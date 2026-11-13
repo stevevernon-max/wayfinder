@@ -174,3 +174,11 @@ body.journey-active #leave-time { font-size: 38px; }
 .route-card .endpoint-row { display: block; width: 100%; margin: 10px 0; box-sizing: border-box; }
 .route-card .endpoint-row .place-box { width: 100%; box-sizing: border-box; }
 #add-stop { font-size: 14px; white-space: nowrap; }
+
+.live-journey { margin: 8px 0 14px; padding: 16px; border: 1px solid var(--line); border-radius: 20px; background: radial-gradient(ellipse at 52% 125%, #164839, transparent 75%), #171a25; }
+.live-journey-top, .live-journey-main { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.live-journey-top, .live-journey small { color: var(--muted); font-size: 12px; }
+.live-journey-main { margin-top: 8px; }
+.live-journey-main > div, #live-margin { white-space: nowrap; }
+#live-margin, #live-eta, .hero[data-margin="late"] #leave-time { color: #77dbb4; font-variant-numeric: tabular-nums; }
+#live-progress { display: block; width: 100%; height: 7px; margin-top: 13px; accent-color: #77dbb4; }

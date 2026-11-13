@@ -89,6 +89,7 @@
     document.body.classList.toggle('journey-active',Boolean(inProgress));
     if(inProgress){if(panel!==panel.parentElement.firstElementChild)panel.parentElement.prepend(panel);}
     else if($('timeline-home').nextElementSibling!==panel)$('timeline-home').after(panel);
+    $('live-journey').hidden=!inProgress;
     const hero=document.querySelector('.hero');
     hero.querySelector('.eyebrow').textContent=inProgress?'ARRIVAL MARGIN':'SET OFF AT';
     if(inProgress){
@@ -138,7 +139,7 @@
     let time=start;
     const names=routeNames();
     const route=currentRoute();
-    const events=[{time,title:'Set off · '+(state.start||'Home').split(',')[0].trim(),location:0,forecastTime:start}];
+    const events=[{time,title:shortPlace(state.start||'Home').split(',')[0],location:0,forecastTime:start}];
     state.stops.forEach((stop,index)=>{
       time+=n(stop.drive)*60000;
       const arrival=time;
@@ -222,53 +223,98 @@
       totalDistance+=length;
     }
     const distance=bestDistance*111000;
-    return totalDistance && distance<=Math.max(30,fix.accuracy)
+    return totalDistance
       ? {progress:bestAlong/totalDistance,distance} : null;
   }
+  let liveEstimate, lastLiveRequest, liveRequestPending=false;
+  function refreshLiveEstimate(route,leg,position){
+    const fix=position.coords;
+    const now=Date.now();
+    const previous=lastLiveRequest;
+    if(liveRequestPending || (previous?.route===route && now-previous.time<60000))return;
+    if(previous?.route===route && previous.leg===leg && now-previous.time<180000
+      && 111000*Math.hypot(fix.latitude-previous.latitude,
+        (fix.longitude-previous.longitude)*Math.cos(fix.latitude*Math.PI/180))<500)return;
+    const tracking=departureTracking;
+    lastLiveRequest={route,leg,time:now,latitude:fix.latitude,longitude:fix.longitude};
+    liveRequestPending=true;
+    const coords=[fix.latitude+','+fix.longitude,...route.coords.slice(leg+1)];
+    void (async ()=>{
+      try{
+        const response=await tomTom({coords,chargerDrive:true});
+        if(!response.ok)return;
+        const seconds=(await response.json()).routes?.[0]?.summary?.travelTimeInSeconds;
+        if(Number.isFinite(seconds) && currentRoute()===route && departureTracking===tracking
+          && !tracking.arrivedAt)liveEstimate={route,tracking,leg,time:now,seconds};
+      }catch{ /* Keep the estimate from the planned route while live routing is unavailable. */ }
+      finally{liveRequestPending=false;}
+    })();
+  }
+
   function drawProgress(){
     const rows=$('timeline').querySelectorAll('.event');
-    let index=-1,fraction=0,colour='time';
     const now=Date.now();
     const route=currentRoute();
     const tracking=route && departureTracking.signature===route.signature && departureTracking.leftAt && !departureTracking.arrivedAt;
-    const candidates=[];
+    const fresh=gpsFix && now-gpsFix.timestamp<30000 && gpsFix.coords.accuracy<=65;
+    const previous=departureTracking.liveLeg||0;
+    let best;
+    let liveEta=null;
     arrivalMargin=null;
-    if(tracking && gpsFix && now-gpsFix.timestamp<30000 && gpsFix.coords.accuracy<=65){
-      timelineEvents.forEach((event,i)=>{
+    if(tracking && fresh){
+      const candidates=route.paths.map((points,i)=>{
+        const match=roadProgress(points,gpsFix.coords);
+        return match && {i,...match};
+      }).filter(match=>match && match.i>=previous).sort((a,b)=>a.distance-b.distance);
+      const closest=candidates[0];
+      const current=candidates.find(match=>match.i===previous);
+      best=current && closest && current.distance<=closest.distance+Math.max(25,gpsFix.coords.accuracy)
+        ? current : closest;
+      const nearby=best && best.distance<=Math.max(120,gpsFix.coords.accuracy*2);
+      // Keep the next planned stop when off route until GPS clearly rejoins a later leg.
+      if(!nearby)best=current||best;
+      if(best && timelineEvents[best.i+1]){
+        const {i,progress}=best;
+        if(nearby)departureTracking.liveLeg=i;
         const next=timelineEvents[i+1];
-        if(!next?.location || next.forecastTime<=event.time)return;
-        const match=roadProgress(route.paths[next.location-1],gpsFix.coords);
-        if(match)candidates.push({i,...match,expected:event.time+match.progress*(next.forecastTime-event.time)});
-      });
-    }
-    candidates.sort((a,b)=>a.distance-b.distance);
-    const unambiguous=candidates.length===1 || (candidates.length>1 && candidates[1].distance-candidates[0].distance>Math.max(15,gpsFix.coords.accuracy));
-    if(unambiguous){
-      const best=candidates[0];
-      index=best.i;
-      const from=timelineEvents[index], to=timelineEvents[index+1];
-      fraction=(best.expected-from.time)/(to.time-from.time);
-      const difference=(now-best.expected)/60000;
-      arrivalMargin=Math.round(-difference);
-      colour=difference < -10?'ahead':difference>10?'behind':'on-time';
-      $('gps-status').textContent=Math.round(best.progress*100)+'% of leg · '+({ahead:'Ahead of schedule',behind:'Behind schedule','on-time':'On schedule'}[colour]);
-    }else{
-      if(gpsFix){
-        $('gps-status').textContent=departureTracking.arrivedAt && departureTracking.signature===route?.signature
-          ? 'Destination reached.'
-          : !route ? 'Route tracking unavailable. Tap Get travel times.'
-          : now-gpsFix.timestamp>=30000 ? 'GPS signal is stale. Keep Wayfinder open or retry GPS.'
-          : gpsFix.coords.accuracy>30 ? 'GPS accuracy is low. Waiting for a clearer signal.'
-          : tracking ? 'GPS can’t confirm the current leg.' : departureTracking.origin ? 'GPS ready. Waiting until you move 50 m from your starting position.' : 'Waiting for an accurate GPS reading near Start. Check that Start matches your location.';
+        const drive=n(i<state.stops.length?state.stops[i].drive:state.destinationDrive)*60000;
+        const stays=state.stops.slice(i).reduce((sum,stop)=>sum+n(stop.stay),0)*60000;
+        const plannedRemaining=Math.max(0,timelineEvents.at(-1).time-next.forecastTime)+(1-progress)*drive;
+        const rejoinTime=nearby?0:best.distance/8*1000;
+        const estimate=liveEstimate;
+        const routed=!nearby && estimate?.route===route && estimate.tracking===departureTracking
+          && estimate.leg===i && now-estimate.time<180000;
+        liveEta=now+(routed?estimate.seconds*1000+stays:plannedRemaining+rejoinTime);
+        const target=departureTracking.targetArrival||timelineEvents.at(-1).time;
+        arrivalMargin=Math.round((target-liveEta)/60000);
+        $('gps-status').textContent=nearby ? Math.round(progress*100)+'% of current leg'
+          : routed ? 'Off route · ETA via remaining stops' : 'Off route · approximate ETA while checking roads';
+        if(!nearby)refreshLiveEstimate(route,i,gpsFix);
+        $('live-stop').textContent=(i<state.stops.length?'Next stop · ':'Destination · ')+next.title.replace(/^End · /,'');
+        $('live-progress').value=(i+progress)/route.paths.length;
       }
     }
+    if(liveEta===null){
+      best=undefined;
+      if(gpsFix)$('gps-status').textContent=departureTracking.arrivedAt && departureTracking.signature===route?.signature
+        ? 'Destination reached.'
+        : !route ? 'Route tracking unavailable. Tap Get travel times.'
+        : !fresh ? 'Waiting for a fresh, accurate GPS reading.'
+        : tracking ? 'Route geometry unavailable. Tap Get travel times.'
+        : departureTracking.origin ? 'GPS ready. Waiting for departure.' : 'Waiting for an accurate GPS reading near Start.';
+      $('live-stop').textContent='Waiting for live progress';
+      $('live-progress').value=0;
+    }
+    const signed=arrivalMargin===null?'—':(arrivalMargin>=0?'+':'−')+Math.abs(arrivalMargin)+' min';
+    $('live-margin').textContent=signed;
+    $('live-eta').textContent=liveEta===null?'—':new Date(liveEta).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     rows.forEach((row,i)=>{
       const track=row.querySelector('.track');
-      if(i===index){
-        track.dataset.progress=colour;
-        row.dataset.tracking=colour;
+      if(best?.i===i && rows[i+1]){
+        track.dataset.progress='on-time';
+        row.dataset.tracking='on-time';
         const height=rows[i+1].offsetTop-row.offsetTop;
-        row.style.setProperty('--progress-y',(8+fraction*height)+'px');
+        row.style.setProperty('--progress-y',(8+best.progress*height)+'px');
       }else{delete track.dataset.progress;delete row.dataset.tracking;}
     });
   }
