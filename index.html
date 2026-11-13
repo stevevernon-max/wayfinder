@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c1116">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Wayfinder">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css?v=30">
+  <title>Wayfinder · Journey planner</title>
+</head>
+<body>
+  <main class="shell">
+    <section class="count-card" id="timer-card">
+      <div><span class="eyebrow" id="count-label">SET OFF IN</span><small id="count-sub"></small></div>
+      <div class="timer-side"><strong id="countdown">Set your route</strong></div>
+      <div class="count-track" aria-hidden="true"><i id="count-progress"></i></div>
+    </section>
+    <section class="hero">
+      <div class="hero-main">
+        <div><span class="eyebrow">SET OFF AT</span><strong id="leave-time">—:—</strong></div>
+        <div class="arrival"><span>Arrive by</span><button id="arrive-open" aria-haspopup="dialog"><b>15</b>:<b>00</b></button><span>Total</span><strong id="total-time">—</strong></div>
+      </div>
+      <div class="journey-track" aria-hidden="true"><i id="drive-progress"></i><i id="stay-progress"></i></div>
+      <div class="hero-foot"><span>Drive <b id="drive-time">—</b></span><span>Stops <b id="stay-time">—</b></span></div>
+    </section>
+    <section class="section-head"><h2>Route</h2></section>
+    <section class="card route-card">
+      <div class="place-row endpoint-row"><label for="start">Start</label><button type="button" class="text-btn" id="use-current-location">⌖ Current Location</button><div class="place-box"><a class="map-link" data-map="start" aria-label="Open start in Apple Maps"></a><input id="start" placeholder="Home" autocomplete="off"></div></div>
+      <div id="stops"></div>
+        <div class="place-row endpoint-row"><label for="destination">End</label><div class="place-box"><a class="map-link" data-map="destination" aria-label="Open End in Apple Maps"></a><input id="destination" placeholder="Where to?" autocomplete="off"><button type="button" id="destination-clear" aria-label="Clear End" hidden>×</button><input id="destination-drive" class="stop-time" type="number" min="0" inputmode="numeric" placeholder="min" aria-label="Drive minutes to End"></div></div>
+      <div class="actions"><button class="text-btn" id="add-stop" aria-label="Add stop">+ Stop</button><button class="text-btn" id="ev-lookup"><span aria-hidden="true">⚡</span> EV chargers</button><button class="text-btn" id="toilet-lookup" aria-label="Public toilets"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;color:#ffc83d"><circle cx="12" cy="4" r="2.5"/><path d="M8 8h8v8h-2v6h-1.5v-6h-1v6H10v-6H8z"/></svg></button><button class="text-btn" id="calculate">Get travel times</button></div>
+      <p class="status" id="status" aria-live="polite">Enter drive times or connect TomTom in Settings for place suggestions and traffic.</p>
+    </section>
+    <div id="timeline-home"></div>
+    <section id="journey-panel">
+    <section class="section-head"><h2>Journey timeline</h2></section>
+    <section class="card timeline" id="timeline" aria-label="Journey timeline"></section>
+    <div class="timeline-tools"><span id="gps-status" role="status"></span><span id="gps-reading" role="status"></span><button class="text-btn" id="retry-gps">Enable / retry GPS</button></div>
+    </section>
+    <section class="section-head"><h2>Saved trips</h2></section><section class="card saved"><div class="save-row"><input id="trip-name" placeholder="Name this trip" aria-label="Trip name"><button class="primary" id="save-trip">Save</button></div><div id="saved"></div><div><button type="button" class="text-btn" id="import-trips">Import trips</button> <button type="button" class="text-btn" id="export-trips">Export trips</button><input type="file" id="trip-file" accept=".json,application/json" hidden><p class="status" role="status" id="trip-transfer-status"></p></div></section>
+    <footer><button class="text-btn" id="settings-open">Settings</button> Plans and settings are stored locally on this device. <button class="text-btn" id="clear-plan">Clear plan</button></footer>
+  </main>
+  <dialog id="ev-dialog" aria-labelledby="ev-title">
+    <div class="settings-form">
+      <header class="dialog-head"><h2 id="ev-title">EV chargers</h2><form method="dialog"><button class="icon-btn" aria-label="Close">×</button></form></header>
+      <p class="small-note" id="ev-note">Over 60 kW and up to 10 minutes’ drive from a stop, your destination or a checked point on the route.</p>
+      <div id="ev-results" aria-live="polite"></div>
+    </div>
+  </dialog>
+  <dialog id="arrival-dialog" aria-labelledby="arrival-title">
+    <form method="dialog" class="settings-form">
+      <h2 id="arrival-title">Arrive by</h2>
+      <div class="time-picker"><label>Hour<select id="arrival-hour"></select></label><span>:</span><label>Minute<select id="arrival-minute"></select></label></div>
+      <div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" value="done">Done</button></div>
+    </form>
+  </dialog>
+  <dialog id="settings"><form method="dialog" class="settings-form"><div class="dialog-head"><div><span class="eyebrow">PREFERENCES</span><h2>Plan your way</h2></div><button class="icon-btn" value="cancel" aria-label="Close">×</button></div>
+    <label class="location-setting"><input type="checkbox" id="keep-location"> Keep live location on when reopening Wayfinder</label>
+    <label class="field">Home address<input id="home-address" readonly placeholder="Enter your home address"></label>
+    <p class="small-note">Home uses your confirmed GPS coordinates: 56.842778, −5.748333.</p>
+    <label class="field">TomTom API key<input id="tomtom-key" type="password" autocomplete="off" placeholder="Optional device-specific key"></label>
+    <label class="field">Routing provider<select id="provider"><option value="tomtom">TomTom (traffic-aware)</option></select></label>
+    <details><summary>Optional data providers</summary><p class="small-note"><a href="https://open-meteo.com/" target="_blank" rel="noopener">Weather by Open-Meteo</a> for personal use.</p><label class="field">Optional adapter URL<input id="adapter-url" type="url" placeholder="https://your-service.example/api"></label></details>
+    <div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" id="settings-save" value="save">Save settings</button></div>
+  </form></dialog>
+  <script src="tomtom-config.js" defer></script>
+  <script src="app.js?v=34" defer></script>
+</body>
+</html>
