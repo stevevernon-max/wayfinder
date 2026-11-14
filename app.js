@@ -115,7 +115,7 @@
     tick();
   }
   function renderTimeline(){
-    if(!state.destination.trim()){ timelineEvents=[]; $('timeline').innerHTML='<div class="empty">Add a destination to see your plan.</div>'; return; }
+    if(!state.destination.trim()){ timelineEvents=[]; $('journey-stop-markers').replaceChildren(); $('timeline').innerHTML='<div class="empty">Add a destination to see your plan.</div>'; return; }
     const start=departureTracking.targetArrival && departureTracking.signature===JSON.stringify(routeNames()) ? departureTracking.targetArrival-total()*60000 : departure().getTime();
     let time=start;
     const names=routeNames();
@@ -129,9 +129,13 @@
         location:index+1,facility:stop.facility,delay:route?.delays[index],note:n(stop.stay)?n(stop.stay)+' min stay':''});
     });
     time+=n(state.destinationDrive)*60000;
-    events.push({time,forecastTime:time,title:'End · '+(state.destination).split(',')[0].trim(),
+    events.push({time,forecastTime:time,title:(state.destination).split(',')[0].trim(),
       location:names.length-1,delay:route?.delays.at(-1)});
     timelineEvents=events;
+    const span=events.at(-1).time-start;
+    $('journey-stop-markers').innerHTML=span>0 ? events.slice(1,-1).map((stop,i)=>
+      '<span style="left:'+Math.min(97,Math.max(3,100*(stop.forecastTime-start)/span))+'%" title="'+esc(stop.title)+'">'+(i+1)+'</span>'
+    ).join('') : '';
     $('timeline').innerHTML=events.map(event=>{
       const coord=route?.coords[event.location] || selectedPlaces.get(names[event.location]);
       const hourly=weather.get(coord);
@@ -144,15 +148,13 @@
       };
       const range=event.range ? timeText(event.forecastTime)+'–'+timeText(event.time) : timeText(event.time);
       const delayReason=route?.reasons[event.location-1]||'Reason unavailable';
-      const delayText=event.delay>0?'+ '+event.delay+' min · '+delayReason+' (included)':'';
-      const details=delayText
-        ? '<small class="traffic-detail" title="'+esc(delayText)+'">'+esc(delayText)+'</small>'
-        : event.note?'<small>'+esc(event.note)+'</small>':'';
+      const delay=event.delay>0?' <span class="inline-delay" aria-label="'+esc(delayReason+', '+event.delay+' minutes included')+'">+'+event.delay+'</span>':'';
+      const details=event.note?'<small>'+esc(event.note)+'</small>':'';
       const facility=event.facility || (/\b(public toilets?|restrooms?)\b/i.test(event.title)?'toilet':/\b(charging station|ev charger|supercharger)\b/i.test(event.title)?'charger':'');
       const marker=facility==='toilet' ? $('toilet-lookup').innerHTML : facility==='charger' ? '⚡' : '';
       const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(facility==='toilet'?'Public toilet':'EV charger')+'">'+marker+'</span>':'')+'</span>';
       return '<div class="event"><time>'+range+'</time>'+track+'<div>'
-        +rain+'<b class="'+(delayText?'delayed':'')+'">'+esc(event.title)+'</b>'+details+'</div></div>';
+        +rain+'<b>'+esc(event.title)+delay+'</b>'+details+'</div></div>';
     }).join('');
     drawProgress();
   }
@@ -272,7 +274,10 @@
           : routed ? 'Off route · ETA via remaining stops' : 'Off route · approximate ETA while checking roads';
         if(!nearby)refreshLiveEstimate(route,i,gpsFix);
         $('live-stop').textContent=(i<state.stops.length?'Next stop · ':'Destination · ')+next.title.replace(/^End · /,'');
-        $('live-progress').value=(i+progress)/route.paths.length;
+        const start=timelineEvents[0].time;
+        const span=timelineEvents.at(-1).time-start;
+        const elapsed=timelineEvents[i].time-start+progress*drive;
+        $('live-progress').value=span>0?Math.max(0,Math.min(1,elapsed/span)):0;
       }
     }
     if(liveEta===null){
@@ -329,6 +334,9 @@
     $('planned-status').hidden=underway;
     $('live-journey').hidden=!underway;
     $('live-margin').hidden=!underway;
+    $('margin-label').hidden=!underway;
+    $('countdown').hidden=underway;
+    $('count-label').hidden=underway;
     $('journey-phase').textContent=arrived?'Journey complete':underway?'Journey underway':'Journey planned';
     $('journey-phase').classList.toggle('is-live',underway && !arrived);
     $('live-eta-label').textContent=arrived?'Arrived':'ETA';
@@ -340,13 +348,14 @@
       $('live-margin').textContent=arrivalMargin===null?'—':(arrivalMargin>=0?'+':'−')+Math.abs(arrivalMargin)+' min';
     }
     $('live-margin').dataset.tone=arrivalMargin===null?'unknown':arrivalMargin<0?'late':'early';
-    $('gps-reading').textContent=gpsFix ? 'GPS ±'+Math.round(gpsFix.coords.accuracy)+' m' : '';
+    $('gps-reading').textContent=gpsFix ? 'GPS ±'+Math.round(gpsFix.coords.accuracy)+' m' : 'No GPS reading';
     const leave=departure();
     const seconds=Math.ceil(Math.abs(leave.getTime()-now)/1000);
     const late=!underway && total()>0 && leave.getTime()<now;
     $('timeline').classList.toggle('departure-overdue',late);
     $('count-label').textContent=late?'LATE BY':'SET OFF IN';
-    $('count-label').parentElement.classList.toggle('late',late);
+    $('leave-time').dataset.tone=late?'late':total()?'early':'unknown';
+    $('gps-reading').dataset.signal=gpsFix && now-gpsFix.timestamp<30000 && gpsFix.coords.accuracy<=65?'ok':'issue';
     $('leave-time').textContent=total()?clock(leave.getHours()*60+leave.getMinutes()):'—:—';
     $('countdown').textContent=total()
       ? `${Math.floor(seconds/3600)}h ${Math.floor(seconds%3600/60)}m ${String(seconds%60).padStart(2,'0')}s`

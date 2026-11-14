@@ -215,3 +215,22 @@ body.journey-active #leave-time { font-size: 38px; }
 .wheel-picker > div { position: relative; width: 74px; height: 190px; box-sizing: border-box; overflow-y: auto; padding-block: 76px; scroll-snap-type: y mandatory; scrollbar-width: none; mask-image: linear-gradient(transparent, #000 42%, #000 58%, transparent); }
 .wheel-picker > div > div { height: 38px; line-height: 38px; text-align: center; scroll-snap-align: center; font-size: 25px; font-variant-numeric: tabular-nums; cursor: pointer; }
 .wheel-picker > span { padding: 0; z-index: 1; }
+
+.journey-clock { display: grid; justify-items: center; gap: 3px; padding-top: 9px; }
+.journey-clock strong { font-size: 23px; }
+#leave-time[data-tone="early"] { color: #77dbb4; }
+#leave-time[data-tone="late"], .inline-delay { color: #ff817a; }
+.inline-delay { white-space: nowrap; font-size: .8em; }
+.journey-meter { position: relative; margin-top: 12px; }
+#live-progress { height: 5px; margin: 0; border: 0; border-radius: 5px; background: #254339; box-shadow: 0 0 10px #77dbb450; }
+#live-progress::-webkit-progress-bar { border-radius: 5px; background: #254339; }
+#live-progress::-webkit-progress-value { border-radius: 5px; background: #77dbb4; }
+#live-progress::-moz-progress-bar { border-radius: 5px; background: #77dbb4; }
+#journey-stop-markers span { position: absolute; top: 50%; transform: translate(-50%, -50%); background: #214439; color: #b2ffd8; border: 1px solid #77dbb4; border-radius: 20px; min-width: 17px; padding-inline: 2px; text-align: center; font-size: 10px; }
+.route-card #arrive-open { display: grid; justify-items: center; align-content: center; gap: 0; font-size: 10px; flex: none; white-space: nowrap; }
+.route-card #arrive-open b { font-size: 13px; padding: 2px 4px; }
+#gps-reading { --signal: #ff817a; }
+#gps-reading[data-signal="ok"] { --signal: #77dbb4; }
+#gps-reading::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; background: var(--signal); animation: gps-dot 1.8s ease-in-out infinite; }
+@keyframes gps-dot { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { #gps-reading::before { animation: none; } }

@@ -9,35 +9,35 @@
   <meta name="apple-mobile-web-app-title" content="Wayfinder">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="./road-mark-180.png">
-  <link rel="stylesheet" href="styles.css?v=38">
+  <link rel="stylesheet" href="styles.css?v=39">
   <title>Wayfinder · Journey planner</title>
 </head>
 <body>
   <main class="shell">
     <section class="live-journey" aria-label="Journey status">
-      <div class="live-journey-top"><span id="journey-phase">Journey planned</span><strong id="live-margin" hidden>—</strong></div>
+      <div class="live-journey-top"><span id="journey-phase">Journey planned</span></div>
       <div id="planned-status" class="live-journey-main">
         <div><small>SET OFF AT</small><br><strong id="leave-time">—:—</strong></div>
-        <div><small id="count-label">SET OFF IN</small><br><strong id="countdown">—</strong></div>
       </div>
       <div id="live-journey" hidden>
         <div class="live-journey-main"><strong id="live-stop">Waiting for live progress</strong><div><small id="live-eta-label">ETA</small> <strong id="live-eta">—</strong></div></div>
-        <progress id="live-progress" max="1" value="0" aria-label="Journey progress"></progress>
       </div>
-    </section>
-    <section class="section-head"><h2>Route</h2></section>
-    <section class="card route-card">
-      <div class="place-row endpoint-row"><label for="start">Start</label><div class="place-box"><a class="map-link" data-map="start" aria-label="Open start in Apple Maps"></a><input id="start" placeholder="Home" autocomplete="off"><button type="button" class="text-btn" id="use-current-location" aria-label="Current Location">⌖</button></div></div>
-      <div id="stops"></div>
-        <div class="place-row endpoint-row"><label for="destination">End</label><div class="place-box"><a class="map-link" data-map="destination" aria-label="Open End in Apple Maps"></a><input id="destination" placeholder="Where to?" autocomplete="off"><button type="button" id="destination-clear" aria-label="Clear End" hidden>×</button><input id="destination-drive" class="stop-time" type="number" min="0" inputmode="numeric" placeholder="min" aria-label="Drive minutes to End"></div></div>
-      <div class="route-summary"><button id="arrive-open" aria-haspopup="dialog"></button><small><span id="total-time">—</span> total · <span id="drive-time">—</span> drive · <span id="stay-time">—</span> stay</small></div>
-      <div class="actions"><button class="text-btn" id="add-stop" aria-label="Add stop">+ Stop</button><button class="text-btn" id="ev-lookup"><span aria-hidden="true">⚡</span> EV chargers</button><button class="text-btn" id="toilet-lookup" aria-label="Public toilets"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;color:#ffc83d"><circle cx="12" cy="4" r="2.5"/><path d="M8 8h8v8h-2v6h-1.5v-6h-1v6H10v-6H8z"/></svg></button><button class="text-btn" id="calculate">Get travel times</button></div>
-      <p class="status" id="status" aria-live="polite">Enter drive times or connect TomTom in Settings for place suggestions and traffic.</p>
+      <div class="journey-meter"><progress id="live-progress" max="1" value="0" aria-label="Journey progress by planned time"></progress><div id="journey-stop-markers"></div></div>
+      <div class="journey-clock"><strong id="countdown">—</strong><small id="count-label">SET OFF IN</small><strong id="live-margin" hidden>—</strong><small id="margin-label" hidden>ARRIVAL MARGIN</small></div>
     </section>
     <section id="journey-panel">
     <section class="section-head"><h2>Journey timeline</h2></section>
     <section class="card timeline" id="timeline" aria-label="Journey timeline"></section>
     <div class="timeline-tools"><span id="gps-status" role="status"></span><span id="gps-reading" role="status"></span></div>
+    </section>
+    <section class="section-head"><h2>Route</h2></section>
+    <section class="card route-card">
+      <div class="place-row endpoint-row"><label for="start">Start</label><div class="place-box"><a class="map-link" data-map="start" aria-label="Open start in Apple Maps"></a><input id="start" placeholder="Home" autocomplete="off"><button type="button" class="text-btn" id="use-current-location" aria-label="Current Location">⌖</button></div></div>
+      <div id="stops"></div>
+        <div class="place-row endpoint-row"><label for="destination">End</label><div class="place-box"><a class="map-link" data-map="destination" aria-label="Open End in Apple Maps"></a><input id="destination" placeholder="Where to?" autocomplete="off"><button type="button" id="destination-clear" aria-label="Clear End" hidden>×</button><input id="destination-drive" class="stop-time" type="number" min="0" inputmode="numeric" placeholder="min" aria-label="Drive minutes to End"><button id="arrive-open" aria-haspopup="dialog"></button></div></div>
+      <div class="route-summary"><small><span id="total-time">—</span> total · <span id="drive-time">—</span> drive · <span id="stay-time">—</span> stay</small></div>
+      <div class="actions"><button class="text-btn" id="add-stop" aria-label="Add stop">+ Stop</button><button class="text-btn" id="ev-lookup"><span aria-hidden="true">⚡</span> EV chargers</button><button class="text-btn" id="toilet-lookup" aria-label="Public toilets"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;color:#ffc83d"><circle cx="12" cy="4" r="2.5"/><path d="M8 8h8v8h-2v6h-1.5v-6h-1v6H10v-6H8z"/></svg></button><button class="text-btn" id="calculate">Get travel times</button></div>
+      <p class="status" id="status" aria-live="polite">Enter drive times or connect TomTom in Settings for place suggestions and traffic.</p>
     </section>
     <section class="section-head"><h2>Saved trips</h2></section><section class="card saved"><div class="save-row"><input id="trip-name" placeholder="Name this trip" aria-label="Trip name"><button class="primary" id="save-trip">Save</button></div><div id="saved"></div><div><button type="button" class="text-btn" id="import-trips">Import trips</button> <button type="button" class="text-btn" id="export-trips">Export trips</button><input type="file" id="trip-file" accept=".json,application/json" hidden><p class="status" role="status" id="trip-transfer-status"></p></div></section>
     <footer><button class="text-btn" id="settings-open">Settings</button> Plans and settings are stored locally on this device. <button class="text-btn" id="clear-plan">Clear plan</button></footer>
@@ -66,6 +66,6 @@
     <div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" id="settings-save" value="save">Save settings</button></div>
   </form></dialog>
   <script src="tomtom-config.js?v=35" defer></script>
-  <script src="app.js?v=38" defer></script>
+  <script src="app.js?v=39" defer></script>
 </body>
 </html>
