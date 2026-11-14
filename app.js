@@ -628,6 +628,15 @@
         : categories[incident?.simpleCategory];
     });
   }
+  const trafficRefreshInterval=30*60*1000;
+  function refreshJourneyTraffic(){
+    const {leftAt,arrivedAt,lastTrafficRequestAt}=departureTracking;
+    if(!leftAt || arrivedAt || document.hidden || navigator.onLine===false || $('calculate').disabled)return;
+    if(Date.now()-Math.max(leftAt,lastTrafficRequestAt||0)<trafficRefreshInterval)return;
+    if(routeNames().some(name=>!name || name==='Home'))return;
+    void calcRoute();
+  }
+
   let routeRequest=0;
   async function calcRoute(){
     const request=++routeRequest;
@@ -640,10 +649,15 @@
     const signature=JSON.stringify(names);
     const button=$('calculate');
     button.disabled=true;
+    if(departureTracking.leftAt && !departureTracking.arrivedAt){
+      departureTracking.lastTrafficRequestAt=Date.now();
+      state.journeyTracking=departureTracking;
+      persist();
+    }
     status('Getting current travel times…');
     try{
-      const coords=[];
-      for(const name of names)coords.push(await geocode(name));
+      const coords=currentRoute()?.coords || [];
+      if(!coords.length)for(const name of names)coords.push(await geocode(name));
       const response=await tomTom({coords});
       if(!response.ok)throw Error('TomTom routing failed ('+response.status+').');
       const data=await response.json();
@@ -1130,6 +1144,9 @@
     void calcRoute();
   };
   setInterval(tick,1000);
+  setInterval(refreshJourneyTraffic,15000);
+  document.addEventListener('visibilitychange',refreshJourneyTraffic);
+  window.addEventListener('online',refreshJourneyTraffic);
   render();
   if(state.liveLocation){
     startLocation();
