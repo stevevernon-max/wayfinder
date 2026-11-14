@@ -302,13 +302,13 @@ body.journey-active #leave-time { font-size: 38px; }
 .journey-clock #count-label { order: -1; }
 .timeline .event { min-height: 52px; padding-bottom: 9px; }
 .timeline .event:last-child { min-height: 36px; padding-bottom: 0; }
-.timeline-segments i { width: 12px; }
+.timeline-segments i { width: 14px; }
 
-#journey-status { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 11px 11px; }
+#journey-status { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 14px 9px; }
 #journey-status .live-journey-top { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
 #journey-status .live-journey-main { align-items: center; gap: 5px; margin: 0; }
 #journey-status #leave-time { display: inline; }
-#journey-status :is(#leave-time, #countdown, #live-eta, #live-margin) { font-size: clamp(16px, 4.8vw, 21px); white-space: nowrap; }
+#journey-status :is(#leave-time, #countdown, #live-eta, #live-margin) { font-size: clamp(18px, 5.2vw, 23px); white-space: nowrap; }
 #journey-status small { font-size: clamp(9px, 2.6vw, 11px); letter-spacing: .02em; }
 #journey-status #live-journey { min-width: 0; flex: 1; }
 #journey-status #live-stop { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
@@ -317,3 +317,11 @@ body.journey-active #leave-time { font-size: 38px; }
 
 .route-actions-top { display: flex; justify-content: flex-end; }
 .route-actions-top #calculate { padding-block: 4px; }
+
+#timeline .event:not(:last-child) { min-height: max(52px, calc(18px + var(--stay-height) + var(--leg-height))); }
+#timeline .timeline-segments { top: calc(17px + var(--stay-height)); grid-template-rows: none; grid-auto-rows: minmax(0, 1fr); }
+#timeline .event:not(:last-child) .track::after {
+  content: ""; position: absolute; top: 17px; left: 50%; transform: translateX(-50%);
+  width: 14px; height: var(--stay-height); border: 0; border-radius: 3px; background: #647995;
+}
+#journey-status #planned-status { white-space: nowrap; }

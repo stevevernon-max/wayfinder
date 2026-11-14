@@ -132,7 +132,12 @@
     events.push({time,forecastTime:time,title:(state.destination).split(',')[0].trim(),
       location:names.length-1,delay:route?.delays.at(-1)});
     timelineEvents=events;
-    $('timeline').innerHTML=events.map(event=>{
+    $('timeline').innerHTML=events.map((event,index)=>{
+      const next=events[index+1];
+      const driveMinutes=next?Math.max(0,(next.forecastTime-event.time)/60000):0;
+      const stayMinutes=Math.max(0,(event.time-event.forecastTime)/60000);
+      const driveHeight=next?Math.max(18,Math.min(100,driveMinutes*1.1)):0;
+      const stayHeight=stayMinutes?Math.max(5,Math.min(38,stayMinutes*.65)):0;
       const coord=route?.coords[event.location] || selectedPlaces.get(names[event.location]);
       const hourly=weather.get(coord);
       const hour=Math.ceil(event.forecastTime/3600000)*3600;
@@ -150,8 +155,8 @@
       const endpoint=event.location===0?'S':event.location===names.length-1?'E':'';
       const marker=endpoint || (facility==='toilet' ? $('toilet-lookup').innerHTML : facility==='charger' ? '⚡' : '');
       const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(endpoint==='S'?'Start':endpoint==='E'?'End':facility==='toilet'?'Public toilet':'EV charger')+'">'+marker+'</span>':'')
-        +(event.location<events.length-1?'<span class="timeline-segments" aria-hidden="true">'+'<i></i>'.repeat(4)+'</span>':'')+'</span>';
-      return '<div class="event"><time>'+range+'</time>'+track+'<div>'
+        +(event.location<events.length-1?'<span class="timeline-segments" aria-hidden="true">'+'<i></i>'.repeat(Math.max(2,Math.round(driveHeight/9)))+'</span>':'')+'</span>';
+      return '<div class="event" style="--leg-height:'+driveHeight+'px;--stay-height:'+stayHeight+'px"><time>'+range+'</time>'+track+'<div>'
         +rain+'<b'+(event.delay>0 && delayReason.includes('Roadworks')?' class="roadworks-location"':'')+'>'+esc(event.title)+delay+'</b>'+details+'</div></div>';
     }).join('');
     drawProgress();
