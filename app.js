@@ -133,9 +133,14 @@
       location:names.length-1,delay:route?.delays.at(-1)});
     timelineEvents=events;
     const span=events.at(-1).time-start;
-    $('journey-stop-markers').innerHTML=span>0 ? events.slice(1,-1).map((stop,i)=>
-      '<span style="left:'+Math.min(97,Math.max(3,100*(stop.forecastTime-start)/span))+'%" title="'+esc(stop.title)+'">'+(i+1)+'</span>'
-    ).join('') : '';
+    $('journey-stop-markers').innerHTML=span>0 ? events.slice(1,-1).map((stop,i)=>{
+      const facility=stop.facility || (/\b(toilets?|restrooms?)\b/i.test(stop.title)?'toilet'
+        : /\b(charg(?:er|ing)s?|supercharger|chargepoint)\b/i.test(stop.title)?'charger'
+        : /\b(parking|car\s*park|park and ride)\b/i.test(stop.title)?'parking':'');
+      const icon=facility==='toilet'?$('toilet-lookup').innerHTML:facility==='charger'?'⚡':facility==='parking'?'P':i+1;
+      const label='Stop '+(i+1)+' · '+stop.title+(facility?' · '+facility:'');
+      return '<span style="left:'+Math.min(97,Math.max(3,100*(stop.forecastTime-start)/span))+'%" title="'+esc(label)+'" aria-label="'+esc(label)+'">'+icon+'</span>';
+    }).join('') : '';
     $('timeline').innerHTML=events.map(event=>{
       const coord=route?.coords[event.location] || selectedPlaces.get(names[event.location]);
       const hourly=weather.get(coord);
@@ -292,6 +297,9 @@
       $('live-progress').value=0;
     }
     const signed=arrivalMargin===null?'—':(arrivalMargin>=0?'+':'−')+Math.abs(arrivalMargin)+' min';
+    const marker=$('journey-position');
+    marker.hidden=liveEta===null;
+    if(liveEta!==null)marker.style.left=(100*$('live-progress').value)+'%';
     $('live-margin').textContent=signed;
     $('live-eta').textContent=liveEta===null?'—':new Date(liveEta).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     rows.forEach((row,i)=>{
@@ -687,20 +695,27 @@
     const label=button.textContent;
     button.textContent='Finding best position…';
     try{
-      const coords=await Promise.all(names.map(name=>geocode(name)));
-      const baseline=await tomTom({coords},signal);
-      if(!baseline.ok)throw Error();
-      const legs=(await baseline.json()).routes?.[0]?.legs;
-      if(legs?.length!==coords.length-1)throw Error();
-      const options=await Promise.all(legs.map(async (leg,index)=>{
-        const original=leg.summary?.travelTimeInSeconds;
-        const route=await tomTom({coords:[coords[index],place.coord,coords[index+1]],chargerDrive:true},signal);
-        if(!route.ok)throw Error();
-        const seconds=(await route.json()).routes?.[0]?.summary?.travelTimeInSeconds;
-        if(!Number.isFinite(seconds)||!Number.isFinite(original))throw Error();
-        return {index,extra:seconds-original};
-      }));
+      const cached=currentRoute();
+      const coords=cached?.coords || await Promise.all(names.map(name=>geocode(name)));
+      const options=[];
+      let incomplete=false;
+      for(let index=0;index<coords.length-1;index++){
+        if(signal.aborted || signature!==JSON.stringify(routeNames()))return;
+        try{
+          const direct=await tomTom({coords:coords.slice(index,index+2),chargerDrive:true},signal);
+          if(!direct.ok)throw Error();
+          const original=(await direct.json()).routes?.[0]?.summary?.travelTimeInSeconds;
+          const via=await tomTom({coords:[coords[index],place.coord,coords[index+1]],chargerDrive:true},signal);
+          if(!via.ok)throw Error();
+          const seconds=(await via.json()).routes?.[0]?.summary?.travelTimeInSeconds;
+          if(!Number.isFinite(seconds)||!Number.isFinite(original))throw Error();
+          options.push({index,extra:seconds-original});
+        }catch{
+          incomplete=true;
+        }
+      }
       if(signal.aborted || signature!==JSON.stringify(routeNames()))return;
+      if(!options.length)throw Error();
       const {index}=options.sort((a,b)=>a.extra-b.extra)[0];
       const name=place.address && !place.name.endsWith(place.address) ? place.name+', '+place.address : place.name;
       selectedPlaces.set(name,place.coord);
@@ -711,8 +726,9 @@
       evDialog.close();
       render();
       await calcRoute();
+      if(incomplete && !$('status').textContent)status('Stop added using the detours TomTom could check.');
     }catch{
-      if(!signal.aborted)button.textContent='Could not check detour · tap to retry';
+      if(!signal.aborted)button.textContent=label+' · detour unavailable, tap to retry';
     }finally{
       if(!signal.aborted){
         if(button.textContent==='Finding best position…')button.textContent=label;

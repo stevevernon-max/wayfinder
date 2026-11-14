@@ -255,3 +255,7 @@ body.journey-active #leave-time { font-size: 38px; }
 .journey-meter { margin-block: 15px 7px; }
 .journey-clock { padding-top: 4px; }
 .journey-clock strong { font-size: clamp(24px, 7vw, 34px); line-height: 1.15; }
+
+#journey-stop-markers svg { width: 11px; height: 11px; vertical-align: -1px; }
+#journey-position { position: absolute; z-index: 1; top: 50%; width: 9px; height: 9px; transform: translate(-50%, -50%); border: 2px solid #d8ffeb; border-radius: 50%; background: #36d998; pointer-events: none; animation: journey-pulse 1.8s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) { #journey-position { animation: none; } }
