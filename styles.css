@@ -292,3 +292,5 @@ body.journey-active #leave-time { font-size: 38px; }
 .meter-endpoint { position: absolute; top: 50%; transform: translate(-50%, -50%); display: grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; border: 1px solid #77dbb4; background: #214439; color: #b2ffd8; font-size: 10px; }
 .meter-start { left: 0; }
 .meter-end { left: 100%; }
+
+.stop-row .stop-drive { background: transparent; font-variant-numeric: tabular-nums; }
