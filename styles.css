@@ -237,7 +237,7 @@ body.journey-active #leave-time { font-size: 38px; }
 #live-progress[data-tone="late"]::-webkit-progress-value { background: #ff817a; }
 #live-progress[data-tone="late"]::-moz-progress-bar { background: #ff817a; }
 
-#gps-status::before {
+.timeline-heading h2::before {
   content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px;
   border-radius: 50%; background: var(--signal); animation: gps-beacon 1.4s ease-in-out infinite;
 }
@@ -245,7 +245,7 @@ body.journey-active #leave-time { font-size: 38px; }
   0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 2px var(--signal); }
   50% { opacity: .35; transform: scale(.65); box-shadow: 0 0 0 5px transparent; }
 }
-@media (prefers-reduced-motion: reduce) { #gps-status::before { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .timeline-heading h2::before { animation: none; } }
 .live-journey { padding: 15px 16px 13px; background: radial-gradient(ellipse at 50% 112%, #173d33, transparent 70%), linear-gradient(125deg, #202531, #141923 70%); }
 .live-journey:has(#live-progress[data-tone="late"]) { background: radial-gradient(ellipse at 50% 112%, #432726, transparent 70%), #191d28; }
 #planned-status { margin-top: 0; }
@@ -259,3 +259,29 @@ body.journey-active #leave-time { font-size: 38px; }
 #journey-stop-markers svg { width: 11px; height: 11px; vertical-align: -1px; }
 #journey-position { position: absolute; z-index: 1; top: 50%; width: 9px; height: 9px; transform: translate(-50%, -50%); border: 2px solid #d8ffeb; border-radius: 50%; background: #36d998; pointer-events: none; animation: journey-pulse 1.8s ease-out infinite; }
 @media (prefers-reduced-motion: reduce) { #journey-position { animation: none; } }
+
+.timeline-heading { display: flex; align-items: center; gap: 10px; }
+.timeline-heading h2 { flex: none; }
+.timeline-heading .timeline-tools { flex: 1; min-width: 0; display: flex; flex-wrap: nowrap; justify-content: flex-end; gap: 6px; white-space: nowrap; overflow: hidden; margin: 0; }
+.timeline-heading #gps-status { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.timeline-heading #gps-reading { flex: none; }
+.timeline-heading h2::before { --signal: #ff817a; vertical-align: 1px; }
+.timeline-heading:has(#gps-status[data-signal="ok"]) h2::before { --signal: #77dbb4; }
+.margin-row { display: flex; align-items: baseline; gap: 8px; }
+.margin-row:has([hidden]) { display: none; }
+#live-eta[data-tone="late"], #timeline[data-tone="late"] .event time { color: #ff817a; }
+#timeline[data-tone="late"] { border-color: #ff817a70; }
+#timeline[data-tone="late"] .event .track::after { border-color: #ff817a70; }
+.event .track[data-progress]::before { width: 14px; height: 12px; top: calc(var(--progress-y) - 6px); left: 2px; animation: car-blink 1.5s ease-in-out infinite; }
+.event .track[data-progress] { filter: none; }
+#timeline[data-tone="late"] .event .track[data-progress] { --pulse: #ff817a; }
+@keyframes car-blink { 50% { opacity: .25; } }
+#live-progress.in-motion { animation: journey-line 2s ease-in-out infinite; }
+@keyframes journey-line { 50% { filter: brightness(1.45); } }
+@media (prefers-reduced-motion: reduce) { #live-progress.in-motion, .event .track[data-progress]::before { animation: none; } }
+.route-card .endpoint-row { margin: 2px 0; }
+.route-card .place-row > label { margin-bottom: 0; }
+.route-card .stop-head { margin-top: 3px; }
+.route-card .place-box input, .route-card .stop-place input, .route-card .stop-row .stop-time { min-height: 38px; }
+.route-card .stop-row { gap: 4px; }
+.route-summary { padding-block: 1px; }

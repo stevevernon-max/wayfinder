@@ -156,8 +156,9 @@
       const delay=event.delay>0?' <span class="inline-delay" aria-label="'+esc(delayReason+', '+event.delay+' minutes included')+'">+'+event.delay+' minutes</span>':'';
       const details=event.note?'<small>'+esc(event.note)+'</small>':'';
       const facility=event.facility || (/\b(public toilets?|restrooms?)\b/i.test(event.title)?'toilet':/\b(charging station|ev charger|supercharger)\b/i.test(event.title)?'charger':'');
-      const marker=facility==='toilet' ? $('toilet-lookup').innerHTML : facility==='charger' ? '⚡' : '';
-      const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(facility==='toilet'?'Public toilet':'EV charger')+'">'+marker+'</span>':'')+'</span>';
+      const endpoint=event.location===0?'S':event.location===names.length-1?'E':'';
+      const marker=endpoint || (facility==='toilet' ? $('toilet-lookup').innerHTML : facility==='charger' ? '⚡' : '');
+      const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(endpoint==='S'?'Start':endpoint==='E'?'End':facility==='toilet'?'Public toilet':'EV charger')+'">'+marker+'</span>':'')+'</span>';
       return '<div class="event"><time>'+range+'</time>'+track+'<div>'
         +rain+'<b'+(event.delay>0 && delayReason.includes('Roadworks')?' class="roadworks-location"':'')+'>'+esc(event.title)+delay+'</b>'+details+'</div></div>';
     }).join('');
@@ -356,6 +357,7 @@
       arrivalMargin=departureTracking.completedMargin ?? null;
       $('live-margin').textContent=arrivalMargin===null?'—':(arrivalMargin>=0?'+':'−')+Math.abs(arrivalMargin)+' min';
     }
+    $('margin-label').textContent=arrivalMargin===null?'ETA pending':arrivalMargin===0?'On time':arrivalMargin<0?'Late by':'Early by';
     $('live-margin').dataset.tone=arrivalMargin===null?'unknown':arrivalMargin<0?'late':'early';
     $('gps-reading').textContent=gpsFix ? 'GPS ±'+Math.round(gpsFix.coords.accuracy)+' m' : 'No GPS reading';
     const leave=departure();
@@ -366,7 +368,11 @@
     const tone=late?'late':total()?'early':'unknown';
     $('leave-time').dataset.tone=tone;
     $('countdown').dataset.tone=tone;
-    $('live-progress').dataset.tone=late || (underway && arrivalMargin<0)?'late':'early';
+    const journeyLate=late || (underway && arrivalMargin<0);
+    $('live-progress').dataset.tone=journeyLate?'late':'early';
+    $('live-progress').classList.toggle('in-motion',underway && !arrived);
+    $('live-eta').dataset.tone=journeyLate?'late':'early';
+    $('timeline').dataset.tone=journeyLate?'late':'early';
     if(late)$('live-progress').value=1;
     if(!$('gps-status').textContent)$('gps-status').textContent=gpsFix?'GPS ready':'Waiting for GPS';
     $('gps-status').dataset.signal=gpsFix && now-gpsFix.timestamp<30000 && gpsFix.coords.accuracy<=65?'ok':'issue';
