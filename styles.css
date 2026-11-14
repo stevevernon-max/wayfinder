@@ -231,15 +231,27 @@ body.journey-active #leave-time { font-size: 38px; }
 .route-card #arrive-open b { font-size: 13px; padding: 2px 4px; }
 #gps-status { --signal: #ff817a; }
 #gps-status[data-signal="ok"] { --signal: #77dbb4; }
-#gps-status::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; background: var(--signal); animation: gps-dot 1.8s ease-in-out infinite; }
-@keyframes gps-dot { 50% { opacity: .45; } }
-@media (prefers-reduced-motion: reduce) { #gps-status::before { animation: none; } }
-
-#gps-status::before { box-shadow: 0 0 0 0 var(--signal); animation: gps-signal-pulse 1.8s ease-out infinite; }
-@keyframes gps-signal-pulse { to { box-shadow: 0 0 0 5px transparent; } }
-@media (prefers-reduced-motion: reduce) { #gps-status::before { animation: none; } }
 .event .roadworks-location, #countdown[data-tone="late"] { color: #ff817a; }
 #countdown[data-tone="early"] { color: #77dbb4; }
 #live-progress[data-tone="late"] { accent-color: #ff817a; box-shadow: 0 0 10px #ff817a50; }
 #live-progress[data-tone="late"]::-webkit-progress-value { background: #ff817a; }
 #live-progress[data-tone="late"]::-moz-progress-bar { background: #ff817a; }
+
+#gps-status::before {
+  content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px;
+  border-radius: 50%; background: var(--signal); animation: gps-beacon 1.4s ease-in-out infinite;
+}
+@keyframes gps-beacon {
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 2px var(--signal); }
+  50% { opacity: .35; transform: scale(.65); box-shadow: 0 0 0 5px transparent; }
+}
+@media (prefers-reduced-motion: reduce) { #gps-status::before { animation: none; } }
+.live-journey { padding: 15px 16px 13px; background: radial-gradient(ellipse at 50% 112%, #173d33, transparent 70%), linear-gradient(125deg, #202531, #141923 70%); }
+.live-journey:has(#live-progress[data-tone="late"]) { background: radial-gradient(ellipse at 50% 112%, #432726, transparent 70%), #191d28; }
+#planned-status { margin-top: 0; }
+.journey-total { text-align: right; }
+#top-total { font-size: clamp(18px, 5vw, 24px); font-variant-numeric: tabular-nums; }
+.live-journey small { font-size: 10px; font-weight: 650; letter-spacing: .09em; }
+.journey-meter { margin-block: 15px 7px; }
+.journey-clock { padding-top: 4px; }
+.journey-clock strong { font-size: clamp(24px, 7vw, 34px); line-height: 1.15; }

@@ -106,7 +106,7 @@
     const [hour, minute]=state.arrive.split(':');
     $('arrive-open').innerHTML='Arrive by <b>'+esc(hour)+':'+esc(minute)+'</b>';
     $('arrive-open').setAttribute('aria-label', 'Arrive by '+state.arrive+', change time');
-    $('total-time').textContent=total()?duration(total()):'—';
+    $('top-total').textContent=$('total-time').textContent=total()?duration(total()):'—';
     $('drive-time').textContent=duration(driving);
     $('stay-time').textContent=duration(staying);
     renderTimeline();
@@ -148,13 +148,13 @@
       };
       const range=event.range ? timeText(event.forecastTime)+'–'+timeText(event.time) : timeText(event.time);
       const delayReason=route?.reasons[event.location-1]||'Reason unavailable';
-      const delay=event.delay>0?' <span class="inline-delay" aria-label="'+esc(delayReason+', '+event.delay+' minutes included')+'">+'+event.delay+'</span>':'';
+      const delay=event.delay>0?' <span class="inline-delay" aria-label="'+esc(delayReason+', '+event.delay+' minutes included')+'">+'+event.delay+' minutes</span>':'';
       const details=event.note?'<small>'+esc(event.note)+'</small>':'';
       const facility=event.facility || (/\b(public toilets?|restrooms?)\b/i.test(event.title)?'toilet':/\b(charging station|ev charger|supercharger)\b/i.test(event.title)?'charger':'');
       const marker=facility==='toilet' ? $('toilet-lookup').innerHTML : facility==='charger' ? '⚡' : '';
       const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(facility==='toilet'?'Public toilet':'EV charger')+'">'+marker+'</span>':'')+'</span>';
       return '<div class="event"><time>'+range+'</time>'+track+'<div>'
-        +rain+'<b'+(delayReason.includes('Roadworks')?' class="roadworks-location"':'')+'>'+esc(event.title)+delay+'</b>'+details+'</div></div>';
+        +rain+'<b'+(event.delay>0 && delayReason.includes('Roadworks')?' class="roadworks-location"':'')+'>'+esc(event.title)+delay+'</b>'+details+'</div></div>';
     }).join('');
     drawProgress();
   }
