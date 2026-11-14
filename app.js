@@ -139,7 +139,7 @@
         : /\b(parking|car\s*park|park and ride)\b/i.test(stop.title)?'parking':'');
       const icon=facility==='toilet'?$('toilet-lookup').innerHTML:facility==='charger'?'⚡':facility==='parking'?'P':i+1;
       const label='Stop '+(i+1)+' · '+stop.title+(facility?' · '+facility:'');
-      return '<span style="left:'+Math.min(97,Math.max(3,100*(stop.forecastTime-start)/span))+'%" title="'+esc(label)+'" aria-label="'+esc(label)+'">'+icon+'</span>';
+      return '<span style="left:'+Math.min(94,Math.max(6,100*(stop.forecastTime-start)/span))+'%" title="'+esc(label)+'" aria-label="'+esc(label)+'">'+icon+'</span>';
     }).join('') : '';
     $('timeline').innerHTML=events.map(event=>{
       const coord=route?.coords[event.location] || selectedPlaces.get(names[event.location]);

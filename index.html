@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Wayfinder">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="./road-mark-180.png">
-  <link rel="stylesheet" href="styles.css?v=43">
+  <link rel="stylesheet" href="styles.css?v=44">
   <title>Wayfinder · Journey planner</title>
 </head>
 <body>
@@ -22,19 +22,18 @@
       <div id="live-journey" hidden>
         <div class="live-journey-main"><strong id="live-stop">Waiting for live progress</strong><div><small id="live-eta-label">ETA</small> <strong id="live-eta">—</strong></div></div>
       </div>
-      <div class="journey-meter"><progress id="live-progress" max="1" value="0" aria-label="Journey progress by planned time"></progress><div id="journey-stop-markers"></div><span id="journey-position" hidden aria-hidden="true"></span></div>
+      <div class="journey-meter"><progress id="live-progress" max="1" value="0" aria-label="Journey progress by planned time"></progress><div id="journey-stop-markers"></div><span class="meter-endpoint meter-start" aria-label="Start">S</span><span class="meter-endpoint meter-end" aria-label="End">E</span><span id="journey-position" hidden aria-hidden="true"></span></div>
       <div class="journey-clock"><strong id="countdown">—</strong><small id="count-label">SET OFF IN</small><div class="margin-row"><small id="margin-label" hidden></small><strong id="live-margin" hidden>—</strong></div></div>
     </section>
     <section id="journey-panel">
     <header class="section-head timeline-heading"><h2>Timeline</h2><div class="timeline-tools"><span id="gps-status" role="status"></span><span id="gps-reading" role="status"></span></div></header>
     <section class="card timeline" id="timeline" aria-label="Timeline"></section>
     </section>
-    <section class="section-head"><h2>Route</h2></section>
+    <section class="section-head route-heading"><h2>Route</h2><small><span id="total-time">—</span> total · <span id="drive-time">—</span> drive · <span id="stay-time">—</span> stay</small></section>
     <section class="card route-card">
       <div class="place-row endpoint-row"><label for="start">Start</label><div class="place-box"><a class="map-link" data-map="start" aria-label="Open start in Apple Maps"></a><input id="start" placeholder="Home" autocomplete="off"><button type="button" class="text-btn" id="use-current-location" aria-label="Current Location">⌖</button></div></div>
       <div id="stops"></div>
         <div class="place-row endpoint-row"><label for="destination">End</label><div class="place-box"><a class="map-link" data-map="destination" aria-label="Open End in Apple Maps"></a><input id="destination" placeholder="Where to?" autocomplete="off"><button type="button" id="destination-clear" aria-label="Clear End" hidden>×</button><input id="destination-drive" class="stop-time" type="number" min="0" inputmode="numeric" placeholder="min" aria-label="Drive minutes to End"><button id="arrive-open" aria-haspopup="dialog"></button></div></div>
-      <div class="route-summary"><small><span id="total-time">—</span> total · <span id="drive-time">—</span> drive · <span id="stay-time">—</span> stay</small></div>
       <div class="actions"><button class="text-btn" id="add-stop" aria-label="Add stop">+ Stop</button><button class="text-btn" id="ev-lookup"><span aria-hidden="true">⚡</span> EV chargers</button><button class="text-btn" id="toilet-lookup" aria-label="Public toilets"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;color:#ffc83d"><circle cx="12" cy="4" r="2.5"/><path d="M8 8h8v8h-2v6h-1.5v-6h-1v6H10v-6H8z"/></svg></button><button class="text-btn" id="calculate">Get travel times</button></div>
       <p class="status" id="status" aria-live="polite">Enter drive times or connect TomTom in Settings for place suggestions and traffic.</p>
     </section>
@@ -65,6 +64,6 @@
     <div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" id="settings-save" value="save">Save settings</button></div>
   </form></dialog>
   <script src="tomtom-config.js?v=35" defer></script>
-  <script src="app.js?v=43" defer></script>
+  <script src="app.js?v=44" defer></script>
 </body>
 </html>
