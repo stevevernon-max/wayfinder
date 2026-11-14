@@ -307,3 +307,14 @@ body.journey-active #leave-time { font-size: 38px; }
 .timeline .event { min-height: 52px; padding-bottom: 9px; }
 .timeline .event:last-child { min-height: 36px; padding-bottom: 0; }
 .timeline-segments i { width: 9px; }
+
+#journey-status { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 7px 9px; }
+#journey-status .live-journey-top { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+#journey-status .live-journey-main { align-items: center; gap: 5px; margin: 0; }
+#journey-status #leave-time { display: inline; }
+#journey-status :is(#leave-time, #countdown, #live-eta, #live-margin) { font-size: clamp(13px, 4.1vw, 18px); white-space: nowrap; }
+#journey-status small { font-size: clamp(8px, 2.4vw, 10px); letter-spacing: .02em; }
+#journey-status #live-journey { min-width: 0; flex: 1; }
+#journey-status #live-stop { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+#journey-status .journey-clock { flex: none; flex-wrap: nowrap; gap: 5px; margin: 0; padding: 4px 7px; white-space: nowrap; }
+#journey-status .margin-row { gap: 4px; }
