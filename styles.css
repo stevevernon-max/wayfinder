@@ -298,10 +298,6 @@ body.journey-active #leave-time { font-size: 38px; }
   max-width: 100%;
   box-sizing: border-box;
   margin: 10px auto 0;
-  padding: 6px 13px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: #0f141e;
 }
 .journey-clock #count-label { order: -1; }
 .timeline .event { min-height: 52px; padding-bottom: 9px; }
@@ -316,5 +312,5 @@ body.journey-active #leave-time { font-size: 38px; }
 #journey-status small { font-size: clamp(8px, 2.4vw, 10px); letter-spacing: .02em; }
 #journey-status #live-journey { min-width: 0; flex: 1; }
 #journey-status #live-stop { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-#journey-status .journey-clock { flex: none; flex-wrap: nowrap; gap: 5px; margin: 0; padding: 4px 7px; white-space: nowrap; }
+#journey-status .journey-clock { flex: none; flex-wrap: nowrap; gap: 5px; margin: 0; padding: 0; white-space: nowrap; }
 #journey-status .margin-row { gap: 4px; }
