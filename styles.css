@@ -304,14 +304,14 @@ body.journey-active #leave-time { font-size: 38px; }
 .timeline .event:last-child { min-height: 36px; padding-bottom: 0; }
 .timeline-segments i { width: 14px; }
 
-#journey-status { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 14px 9px; }
+#journey-status { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 14px 12px; }
 #journey-status .live-journey-top { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
 #journey-status .live-journey-main { align-items: center; gap: 5px; margin: 0; }
 #journey-status #leave-time { display: inline; }
-#journey-status :is(#leave-time, #countdown, #live-eta, #live-margin) { font-size: clamp(18px, 5.2vw, 23px); white-space: nowrap; }
-#journey-status small { font-size: clamp(9px, 2.6vw, 11px); letter-spacing: .02em; }
+#journey-status :is(#leave-time, #countdown, #live-eta, #live-margin) { font-size: clamp(22px, 6.5vw, 30px); white-space: nowrap; }
+#journey-status small { font-size: clamp(10px, 3vw, 13px); letter-spacing: .02em; }
 #journey-status #live-journey { min-width: 0; flex: 1; }
-#journey-status #live-stop { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+#journey-status #live-stop { min-width: 0; overflow-wrap: anywhere; font-size: clamp(18px, 5.3vw, 24px); }
 #journey-status .journey-clock { flex: none; flex-wrap: nowrap; gap: 5px; margin: 0; padding: 0; white-space: nowrap; }
 #journey-status .margin-row { gap: 4px; }
 
@@ -325,3 +325,14 @@ body.journey-active #leave-time { font-size: 38px; }
   width: 14px; height: var(--stay-height); border: 0; border-radius: 3px; background: #647995;
 }
 #journey-status #planned-status { white-space: nowrap; }
+
+#journey-status:not(:has(#live-journey:not([hidden]))) { flex-wrap: wrap; }
+#journey-status:has(#live-journey:not([hidden])) {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  row-gap: 8px;
+}
+#journey-status #live-journey:not([hidden]), #journey-status #live-journey .live-journey-main { display: contents; }
+#journey-status #live-stop { grid-column: 1 / -1; }
+#journey-status:has(#live-journey:not([hidden])) .journey-clock { justify-self: end; }
