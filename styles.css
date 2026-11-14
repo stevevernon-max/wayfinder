@@ -229,8 +229,17 @@ body.journey-active #leave-time { font-size: 38px; }
 #journey-stop-markers span { position: absolute; top: 50%; transform: translate(-50%, -50%); background: #214439; color: #b2ffd8; border: 1px solid #77dbb4; border-radius: 20px; min-width: 17px; padding-inline: 2px; text-align: center; font-size: 10px; }
 .route-card #arrive-open { display: grid; justify-items: center; align-content: center; gap: 0; font-size: 10px; flex: none; white-space: nowrap; }
 .route-card #arrive-open b { font-size: 13px; padding: 2px 4px; }
-#gps-reading { --signal: #ff817a; }
-#gps-reading[data-signal="ok"] { --signal: #77dbb4; }
-#gps-reading::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; background: var(--signal); animation: gps-dot 1.8s ease-in-out infinite; }
+#gps-status { --signal: #ff817a; }
+#gps-status[data-signal="ok"] { --signal: #77dbb4; }
+#gps-status::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; background: var(--signal); animation: gps-dot 1.8s ease-in-out infinite; }
 @keyframes gps-dot { 50% { opacity: .45; } }
-@media (prefers-reduced-motion: reduce) { #gps-reading::before { animation: none; } }
+@media (prefers-reduced-motion: reduce) { #gps-status::before { animation: none; } }
+
+#gps-status::before { box-shadow: 0 0 0 0 var(--signal); animation: gps-signal-pulse 1.8s ease-out infinite; }
+@keyframes gps-signal-pulse { to { box-shadow: 0 0 0 5px transparent; } }
+@media (prefers-reduced-motion: reduce) { #gps-status::before { animation: none; } }
+.event .roadworks-location, #countdown[data-tone="late"] { color: #ff817a; }
+#countdown[data-tone="early"] { color: #77dbb4; }
+#live-progress[data-tone="late"] { accent-color: #ff817a; box-shadow: 0 0 10px #ff817a50; }
+#live-progress[data-tone="late"]::-webkit-progress-value { background: #ff817a; }
+#live-progress[data-tone="late"]::-moz-progress-bar { background: #ff817a; }
