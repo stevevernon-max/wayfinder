@@ -294,3 +294,18 @@ body.journey-active #leave-time { font-size: 38px; }
 .meter-end { left: 100%; }
 
 .stop-row .stop-drive { background: transparent; font-variant-numeric: tabular-nums; }
+
+.event .rain-high { color: #ffc85a; animation: rain-blink 1.5s ease-in-out infinite; }
+.journey-meter { padding-top: 20px; --segment-tone: #77dbb4; }
+.journey-meter:has(#live-progress[data-tone="late"]) { --segment-tone: #ff817a; }
+.journey-meter #live-progress, #journey-position { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; animation: none; }
+#journey-segments { display: grid; grid-template-columns: repeat(32, minmax(0, 1fr)); gap: 2px; }
+#journey-segments span { height: 21px; border-radius: 3px; background: #3c454b; }
+#journey-segments .complete, #journey-segments .current { background: var(--segment-tone); }
+#journey-segments .current { box-shadow: 0 0 7px var(--segment-tone); animation: segment-blink 1.2s ease-in-out infinite; }
+#journey-stop-markers span, .journey-meter .meter-endpoint { top: 0; transform: translateX(-50%); }
+@keyframes rain-blink { 50% { opacity: .55; } }
+@keyframes segment-blink { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) {
+  .event .rain-high, #journey-segments .current { animation: none; }
+}

@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Wayfinder">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="./road-mark-180.png">
-  <link rel="stylesheet" href="styles.css?v=45">
+  <link rel="stylesheet" href="styles.css?v=47">
   <title>Wayfinder · Journey planner</title>
 </head>
 <body>
@@ -22,7 +22,7 @@
       <div id="live-journey" hidden>
         <div class="live-journey-main"><strong id="live-stop">Waiting for live progress</strong><div><small id="live-eta-label">ETA</small> <strong id="live-eta">—</strong></div></div>
       </div>
-      <div class="journey-meter"><progress id="live-progress" max="1" value="0" aria-label="Journey progress by planned time"></progress><div id="journey-stop-markers"></div><span class="meter-endpoint meter-start" aria-label="Start">S</span><span class="meter-endpoint meter-end" aria-label="End">E</span><span id="journey-position" hidden aria-hidden="true"></span></div>
+      <div class="journey-meter"><progress id="live-progress" max="1" value="0" aria-label="Journey progress by planned time"></progress><div id="journey-stop-markers"></div><div id="journey-segments" aria-hidden="true"></div><span class="meter-endpoint meter-start" aria-label="Start">S</span><span class="meter-endpoint meter-end" aria-label="End">E</span><span id="journey-position" hidden aria-hidden="true"></span></div>
       <div class="journey-clock"><strong id="countdown">—</strong><small id="count-label">SET OFF IN</small><div class="margin-row"><small id="margin-label" hidden></small><strong id="live-margin" hidden>—</strong></div></div>
     </section>
     <section id="journey-panel">
@@ -64,6 +64,6 @@
     <div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" id="settings-save" value="save">Save settings</button></div>
   </form></dialog>
   <script src="tomtom-config.js?v=35" defer></script>
-  <script src="app.js?v=46" defer></script>
+  <script src="app.js?v=47" defer></script>
 </body>
 </html>

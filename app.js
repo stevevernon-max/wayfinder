@@ -146,7 +146,7 @@
       const hourly=weather.get(coord);
       const hour=Math.ceil(event.forecastTime/3600000)*3600;
       const probability=hourly?.precipitation_probability[hourly.time.indexOf(hour)];
-      const rain=Number.isFinite(probability)?'<span class="rain" title="Hourly precipitation probability">☂ '+probability+'%</span>':'';
+      const rain=Number.isFinite(probability)?'<span class="rain'+(probability>50?' rain-high':'')+'" title="Hourly precipitation probability">☂ '+probability+'%</span>':'';
       const timeText=stamp=>{
         const date=new Date(stamp);
         return clock(date.getHours()*60+date.getMinutes());
@@ -329,6 +329,16 @@
     });
   }
   function renderTrips(){ $('saved').innerHTML=trips.length?trips.map((t,i)=>`<button class="trip-chip" data-load="${i}">${esc(t.name)}<span data-delete="${i}" aria-label="Delete">×</span></button>`).join(''):'<span class="empty">Saved journeys appear here.</span>'; }
+  const journeySegments=Array.from({length:32},()=>document.createElement('span'));
+  $('journey-segments').append(...journeySegments);
+  function renderJourneySegments(tracking){
+    const complete=Math.floor($('live-progress').value*journeySegments.length);
+    journeySegments.forEach((segment,index)=>{
+      segment.classList.toggle('complete',index<complete);
+      segment.classList.toggle('current',tracking && index===Math.min(complete,journeySegments.length-1));
+    });
+  }
+
   function tick(){
     const now=Date.now();
     if(departureTracking.arrivedAt && now-departureTracking.arrivedAt>=3600000){
@@ -370,10 +380,9 @@
     $('countdown').dataset.tone=tone;
     const journeyLate=late || (underway && arrivalMargin<0);
     $('live-progress').dataset.tone=journeyLate?'late':'early';
-    $('live-progress').classList.toggle('in-motion',underway && !arrived);
+    renderJourneySegments(underway && !arrived && !$('journey-position').hidden);
     $('live-eta').dataset.tone=journeyLate?'late':'early';
     $('timeline').dataset.tone=journeyLate?'late':'early';
-    if(late)$('live-progress').value=1;
     if(!$('gps-status').textContent)$('gps-status').textContent=gpsFix?'GPS ready':'Waiting for GPS';
     $('gps-status').dataset.signal=gpsFix && now-gpsFix.timestamp<30000 && gpsFix.coords.accuracy<=65?'ok':'issue';
     $('leave-time').textContent=total()?clock(leave.getHours()*60+leave.getMinutes()):'—:—';
