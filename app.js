@@ -38,12 +38,17 @@
   }
   const savedTracking=state.journeyTracking;
   let departureTracking=savedTracking?.version===2 && savedTracking.leftAt
-    && Date.now()-savedTracking.leftAt<12*60*60*1000
+    && (!savedTracking.arrivedAt || Date.now()-savedTracking.arrivedAt<3600000)
     ? savedTracking : newJourneyTracking();
   function trackDeparture(position){
     const route=currentRoute();
     if(!route || Date.now()-position.timestamp>30000 || position.coords.accuracy>30)return;
-    if(departureTracking.signature!==route.signature)departureTracking=newJourneyTracking(route.signature);
+    if(departureTracking.signature!==route.signature){
+      if(departureTracking.leftAt){
+        departureTracking.signature=route.signature;
+        departureTracking.liveLeg=0;
+      }else departureTracking=newJourneyTracking(route.signature);
+    }
     const fix=position.coords;
     const distanceTo=coordinate=>{
       const [latitude,longitude]=coordinate.split(',').map(Number);
@@ -51,15 +56,13 @@
         (fix.longitude-longitude)*Math.cos(latitude*Math.PI/180));
     };
     const startDistance=distanceTo(route.coords[0]);
-    const originDistance=departureTracking.origin?distanceTo(departureTracking.origin):Infinity;
     if(departureTracking.leftAt){
-      // Returning to the actual departure point ends the old tracking session.
-      if(originDistance+fix.accuracy<=40 && position.timestamp-departureTracking.leftAt>60000){
-        departureTracking=newJourneyTracking(route.signature);
-      }else{
-        if(distanceTo(route.coords.at(-1))+fix.accuracy<=120)departureTracking.arrivedAt=position.timestamp;
-        return;
+      if(!departureTracking.arrivedAt && distanceTo(route.coords.at(-1))+fix.accuracy<=120){
+        departureTracking.arrivedAt=position.timestamp;
+        departureTracking.completedMargin=departureTracking.targetArrival
+          ? Math.round((departureTracking.targetArrival-position.timestamp)/60000) : null;
       }
+      return;
     }
     // Capture the phone's position near Start so geocoding offsets cannot trigger departure.
     if(!departureTracking.origin){
@@ -82,25 +85,6 @@
     departureTracking.targetArrival=departure().getTime()+total()*60000;
   }
 
-  function syncJourneyLayout(){
-    const panel=$('journey-panel');
-    const inProgress=departureTracking.signature===JSON.stringify(routeNames())
-      && departureTracking.leftAt && !departureTracking.arrivedAt;
-    document.body.classList.toggle('journey-active',Boolean(inProgress));
-    if(inProgress){if(panel!==panel.parentElement.firstElementChild)panel.parentElement.prepend(panel);}
-    else if($('timeline-home').nextElementSibling!==panel)$('timeline-home').after(panel);
-    $('live-journey').hidden=!inProgress;
-    const hero=document.querySelector('.hero');
-    hero.querySelector('.eyebrow').textContent=inProgress?'ARRIVAL MARGIN':'SET OFF AT';
-    if(inProgress){
-      $('leave-time').textContent=arrivalMargin===null?'—':(arrivalMargin>=0?'+':'−')+Math.abs(arrivalMargin)+' min';
-      hero.dataset.margin=arrivalMargin===null?'unknown':arrivalMargin>=0?'early':'late';
-    }else{
-      const leave=departure();
-      $('leave-time').textContent=total()?clock(leave.getHours()*60+leave.getMinutes()):'—:—';
-      delete hero.dataset.margin;
-    }
-  }
   const weather=new Map();
   const total=()=>state.stops.reduce((a,s)=>a+n(s.drive)+n(s.stay),0)+n(state.destinationDrive);
   function departure(){const now=new Date(),d=new Date();d.setHours(0,0,0,0);d.setMinutes(mins(state.arrive));if(d.getTime()<=now.getTime())d.setDate(d.getDate()+1);return new Date(d.getTime()-total()*60000)}
@@ -115,19 +99,16 @@
     updatePlan();
   }
   function updatePlan(){
+    state.journeyTracking=departureTracking;
     $('destination-clear').hidden=!$('destination').value;
     const driving=state.stops.reduce((sum, stop)=>sum+n(stop.drive), n(state.destinationDrive));
     const staying=total()-driving;
     const [hour, minute]=state.arrive.split(':');
-    $('arrive-open').innerHTML='<b>'+esc(hour)+'</b>:<b>'+esc(minute)+'</b>';
+    $('arrive-open').innerHTML='Arrive by <b>'+esc(hour)+':'+esc(minute)+'</b>';
     $('arrive-open').setAttribute('aria-label', 'Arrive by '+state.arrive+', change time');
     $('total-time').textContent=total()?duration(total()):'—';
     $('drive-time').textContent=duration(driving);
     $('stay-time').textContent=duration(staying);
-    $('drive-progress').style.width=(total()?driving/total()*100:0)+'%';
-    $('stay-progress').style.width=(total()?staying/total()*100:0)+'%';
-    const leave=departure();
-    $('leave-time').textContent=total()?clock(leave.getHours()*60+leave.getMinutes()):'—:—';
     renderTimeline();
     setMaps();
     persist();
@@ -298,7 +279,7 @@
       best=undefined;
       if(gpsFix)$('gps-status').textContent=departureTracking.arrivedAt && departureTracking.signature===route?.signature
         ? 'Destination reached.'
-        : !route ? 'Route tracking unavailable. Tap Get travel times.'
+        : !route ? 'Route changed. Tap Get travel times to refresh the ETA.'
         : !fresh ? 'Waiting for a fresh, accurate GPS reading.'
         : tracking ? 'Route geometry unavailable. Tap Get travel times.'
         : departureTracking.origin ? 'GPS ready. Waiting for departure.' : 'Waiting for an accurate GPS reading near Start.';
@@ -335,36 +316,41 @@
   }
   function renderTrips(){ $('saved').innerHTML=trips.length?trips.map((t,i)=>`<button class="trip-chip" data-load="${i}">${esc(t.name)}<span data-delete="${i}" aria-label="Delete">×</span></button>`).join(''):'<span class="empty">Saved journeys appear here.</span>'; }
   function tick(){
-    drawProgress();
-    syncJourneyLayout();
-    $('gps-reading').textContent=gpsFix ? 'GPS updated '+Math.max(0,Math.floor((Date.now()-gpsFix.timestamp)/1000))+'s ago · accuracy ±'+Math.round(gpsFix.coords.accuracy)+' m' : 'No GPS reading yet.';
-    if(departureTracking.leftAt && !departureTracking.arrivedAt && departureTracking.signature===JSON.stringify(routeNames())){
-      $('leave-time').classList.remove('overdue');
-      $('timeline').classList.remove('departure-overdue');
-      const arrived=Boolean(departureTracking.arrivedAt);
-      const time=new Date(departureTracking.arrivedAt||departureTracking.leftAt);
-      $('count-label').textContent=arrived?'JOURNEY COMPLETE':'JOURNEY UNDERWAY';
-      $('countdown').textContent=arrived?'Arrived':'Departed';
-      $('count-sub').textContent=(arrived?'Arrived at ':'Left at ')+clock(time.getHours()*60+time.getMinutes());
-      $('countdown').closest('.count-card').dataset.late='false';
-      $('count-progress').style.width='100%';
-      return;
+    const now=Date.now();
+    if(departureTracking.arrivedAt && now-departureTracking.arrivedAt>=3600000){
+      departureTracking=newJourneyTracking();
+      state.journeyTracking=departureTracking;
+      persist();
+      renderTimeline();
     }
+    drawProgress();
+    const underway=Boolean(departureTracking.leftAt);
+    const arrived=departureTracking.arrivedAt;
+    $('planned-status').hidden=underway;
+    $('live-journey').hidden=!underway;
+    $('live-margin').hidden=!underway;
+    $('journey-phase').textContent=arrived?'Journey complete':underway?'Journey underway':'Journey planned';
+    $('journey-phase').classList.toggle('is-live',underway && !arrived);
+    $('live-eta-label').textContent=arrived?'Arrived':'ETA';
+    if(arrived){
+      $('live-stop').textContent=shortPlace(state.destination);
+      $('live-eta').textContent=clock(new Date(arrived).getHours()*60+new Date(arrived).getMinutes());
+      $('live-progress').value=1;
+      arrivalMargin=departureTracking.completedMargin ?? null;
+      $('live-margin').textContent=arrivalMargin===null?'—':(arrivalMargin>=0?'+':'−')+Math.abs(arrivalMargin)+' min';
+    }
+    $('live-margin').dataset.tone=arrivalMargin===null?'unknown':arrivalMargin<0?'late':'early';
+    $('gps-reading').textContent=gpsFix ? 'GPS ±'+Math.round(gpsFix.coords.accuracy)+' m' : '';
     const leave=departure();
-    const remaining=Math.ceil((leave-Date.now())/1000);
-    const seconds=Math.abs(remaining);
-    const late=leave.getTime()<=Date.now() && total()>0;
-    $('leave-time').classList.toggle('overdue',late);
+    const seconds=Math.ceil(Math.abs(leave.getTime()-now)/1000);
+    const late=!underway && total()>0 && leave.getTime()<now;
     $('timeline').classList.toggle('departure-overdue',late);
     $('count-label').textContent=late?'LATE BY':'SET OFF IN';
+    $('count-label').parentElement.classList.toggle('late',late);
+    $('leave-time').textContent=total()?clock(leave.getHours()*60+leave.getMinutes()):'—:—';
     $('countdown').textContent=total()
       ? `${Math.floor(seconds/3600)}h ${Math.floor(seconds%3600/60)}m ${String(seconds%60).padStart(2,'0')}s`
-      : 'Set your route';
-    $('count-sub').textContent=total()
-      ? `at ${clock(leave.getHours()*60+leave.getMinutes())} · ${leave.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'})}`
-      : 'Add drive or stay times';
-    $('countdown').closest('.count-card').dataset.late=String(late);
-    $('count-progress').style.width=(total()?Math.max(0,Math.min(100,100-remaining/108)) :0)+'%';
+      : '—';
   }
 
   for(const field of ['start','destination']){
@@ -398,23 +384,46 @@
   });
 
   const arrivalDialog=$('arrival-dialog');
-  for(const [id,length] of [['arrival-hour',24],['arrival-minute',60]]){
+  const wheelSize=38;
+  function setupWheel(id,length){
+    const wheel=$(id);
+    const value=()=>Math.max(0,Math.min(length-1,Math.round(wheel.scrollTop/wheelSize)));
+    const showValue=()=>wheel.setAttribute('aria-valuenow',String(value()));
     for(let i=0;i<length;i++){
-      const value=String(i).padStart(2,'0');
-      $(id).add(new Option(value,value));
+      const item=document.createElement('div');
+      item.textContent=String(i).padStart(2,'0');
+      item.setAttribute('aria-hidden','true');
+      item.onclick=()=>{wheel.scrollTop=i*wheelSize;showValue();};
+      wheel.append(item);
     }
+    wheel.addEventListener('scroll',showValue);
+    wheel.addEventListener('keydown',event=>{
+      if(!['ArrowUp','ArrowDown','Home','End'].includes(event.key))return;
+      event.preventDefault();
+      const next=event.key==='Home'?0:event.key==='End'?length-1:value()+(event.key==='ArrowDown'?1:-1);
+      wheel.scrollTop=next*wheelSize;
+      showValue();
+    });
+    return {value,select(index){wheel.scrollTop=index*wheelSize;showValue();}};
   }
+  const hourWheel=setupWheel('arrival-hour',24);
+  const minuteWheel=setupWheel('arrival-minute',60);
   $('arrive-open').onclick=()=>{
     closeLookup();
-    const [hour,minute]=state.arrive.split(':');
-    $('arrival-hour').value=hour;
-    $('arrival-minute').value=minute;
+    const [hour,minute]=state.arrive.split(':').map(Number);
     arrivalDialog.returnValue='';
     arrivalDialog.showModal();
+    hourWheel.select(hour);
+    minuteWheel.select(minute);
   };
-  arrivalDialog.addEventListener('close',()=>{
-    if(arrivalDialog.returnValue!=='done')return;
-    state.arrive=$('arrival-hour').value+':'+$('arrival-minute').value;
+  arrivalDialog.addEventListener('submit',event=>{
+    if(event.submitter?.value!=='done')return;
+    state.arrive=[hourWheel.value(),minuteWheel.value()].map(value=>String(value).padStart(2,'0')).join(':');
+    if(departureTracking.leftAt && !departureTracking.arrivedAt){
+      const target=new Date(departureTracking.targetArrival||Date.now());
+      target.setHours(Math.floor(mins(state.arrive)/60),mins(state.arrive)%60,0,0);
+      departureTracking.targetArrival=target.getTime();
+    }
     updatePlan();
   });
   $('stops').addEventListener('click',e=>{if(e.target.dataset.remove!==undefined){state.stops.splice(+e.target.dataset.remove,1);render()}});
@@ -469,7 +478,7 @@
     moveStop(from,from+(event.key==='ArrowUp'?-1:1));
   });
   $('add-stop').onclick=()=>{state.stops.push({name:'',drive:'',stay:20});render();$('stops').lastElementChild?.querySelector('[data-field=name]')?.focus()};
-  $('clear-plan').onclick=()=>{if(!confirm('Clear this journey? Saved trips will stay.'))return;departureTracking=newJourneyTracking();state={...state,start:state.homeAddress?'Home':'',destination:'',destinationDrive:'',stops:[]};render();status('Journey cleared.')};
+  $('clear-plan').onclick=()=>{if(!confirm('Clear this journey? Saved trips will stay.'))return;departureTracking=newJourneyTracking();state={...state,journeyTracking:departureTracking,start:state.homeAddress?'Home':'',destination:'',destinationDrive:'',stops:[]};render();status('Journey cleared.')};
   function readImportedTrip(trip){
     const text=value=>typeof value==='string' && value.length<=2000;
     const time=value=>value==='' || ((typeof value==='number' || typeof value==='string') && Number.isFinite(Number(value)) && Number(value)>=0 && Number(value)<=525600);
@@ -531,7 +540,7 @@
     }
   };
   $('save-trip').onclick=()=>{if(!state.destination.trim()){status('Add a destination before saving this trip.');return}const name=$('trip-name').value.trim()||`${loc(state.destination)} trip`;trips=trips.filter(t=>t.name!==name.trim());trips.push({name:name.trim(),start:state.start,destination:state.destination,arrive:state.arrive,stops:state.stops.map(s=>({...s})),destinationDrive:state.destinationDrive||''});try{localStorage.setItem(TRIPS,JSON.stringify(trips))}catch{status('Could not save this trip in browser storage.');return}$('trip-name').value='';renderTrips();status(`Saved “${name.trim()}”.`)};
-  $('saved').onclick=e=>{const del=e.target.dataset.delete,load=e.target.closest('[data-load]')?.dataset.load;if(del!==undefined){trips.splice(+del,1);localStorage.setItem(TRIPS,JSON.stringify(trips));renderTrips();return}if(load===undefined)return;const t=trips[+load];departureTracking=newJourneyTracking();Object.assign(state,{...t,stops:t.stops.map(stop=>({...stop}))});render();void calcRoute()};
+  $('saved').onclick=e=>{const del=e.target.dataset.delete,load=e.target.closest('[data-load]')?.dataset.load;if(del!==undefined){trips.splice(+del,1);localStorage.setItem(TRIPS,JSON.stringify(trips));renderTrips();return}if(load===undefined)return;const t=trips[+load];Object.assign(state,{...t,stops:t.stops.map(stop=>({...stop}))});render();void calcRoute()};
   const dialog=$('settings'); $('settings-open').onclick=()=>openSettings();
   function openSettings(){ $('tomtom-key').value=localStorage.getItem('wayfinder.tomtom-key')||''; $('keep-location').checked=Boolean(state.liveLocation); $('home-address').value=state.homeAddress||'';$('provider').value=state.provider||'manual';$('adapter-url').value=state.adapterUrl||'';dialog.showModal() }
   $('settings-save').onclick=()=>{localStorage.setItem('wayfinder.tomtom-key',$('tomtom-key').value.trim());if($('keep-location').checked){startLocation()}else{stopLocation()}state.adapterUrl=$('adapter-url').value.trim();persist();render();status('Settings saved on this device.');};
@@ -1033,14 +1042,14 @@
       options[highlighted].scrollIntoView({block:'nearest'});
     }
   });
-  $('retry-gps').onclick=()=>{
+  function retryGps(){
     if(gpsWatch!==undefined)navigator.geolocation.clearWatch(gpsWatch);
     gpsWatch=undefined;
     startLocation();
     requestFreshLocation();
   };
   document.addEventListener('visibilitychange',()=>{
-    if(!document.hidden && state.liveLocation)$('retry-gps').click();
+    if(!document.hidden && state.liveLocation)retryGps();
   });
   $('use-current-location').onclick=()=>{
     const button=$('use-current-location');
@@ -1062,8 +1071,6 @@
       routeRequest++;
       routeData=undefined;
       delete state.cachedRoute;
-      departureTracking=newJourneyTracking();
-      state.journeyTracking=departureTracking;
       state.start=label;
       selectedPlaces.set(label,latitude+','+longitude);
       state.places=Object.fromEntries(selectedPlaces);
