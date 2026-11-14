@@ -158,7 +158,8 @@
       const facility=event.facility || (/\b(public toilets?|restrooms?)\b/i.test(event.title)?'toilet':/\b(charging station|ev charger|supercharger)\b/i.test(event.title)?'charger':'');
       const endpoint=event.location===0?'S':event.location===names.length-1?'E':'';
       const marker=endpoint || (facility==='toilet' ? $('toilet-lookup').innerHTML : facility==='charger' ? '⚡' : '');
-      const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(endpoint==='S'?'Start':endpoint==='E'?'End':facility==='toilet'?'Public toilet':'EV charger')+'">'+marker+'</span>':'')+'</span>';
+      const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(endpoint==='S'?'Start':endpoint==='E'?'End':facility==='toilet'?'Public toilet':'EV charger')+'">'+marker+'</span>':'')
+        +(event.location<events.length-1?'<span class="timeline-segments" aria-hidden="true">'+'<i></i>'.repeat(4)+'</span>':'')+'</span>';
       return '<div class="event"><time>'+range+'</time>'+track+'<div>'
         +rain+'<b'+(event.delay>0 && delayReason.includes('Roadworks')?' class="roadworks-location"':'')+'>'+esc(event.title)+delay+'</b>'+details+'</div></div>';
     }).join('');
@@ -303,14 +304,18 @@
     if(liveEta!==null)marker.style.left=(100*$('live-progress').value)+'%';
     $('live-margin').textContent=signed;
     $('live-eta').textContent=liveEta===null?'—':new Date(liveEta).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const arrived=departureTracking.signature===route?.signature && Boolean(departureTracking.arrivedAt);
     rows.forEach((row,i)=>{
-      const track=row.querySelector('.track');
-      if(best?.i===i && rows[i+1]){
-        track.dataset.progress='on-time';
-        row.dataset.tracking='on-time';
-        const height=rows[i+1].offsetTop-row.offsetTop;
-        row.style.setProperty('--progress-y',(8+best.progress*height)+'px');
-      }else{delete track.dataset.progress;delete row.dataset.tracking;}
+      updateTimelineSegments(row.querySelectorAll('.timeline-segments i'),i,best,arrived);
+    });
+  }
+
+  function updateTimelineSegments(segments,leg,best,arrived){
+    const current=best?.i===leg;
+    const completed=current ? Math.floor(best.progress*segments.length) : 0;
+    segments.forEach((segment,index)=>{
+      segment.classList.toggle('complete',arrived || leg<best?.i || (current && index<completed));
+      segment.classList.toggle('current',current && index===Math.min(completed,segments.length-1));
     });
   }
 

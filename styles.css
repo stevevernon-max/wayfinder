@@ -309,3 +309,12 @@ body.journey-active #leave-time { font-size: 38px; }
 @media (prefers-reduced-motion: reduce) {
   .event .rain-high, #journey-segments .current { animation: none; }
 }
+
+#timeline { --timeline-progress: #77dbb4; }
+#timeline[data-tone="late"] { --timeline-progress: #ff817a; }
+#timeline .event .track::after { content: none; }
+.timeline-segments { position: absolute; inset: 17px 0 1px; display: grid; grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 2px; justify-items: center; }
+.timeline-segments i { width: 5px; border-radius: 2px; background: #3c454b; }
+.timeline-segments .complete, .timeline-segments .current { background: var(--timeline-progress); }
+.timeline-segments .current { box-shadow: 0 0 7px var(--timeline-progress); animation: segment-blink 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .timeline-segments .current { animation: none; } }
