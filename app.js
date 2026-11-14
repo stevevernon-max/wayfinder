@@ -293,17 +293,19 @@
     $('live-margin').textContent=signed;
     $('live-eta').textContent=liveEta===null?'—':new Date(liveEta).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     const arrived=departureTracking.signature===route?.signature && Boolean(departureTracking.arrivedAt);
+    const waitingToDepart=Boolean(route && !departureTracking.leftAt && !departureTracking.arrivedAt);
     rows.forEach((row,i)=>{
-      updateTimelineSegments(row.querySelectorAll('.timeline-segments i'),i,best,arrived);
+      updateTimelineSegments(row.querySelectorAll('.timeline-segments i'),i,best,arrived,waitingToDepart);
     });
   }
 
-  function updateTimelineSegments(segments,leg,best,arrived){
+  function updateTimelineSegments(segments,leg,best,arrived,waitingToDepart){
     const current=best?.i===leg;
     const completed=current ? Math.floor(best.progress*segments.length) : 0;
     segments.forEach((segment,index)=>{
       segment.classList.toggle('complete',arrived || leg<best?.i || (current && index<completed));
-      segment.classList.toggle('current',current && index===Math.min(completed,segments.length-1));
+      segment.classList.toggle('current',(waitingToDepart && leg===0 && index===0)
+        || (current && index===Math.min(completed,segments.length-1)));
     });
   }
 
