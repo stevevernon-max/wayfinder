@@ -106,7 +106,7 @@
     const [hour, minute]=state.arrive.split(':');
     $('arrive-open').innerHTML='Arrive by <b>'+esc(hour)+':'+esc(minute)+'</b>';
     $('arrive-open').setAttribute('aria-label', 'Arrive by '+state.arrive+', change time');
-    $('top-total').textContent=$('total-time').textContent=total()?duration(total()):'—';
+    $('total-time').textContent=total()?duration(total()):'—';
     $('drive-time').textContent=duration(driving);
     $('stay-time').textContent=duration(staying);
     renderTimeline();
@@ -115,7 +115,7 @@
     tick();
   }
   function renderTimeline(){
-    if(!state.destination.trim()){ timelineEvents=[]; $('journey-stop-markers').replaceChildren(); $('timeline').innerHTML='<div class="empty">Add a destination to see your plan.</div>'; return; }
+    if(!state.destination.trim()){ timelineEvents=[]; $('timeline').innerHTML='<div class="empty">Add a destination to see your plan.</div>'; return; }
     const start=departureTracking.targetArrival && departureTracking.signature===JSON.stringify(routeNames()) ? departureTracking.targetArrival-total()*60000 : departure().getTime();
     let time=start;
     const names=routeNames();
@@ -132,15 +132,6 @@
     events.push({time,forecastTime:time,title:(state.destination).split(',')[0].trim(),
       location:names.length-1,delay:route?.delays.at(-1)});
     timelineEvents=events;
-    const span=events.at(-1).time-start;
-    $('journey-stop-markers').innerHTML=span>0 ? events.slice(1,-1).map((stop,i)=>{
-      const facility=stop.facility || (/\b(toilets?|restrooms?)\b/i.test(stop.title)?'toilet'
-        : /\b(charg(?:er|ing)s?|supercharger|chargepoint)\b/i.test(stop.title)?'charger'
-        : /\b(parking|car\s*park|park and ride)\b/i.test(stop.title)?'parking':'');
-      const icon=facility==='toilet'?$('toilet-lookup').innerHTML:facility==='charger'?'⚡':facility==='parking'?'P':i+1;
-      const label='Stop '+(i+1)+' · '+stop.title+(facility?' · '+facility:'');
-      return '<span style="left:'+Math.min(94,Math.max(6,100*(stop.forecastTime-start)/span))+'%" title="'+esc(label)+'" aria-label="'+esc(label)+'">'+icon+'</span>';
-    }).join('') : '';
     $('timeline').innerHTML=events.map(event=>{
       const coord=route?.coords[event.location] || selectedPlaces.get(names[event.location]);
       const hourly=weather.get(coord);
@@ -281,10 +272,6 @@
           : routed ? 'Off route · ETA via remaining stops' : 'Off route · approximate ETA while checking roads';
         if(!nearby)refreshLiveEstimate(route,i,gpsFix);
         $('live-stop').textContent=(i<state.stops.length?'Next stop · ':'Destination · ')+next.title.replace(/^End · /,'');
-        const start=timelineEvents[0].time;
-        const span=timelineEvents.at(-1).time-start;
-        const elapsed=timelineEvents[i].time-start+progress*drive;
-        $('live-progress').value=span>0?Math.max(0,Math.min(1,elapsed/span)):0;
       }
     }
     if(liveEta===null){
@@ -296,12 +283,8 @@
         : tracking ? 'Route geometry unavailable. Tap Get travel times.'
         : departureTracking.origin ? 'GPS ready. Waiting for departure.' : 'Waiting for an accurate GPS reading near Start.';
       $('live-stop').textContent='Waiting for live progress';
-      $('live-progress').value=0;
     }
     const signed=arrivalMargin===null?'—':(arrivalMargin>=0?'+':'−')+Math.abs(arrivalMargin)+' min';
-    const marker=$('journey-position');
-    marker.hidden=liveEta===null;
-    if(liveEta!==null)marker.style.left=(100*$('live-progress').value)+'%';
     $('live-margin').textContent=signed;
     $('live-eta').textContent=liveEta===null?'—':new Date(liveEta).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     const arrived=departureTracking.signature===route?.signature && Boolean(departureTracking.arrivedAt);
@@ -334,16 +317,6 @@
     });
   }
   function renderTrips(){ $('saved').innerHTML=trips.length?trips.map((t,i)=>`<button class="trip-chip" data-load="${i}">${esc(t.name)}<span data-delete="${i}" aria-label="Delete">×</span></button>`).join(''):'<span class="empty">Saved journeys appear here.</span>'; }
-  const journeySegments=Array.from({length:32},()=>document.createElement('span'));
-  $('journey-segments').append(...journeySegments);
-  function renderJourneySegments(tracking){
-    const complete=Math.floor($('live-progress').value*journeySegments.length);
-    journeySegments.forEach((segment,index)=>{
-      segment.classList.toggle('complete',index<complete);
-      segment.classList.toggle('current',tracking && index===Math.min(complete,journeySegments.length-1));
-    });
-  }
-
   function tick(){
     const now=Date.now();
     if(departureTracking.arrivedAt && now-departureTracking.arrivedAt>=3600000){
@@ -368,7 +341,6 @@
     if(arrived){
       $('live-stop').textContent=shortPlace(state.destination);
       $('live-eta').textContent=clock(new Date(arrived).getHours()*60+new Date(arrived).getMinutes());
-      $('live-progress').value=1;
       arrivalMargin=departureTracking.completedMargin ?? null;
       $('live-margin').textContent=arrivalMargin===null?'—':(arrivalMargin>=0?'+':'−')+Math.abs(arrivalMargin)+' min';
     }
@@ -384,10 +356,9 @@
     $('leave-time').dataset.tone=tone;
     $('countdown').dataset.tone=tone;
     const journeyLate=late || (underway && arrivalMargin<0);
-    $('live-progress').dataset.tone=journeyLate?'late':'early';
-    renderJourneySegments(underway && !arrived && !$('journey-position').hidden);
     $('live-eta').dataset.tone=journeyLate?'late':'early';
     $('timeline').dataset.tone=journeyLate?'late':'early';
+    $('journey-status').dataset.tone=$('timeline').dataset.tone;
     if(!$('gps-status').textContent)$('gps-status').textContent=gpsFix?'GPS ready':'Waiting for GPS';
     $('gps-status').dataset.signal=gpsFix && now-gpsFix.timestamp<30000 && gpsFix.coords.accuracy<=65?'ok':'issue';
     $('leave-time').textContent=total()?clock(leave.getHours()*60+leave.getMinutes()):'—:—';
