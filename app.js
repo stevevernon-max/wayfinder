@@ -305,10 +305,18 @@
     }
     const signed=arrivalMargin===null?'—':(arrivalMargin>=0?'+':'−')+Math.abs(arrivalMargin)+' min';
     $('live-margin').textContent=signed;
-    $('live-eta').textContent=liveEta===null?'—':new Date(liveEta).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const stayIndex=atStop ? manualStop.index+1 : tracking && fresh ? currentStayIndex(route.coords,best?.i ?? previous,gpsFix.coords) : -1;
+    const stay=timelineEvents[stayIndex];
+    const destination=timelineEvents.at(-1);
+    const leaveBy=stay && destination
+      ? (departureTracking.targetArrival||destination.time)-Math.max(0,destination.time-stay.time)
+      : null;
+    const shownTime=leaveBy ?? liveEta;
+    $('live-eta-label').textContent=leaveBy===null?'ETA':'Leave by';
+    $('live-eta').textContent=shownTime===null?'—':new Date(shownTime).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     const arrived=departureTracking.signature===route?.signature && Boolean(departureTracking.arrivedAt);
     const waitingToDepart=Boolean(route && !departureTracking.leftAt && !departureTracking.arrivedAt);
-    const stayIndex=atStop ? manualStop.index+1 : tracking && fresh ? currentStayIndex(route.coords,best?.i ?? previous,gpsFix.coords) : -1;
+
     rows.forEach((row,i)=>{
       row.classList.toggle('stay-current',i===stayIndex);
       const segments=row.querySelectorAll('.timeline-segments i');
@@ -378,7 +386,7 @@
     $('journey-phase').textContent=arrived?'Journey complete':underway?'Journey underway':'';
     $('journey-phase').parentElement.hidden=!underway;
     $('journey-phase').classList.toggle('is-live',underway && !arrived);
-    $('live-eta-label').textContent=arrived?'Arrived':'ETA';
+    if(arrived)$('live-eta-label').textContent='Arrived';
     if(arrived){
       $('live-stop').textContent=shortPlace(state.destination);
       $('live-eta').textContent=clock(new Date(arrived).getHours()*60+new Date(arrived).getMinutes());

@@ -322,7 +322,7 @@ body.journey-active #leave-time { font-size: 38px; }
 #timeline .timeline-segments { top: calc(17px + var(--stay-height)); grid-template-rows: none; grid-auto-rows: minmax(0, 1fr); }
 #timeline .event:not(:last-child) .track::after {
   content: ""; position: absolute; top: 17px; left: 50%; transform: translateX(-50%);
-  width: 14px; height: var(--stay-height); border: 0; border-radius: 3px; background: #4d9e7e;
+  width: 14px; height: var(--stay-height); border: 0; border-radius: 3px; background: var(--timeline-progress);
 }
 #journey-status #planned-status { white-space: nowrap; }
 
@@ -339,8 +339,7 @@ body.journey-active #leave-time { font-size: 38px; }
 #journey-status:has(#live-journey:not([hidden])) .journey-clock { justify-self: end; }
 
 #timeline .event.stay-current .track::after {
-  background: #77dbb4;
-  box-shadow: 0 0 7px #77dbb4;
+  box-shadow: 0 0 7px var(--timeline-progress);
   animation: stay-pulse 1.2s ease-in-out infinite;
 }
 @keyframes stay-pulse { 50% { opacity: .3; box-shadow: none; } }
