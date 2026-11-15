@@ -250,7 +250,9 @@
     let best;
     let liveEta=null;
     arrivalMargin=null;
-    if(tracking && fresh){
+    const manualStop=departureTracking.manualStop;
+    const atStop=tracking && manualStop?.signature===route.signature && state.stops[manualStop.index];
+    if(tracking && fresh && !atStop){
       const candidates=route.paths.map((points,i)=>{
         const match=roadProgress(points,gpsFix.coords);
         return match && {i,...match};
@@ -282,6 +284,15 @@
         $('live-stop').textContent=(i<state.stops.length?'Next stop · ':'Destination · ')+next.title.replace(/^End · /,'');
       }
     }
+    if(atStop){
+      const stop=timelineEvents[manualStop.index+1];
+      const remainingStay=Math.max(0,stop.time-stop.forecastTime-(now-manualStop.arrivedAt));
+      liveEta=now+remainingStay+Math.max(0,timelineEvents.at(-1).time-stop.time);
+      const target=departureTracking.targetArrival||timelineEvents.at(-1).time;
+      arrivalMargin=Math.round((target-liveEta)/60000);
+      $('live-stop').textContent='At stop · '+stop.title;
+      $('gps-status').textContent='Stop marked manually';
+    }
     if(liveEta===null){
       best=undefined;
       if(gpsFix)$('gps-status').textContent=departureTracking.arrivedAt && departureTracking.signature===route?.signature
@@ -297,7 +308,7 @@
     $('live-eta').textContent=liveEta===null?'—':new Date(liveEta).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     const arrived=departureTracking.signature===route?.signature && Boolean(departureTracking.arrivedAt);
     const waitingToDepart=Boolean(route && !departureTracking.leftAt && !departureTracking.arrivedAt);
-    const stayIndex=tracking && fresh ? currentStayIndex(route.coords,best?.i ?? previous,gpsFix.coords) : -1;
+    const stayIndex=atStop ? manualStop.index+1 : tracking && fresh ? currentStayIndex(route.coords,best?.i ?? previous,gpsFix.coords) : -1;
     rows.forEach((row,i)=>{
       row.classList.toggle('stay-current',i===stayIndex);
       const segments=row.querySelectorAll('.timeline-segments i');
@@ -356,7 +367,10 @@
     const arrived=departureTracking.arrivedAt;
     $('planned-status').hidden=underway;
     $('live-journey').hidden=!underway;
-    $('advance-stop').hidden=!underway || Boolean(arrived) || !currentRoute() || (departureTracking.liveLeg||0)>=state.stops.length;
+    const route=currentRoute();
+    const atStop=route && departureTracking.manualStop?.signature===route.signature;
+    $('advance-stop').hidden=!underway || Boolean(arrived) || !route || (!atStop && (departureTracking.liveLeg||0)>=state.stops.length);
+    $('advance-stop').textContent=atStop?'Leave stop':'At stop';
     $('live-margin').hidden=!underway;
     $('margin-label').hidden=!underway;
     $('countdown').hidden=underway;
@@ -1169,9 +1183,17 @@
   };
   $('advance-stop').onclick=()=>{
     const tracking=departureTracking;
-    const leg=tracking.liveLeg||0;
-    if(!tracking.leftAt || tracking.arrivedAt || !currentRoute() || leg>=state.stops.length)return;
-    tracking.liveLeg=leg+1;
+    const route=currentRoute();
+    if(!tracking.leftAt || tracking.arrivedAt || !route)return;
+    const manual=tracking.manualStop;
+    if(manual?.signature===route.signature){
+      tracking.liveLeg=manual.index+1;
+      delete tracking.manualStop;
+    }else{
+      const index=tracking.liveLeg||0;
+      if(index>=state.stops.length)return;
+      tracking.manualStop={signature:route.signature,index,arrivedAt:Date.now()};
+    }
     state.journeyTracking=tracking;
     persist();
     tick();
