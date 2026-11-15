@@ -334,6 +334,6 @@ body.journey-active #leave-time { font-size: 38px; }
   row-gap: 8px;
 }
 #journey-status #live-journey:not([hidden]), #journey-status #live-journey .live-journey-main { display: contents; }
-#journey-status .journey-next { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-#advance-stop { flex: none; min-height: 44px; white-space: nowrap; }
+#journey-status .journey-next { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; white-space: normal; }
+#advance-stop { min-height: 36px; padding: 5px 10px; border-radius: 8px; background: #77dbb4; color: #10251b; font-size: 12px; white-space: nowrap; }
 #journey-status:has(#live-journey:not([hidden])) .journey-clock { justify-self: end; }
