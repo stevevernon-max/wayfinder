@@ -344,3 +344,20 @@ body.journey-active #leave-time { font-size: 38px; }
 }
 @keyframes stay-pulse { 50% { opacity: .3; box-shadow: none; } }
 @media (prefers-reduced-motion: reduce) { #timeline .event.stay-current .track::after { animation: none; } }
+
+/* Parked-car mode stays in Tile 1 while the user walks away from a planned stop. */
+#journey-status #parked-info:not([hidden]) {
+  grid-column: 1 / -1;
+  width: 100%;
+  border-top: 1px solid #ffffff30;
+  padding-top: 10px;
+  display: grid;
+  gap: 3px;
+  color: #d7e6e0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+#journey-status #parked-info .parked-heading { color: #77dbb4; font-weight: 800; }
+#journey-status #parked-info[data-warning="true"] .parked-heading,
+#journey-status #car-warning { color: #ffd19b; }
+#journey-status #car-warning:not([hidden]) { display: block; font-size: 12px; }
