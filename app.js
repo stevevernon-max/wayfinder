@@ -244,6 +244,37 @@
     return totalDistance
       ? {progress:bestAlong/totalDistance,distance} : null;
   }
+  let walkingEstimate=null, walkingRequest=null;
+  function updateWalkingEstimate(position,parkedAt,stopIndex){
+    if(!parkedAt || !position || position.coords.accuracy>65)return;
+    const point=position.coords, now=Date.now();
+    if(walkingRequest || (walkingEstimate?.stopIndex===stopIndex && now-walkingEstimate.time<45000
+        && metresBetween(point,walkingEstimate.from)<45))return;
+    walkingRequest={stopIndex};
+    const request=walkingRequest;
+    void (async ()=>{
+      try{
+        const coords=[point.latitude+','+point.longitude,parkedAt.latitude+','+parkedAt.longitude];
+        const response=await tomTom({coords,pedestrian:true});
+        if(!response.ok)return;
+        const summary=(await response.json()).routes?.[0]?.summary;
+        if(summary && Number.isFinite(summary.travelTimeInSeconds)
+          && departureTracking.manualStop?.index===stopIndex
+          && departureTracking.manualStop?.parkedAt?.latitude===parkedAt.latitude){
+          walkingEstimate={stopIndex,from:{latitude:point.latitude,longitude:point.longitude},
+            time:Date.now(),seconds:summary.travelTimeInSeconds,metres:summary.lengthInMeters};
+          tick();
+        }
+      }catch{/* Fall back to approximate walking distance. */}
+      finally{if(walkingRequest===request)walkingRequest=null;}
+    })();
+  }
+  const timerString=milliseconds=>{
+    const seconds=Math.max(0,Math.ceil(Math.abs(milliseconds)/1000));
+    return String(Math.floor(seconds/3600)).padStart(2,'0')+':'
+      +String(Math.floor(seconds%3600/60)).padStart(2,'0')+':'
+      +String(seconds%60).padStart(2,'0');
+  };
   let liveEstimate, lastLiveRequest, liveRequestPending=false;
   function refreshLiveEstimate(route,leg,position){
     const fix=position.coords;
@@ -318,8 +349,17 @@
       const target=departureTracking.targetArrival||timelineEvents.at(-1).time;
       const downstream=Math.max(0,timelineEvents.at(-1).time-stop.time);
       const plannedLeave=target-downstream;
-      // A walk away from the car is still part of the stop, not an off-route journey.
-      liveEta=Math.max(now,plannedLeave)+downstream;
+      // Use actual stop arrival and full stay, plus the time to return to the car.
+      const parked=manualStop.parkedAt, freshFix=fresh && parked;
+      const straight=freshFix?metresBetween(gpsFix.coords,parked):null;
+      const routed=freshFix && walkingEstimate?.stopIndex===manualStop.index
+        && now-walkingEstimate.time<90000
+        && metresBetween(gpsFix.coords,walkingEstimate.from)<100;
+      const walkingMs=straight===null?0:straight<=50?0
+        :routed?walkingEstimate.seconds*1000:straight*1.25/1.2*1000;
+      const minimumStay=n(state.stops[manualStop.index]?.stay)*60000;
+      const earliestLeave=Math.max(manualStop.arrivedAt+minimumStay,now+walkingMs);
+      liveEta=earliestLeave+downstream;
       arrivalMargin=Math.round((target-liveEta)/60000);
       $('live-stop').textContent='At stop · '+stop.title;
       $('gps-status').textContent=manualStop.automatic?'Stop detected by GPS':'Stop marked manually';
@@ -344,21 +384,30 @@
       : null;
     const info=$('parked-info');
     if(atStop && leaveBy!==null){
-      const remaining=Math.max(0,Math.ceil((leaveBy-now)/60000));
-      let distance=null,walkBack=null;
-      if(manualStop.parkedAt && fresh){
-        distance=Math.round(metresBetween(gpsFix.coords,manualStop.parkedAt));
-        walkBack=distance<=50?0:Math.ceil(distance/1.2/60);
-      }
-      const warning=walkBack!==null && distance>50 && remaining<=walkBack+2;
+      const remaining=leaveBy-now;
+      const straight=manualStop.parkedAt && fresh?metresBetween(gpsFix.coords,manualStop.parkedAt):null;
+      if(straight!==null && straight>50)updateWalkingEstimate(gpsFix,manualStop.parkedAt,manualStop.index);
+      const routed=straight!==null && walkingEstimate?.stopIndex===manualStop.index
+        && now-walkingEstimate.time<90000 && metresBetween(gpsFix.coords,walkingEstimate.from)<100;
+      const distance=straight===null?null:straight<=50?Math.round(straight)
+        :routed && Number.isFinite(walkingEstimate.metres)?Math.round(walkingEstimate.metres):Math.round(straight);
+      const walkMs=straight===null?null:straight<=50?0:
+        routed?walkingEstimate.seconds*1000:straight*1.25/1.2*1000;
+      const returnDeadline=walkMs===null?null:leaveBy-walkMs-120000;
+      const warning=returnDeadline!==null && straight>50 && now>=returnDeadline;
       info.hidden=false;
       info.dataset.warning=warning?'true':'false';
-      $('stop-remaining').textContent=now>leaveBy?'Departure overdue by '+Math.ceil((now-leaveBy)/60000)+' min'
-        : remaining+' min until departure';
+      $('stop-remaining').textContent=timerString(remaining);
+      $('stop-remaining').dataset.tone=remaining<0?'late':remaining<300000?'warning':'normal';
+      $('departure-timer-label').textContent=remaining<0?'DEPARTURE OVERDUE':'TIME UNTIL DEPARTURE';
       $('car-distance').textContent=distance===null
-        ? (manualStop.parkedAt?'Open Wayfinder for GPS distance to car':'Car position unavailable — use At stop near the car')
-        : distance<=50?'Back at car (within 50 m)'
-        : 'Car '+distance+' m away · approx. '+walkBack+' min walk back';
+        ? (manualStop.parkedAt?'Waiting for accurate GPS to locate the car':'Car position unavailable — use At stop near the car')
+        : straight<=50?'Back at car (within 50 m)'
+        : 'Car '+(distance>=1000?(distance/1000).toFixed(1)+' km':distance+' m')
+          +' away · '+Math.ceil(walkMs/60000)+' min walk back'+(routed?' (walking route)':' (estimated)');
+      $('return-by').textContent=returnDeadline===null?''
+        :straight<=50?'At car · ready to depart'
+        :'Start walking back by '+new Date(returnDeadline).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
       $('car-warning').textContent=warning?'Head back to the car now to leave on time.':'';
       $('car-warning').hidden=!warning;
     }else{
@@ -686,9 +735,10 @@
   } else if (Array.isArray(body?.coords) && body.coords.length >= 2 && body.coords.length <= 150
     && body.coords.every(coordinate)) {
     url = new URL('https://api.tomtom.com/routing/1/calculateRoute/' + body.coords.join(':') + '/json');
-    url.searchParams.set('traffic', 'true');
+    url.searchParams.set('traffic', body.pedestrian ? 'false' : 'true');
     url.searchParams.set('routeType', 'fastest');
-    url.searchParams.set('computeTravelTimeFor', 'all');
+    if(body.pedestrian)url.searchParams.set('travelMode','pedestrian');
+    else url.searchParams.set('computeTravelTimeFor', 'all');
     if (body.chargerDrive) url.searchParams.set('routeRepresentation', 'summaryOnly');
     else url.searchParams.set('sectionType', 'traffic');
   } else {
