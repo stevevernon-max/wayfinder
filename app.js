@@ -149,7 +149,10 @@
       };
       const range=event.range ? timeText(event.forecastTime)+'–'+timeText(event.time) : timeText(event.time);
       const delayReason=route?.reasons[event.location-1]||'Reason unavailable';
-      const delay=event.delay>0?' <span class="inline-delay" aria-label="'+esc(delayReason+', '+event.delay+' minutes included')+'">+'+event.delay+' minutes</span>':'';
+      const roadworks=delayReason.includes('Roadworks');
+      const delay=event.delay>0
+        ? ' <span class="inline-delay" title="'+esc(delayReason)+'" aria-label="'+esc(delayReason+', '+event.delay+' minutes included')+'">+'+event.delay+(event.delay===1?' minute':' minutes')+'</span>'
+        : roadworks?' <small title="Roadworks on this leg · no traffic delay reported">Roadworks</small>':'';
       const details=event.note?'<small>'+esc(event.note)+'</small>':'';
       const facility=event.facility || (/\b(public toilets?|restrooms?)\b/i.test(event.title)?'toilet':/\b(charging station|ev charger|supercharger)\b/i.test(event.title)?'charger':'');
       const endpoint=event.location===0?'S':event.location===names.length-1?'E':'';
@@ -157,7 +160,7 @@
       const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(endpoint==='S'?'Start':endpoint==='E'?'End':facility==='toilet'?'Public toilet':'EV charger')+'">'+marker+'</span>':'')
         +(event.location<events.length-1?'<span class="timeline-segments" aria-hidden="true">'+'<i></i>'.repeat(Math.max(2,Math.round(driveHeight/9)))+'</span>':'')+'</span>';
       return '<div class="event" style="--leg-height:'+driveHeight+'px;--stay-height:'+stayHeight+'px"><time>'+range+'</time>'+track+'<div>'
-        +rain+'<b'+(event.delay>0 && delayReason.includes('Roadworks')?' class="roadworks-location"':'')+'>'+esc(event.title)+delay+'</b>'+details+'</div></div>';
+        +rain+'<b'+(event.delay>0 && roadworks?' class="roadworks-location"':'')+'>'+esc(event.title)+delay+'</b>'+details+'</div></div>';
     }).join('');
     drawProgress();
   }
@@ -657,6 +660,7 @@
       const legs=route?.legs;
       if(legs?.length!==names.length-1 || legs.some(leg=>!Number.isFinite(leg.summary?.travelTimeInSeconds)))throw Error('TomTom returned an incomplete route.');
       if(request!==routeRequest || signature!==JSON.stringify(routeNames()))return;
+      const previousTotal=currentRoute()?total():null;
       const minutes=leg=>Math.max(0,Math.round(leg.summary.travelTimeInSeconds/60));
       state.stops.forEach((stop,index)=>{stop.drive=minutes(legs[index]);});
       state.destinationDrive=minutes(legs.at(-1));
@@ -666,7 +670,9 @@
       state.journeyTracking=departureTracking;
       render();
       const checkedAt=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-      status('TomTom traffic checked at '+checkedAt);
+      const change=previousTotal===null?0:total()-previousTotal;
+      const difference=change===0?'': ' · Drive estimate '+Math.abs(change)+' min '+(change>0?'longer':'shorter');
+      status('TomTom traffic checked at '+checkedAt+difference);
       void loadWeather(coords);
     }catch(error){
       if(request===routeRequest)status((error.message||'Travel times unavailable.')+' Existing times kept.');
