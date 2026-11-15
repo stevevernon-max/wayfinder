@@ -297,18 +297,34 @@
     $('live-eta').textContent=liveEta===null?'—':new Date(liveEta).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     const arrived=departureTracking.signature===route?.signature && Boolean(departureTracking.arrivedAt);
     const waitingToDepart=Boolean(route && !departureTracking.leftAt && !departureTracking.arrivedAt);
+    const stayIndex=best ? currentStayIndex(route.coords,best.i,gpsFix.coords) : -1;
     rows.forEach((row,i)=>{
-      updateTimelineSegments(row.querySelectorAll('.timeline-segments i'),i,best,arrived,waitingToDepart);
+      row.classList.toggle('stay-current',i===stayIndex);
+      const segments=row.querySelectorAll('.timeline-segments i');
+      updateTimelineSegments(segments,i,best,arrived,waitingToDepart,stayIndex);
     });
   }
 
-  function updateTimelineSegments(segments,leg,best,arrived,waitingToDepart){
+  function currentStayIndex(coords,leg,fix){
+    let closest=-1,distanceLimit=100;
+    // The phone can match either of the two driving legs that meet at this stop.
+    for(const index of [leg,leg+1]){
+      if(index<1 || !n(state.stops[index-1]?.stay) || !coords[index])continue;
+      const [latitude,longitude]=coords[index].split(',').map(Number);
+      const distance=111000*Math.hypot(fix.latitude-latitude,
+        (fix.longitude-longitude)*Math.cos(fix.latitude*Math.PI/180));
+      if(distance<distanceLimit){closest=index;distanceLimit=distance;}
+    }
+    return closest;
+  }
+
+  function updateTimelineSegments(segments,leg,best,arrived,waitingToDepart,stayIndex=-1){
     const current=best?.i===leg;
     const completed=current ? Math.floor(best.progress*segments.length) : 0;
     segments.forEach((segment,index)=>{
-      segment.classList.toggle('complete',arrived || leg<best?.i || (current && index<completed));
+      segment.classList.toggle('complete',arrived || (stayIndex>=0 ? leg<stayIndex : leg<best?.i || (current && index<completed)));
       segment.classList.toggle('current',(waitingToDepart && leg===0 && index===0)
-        || (current && index===Math.min(completed,segments.length-1)));
+        || (stayIndex<0 && current && index===Math.min(completed,segments.length-1)));
     });
   }
 
@@ -633,6 +649,13 @@
     void calcRoute();
   }
 
+  let lastRouteAttempt=0;
+  function refreshRouteOnOpen(){
+    if(document.hidden || navigator.onLine===false || $('calculate').disabled)return;
+    if(Date.now()-lastRouteAttempt<30000 || routeNames().some(name=>!name || name==='Home'))return;
+    void calcRoute();
+  }
+
   let routeRequest=0;
   async function calcRoute(){
     const request=++routeRequest;
@@ -645,6 +668,7 @@
     const signature=JSON.stringify(names);
     const button=$('calculate');
     button.disabled=true;
+    lastRouteAttempt=Date.now();
     if(departureTracking.leftAt && !departureTracking.arrivedAt){
       departureTracking.lastTrafficRequestAt=Date.now();
       state.journeyTracking=departureTracking;
@@ -1154,13 +1178,11 @@
   };
   setInterval(tick,1000);
   setInterval(refreshJourneyTraffic,15000);
-  document.addEventListener('visibilitychange',refreshJourneyTraffic);
+  document.addEventListener('visibilitychange',refreshRouteOnOpen);
   window.addEventListener('online',refreshJourneyTraffic);
   render();
-  if(state.liveLocation){
-    startLocation();
-    if(!routeNames().some(name=>!name || name==='Home'))void calcRoute();
-  }
+  if(state.liveLocation)startLocation();
+  refreshRouteOnOpen();
   void loadWeather(routeNames().map(name=>selectedPlaces.get(name)));
   if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 })();

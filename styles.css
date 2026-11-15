@@ -337,3 +337,10 @@ body.journey-active #leave-time { font-size: 38px; }
 #journey-status .journey-next { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; white-space: normal; }
 #advance-stop { min-height: 36px; padding: 5px 10px; border-radius: 8px; background: #77dbb4; color: #10251b; font-size: 12px; white-space: nowrap; }
 #journey-status:has(#live-journey:not([hidden])) .journey-clock { justify-self: end; }
+
+#timeline .event.stay-current .track::after {
+  background: #77dbb4;
+  box-shadow: 0 0 7px #77dbb4;
+  animation: segment-blink 1.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) { #timeline .event.stay-current .track::after { animation: none; } }
