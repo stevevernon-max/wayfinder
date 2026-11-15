@@ -322,8 +322,9 @@ body.journey-active #leave-time { font-size: 38px; }
 #timeline .timeline-segments { top: calc(17px + var(--stay-height)); grid-template-rows: none; grid-auto-rows: minmax(0, 1fr); }
 #timeline .event:not(:last-child) .track::after {
   content: ""; position: absolute; top: 17px; left: 50%; transform: translateX(-50%);
-  width: 14px; height: var(--stay-height); border: 0; border-radius: 3px; background: var(--timeline-progress);
+  width: 14px; height: var(--stay-height); border: 0; border-radius: 3px; background: #3c454b;
 }
+#timeline .event:is(.stay-current, .stay-complete) .track::after { background: var(--timeline-progress); }
 #journey-status #planned-status { white-space: nowrap; }
 
 #journey-status:not(:has(#live-journey:not([hidden]))) { flex-wrap: wrap; }
