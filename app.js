@@ -665,7 +665,8 @@
       if(gpsFix)trackDeparture(gpsFix);
       state.journeyTracking=departureTracking;
       render();
-      status('');
+      const checkedAt=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      status('TomTom traffic checked at '+checkedAt);
       void loadWeather(coords);
     }catch(error){
       if(request===routeRequest)status((error.message||'Travel times unavailable.')+' Existing times kept.');
