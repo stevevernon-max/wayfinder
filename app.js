@@ -340,6 +340,7 @@
     const arrived=departureTracking.arrivedAt;
     $('planned-status').hidden=underway;
     $('live-journey').hidden=!underway;
+    $('advance-stop').hidden=!underway || Boolean(arrived) || !currentRoute() || (departureTracking.liveLeg||0)>=state.stops.length;
     $('live-margin').hidden=!underway;
     $('margin-label').hidden=!underway;
     $('countdown').hidden=underway;
@@ -1141,6 +1142,15 @@
   $('calculate').onclick=()=>{
     startLocation();
     void calcRoute();
+  };
+  $('advance-stop').onclick=()=>{
+    const tracking=departureTracking;
+    const leg=tracking.liveLeg||0;
+    if(!tracking.leftAt || tracking.arrivedAt || !currentRoute() || leg>=state.stops.length)return;
+    tracking.liveLeg=leg+1;
+    state.journeyTracking=tracking;
+    persist();
+    tick();
   };
   setInterval(tick,1000);
   setInterval(refreshJourneyTraffic,15000);

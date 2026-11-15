@@ -334,5 +334,6 @@ body.journey-active #leave-time { font-size: 38px; }
   row-gap: 8px;
 }
 #journey-status #live-journey:not([hidden]), #journey-status #live-journey .live-journey-main { display: contents; }
-#journey-status #live-stop { grid-column: 1 / -1; }
+#journey-status .journey-next { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#advance-stop { flex: none; min-height: 44px; white-space: nowrap; }
 #journey-status:has(#live-journey:not([hidden])) .journey-clock { justify-self: end; }
