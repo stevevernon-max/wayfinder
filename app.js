@@ -297,7 +297,7 @@
     $('live-eta').textContent=liveEta===null?'—':new Date(liveEta).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     const arrived=departureTracking.signature===route?.signature && Boolean(departureTracking.arrivedAt);
     const waitingToDepart=Boolean(route && !departureTracking.leftAt && !departureTracking.arrivedAt);
-    const stayIndex=best ? currentStayIndex(route.coords,best.i,gpsFix.coords) : -1;
+    const stayIndex=tracking && fresh ? currentStayIndex(route.coords,best?.i ?? previous,gpsFix.coords) : -1;
     rows.forEach((row,i)=>{
       row.classList.toggle('stay-current',i===stayIndex);
       const segments=row.querySelectorAll('.timeline-segments i');

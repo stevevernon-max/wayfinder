@@ -322,7 +322,7 @@ body.journey-active #leave-time { font-size: 38px; }
 #timeline .timeline-segments { top: calc(17px + var(--stay-height)); grid-template-rows: none; grid-auto-rows: minmax(0, 1fr); }
 #timeline .event:not(:last-child) .track::after {
   content: ""; position: absolute; top: 17px; left: 50%; transform: translateX(-50%);
-  width: 14px; height: var(--stay-height); border: 0; border-radius: 3px; background: #647995;
+  width: 14px; height: var(--stay-height); border: 0; border-radius: 3px; background: #4d9e7e;
 }
 #journey-status #planned-status { white-space: nowrap; }
 
@@ -341,6 +341,7 @@ body.journey-active #leave-time { font-size: 38px; }
 #timeline .event.stay-current .track::after {
   background: #77dbb4;
   box-shadow: 0 0 7px #77dbb4;
-  animation: segment-blink 1.2s ease-in-out infinite;
+  animation: stay-pulse 1.2s ease-in-out infinite;
 }
+@keyframes stay-pulse { 50% { opacity: .3; box-shadow: none; } }
 @media (prefers-reduced-motion: reduce) { #timeline .event.stay-current .track::after { animation: none; } }
