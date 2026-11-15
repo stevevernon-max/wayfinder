@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Wayfinder">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="./road-mark-180.png">
-  <link rel="stylesheet" href="styles.css?v=63">
+  <link rel="stylesheet" href="styles.css?v=64">
   <title>Wayfinder · Journey planner</title>
 </head>
 <body>
@@ -23,6 +23,7 @@
         <div class="live-journey-main"><div class="journey-next"><strong id="live-stop">Waiting for live progress</strong><button type="button" class="text-btn" id="advance-stop" hidden>At stop</button></div><div><small id="live-eta-label">ETA</small> <strong id="live-eta">—</strong></div></div>
       </div>
       <div class="journey-clock"><strong id="countdown">—</strong><small id="count-label">SET OFF IN</small><div class="margin-row"><small id="margin-label" hidden></small><strong id="live-margin" hidden>—</strong></div></div>
+      <div id="parked-info" class="parked-info" hidden aria-live="polite"><div class="parked-heading">Parked · Away from car</div><div id="stop-remaining"></div><div id="car-distance"></div><strong id="car-warning" hidden></strong></div>
     </section>
     <section id="journey-panel">
     <header class="section-head timeline-heading"><h2>Timeline</h2><div class="timeline-tools"><span id="gps-status" role="status"></span><span id="gps-reading" role="status"></span></div></header>
@@ -64,6 +65,6 @@
     <div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" id="settings-save" value="save">Save settings</button></div>
   </form></dialog>
   <script src="tomtom-config.js?v=35" defer></script>
-  <script src="app.js?v=63" defer></script>
+  <script src="app.js?v=64" defer></script>
 </body>
 </html>
