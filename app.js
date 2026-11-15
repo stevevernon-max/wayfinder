@@ -371,7 +371,11 @@
     const waitingToDepart=Boolean(route && !departureTracking.leftAt && !departureTracking.arrivedAt);
 
     rows.forEach((row,i)=>{
-      row.classList.toggle('stay-current',i===stayIndex);
+      const isStay=i>0 && i<timelineEvents.length-1 && timelineEvents[i].time>timelineEvents[i].forecastTime;
+      const stayCompleted=isStay && (arrived || (tracking && i!==stayIndex &&
+        (stayIndex>=0 ? i<stayIndex : i<=Math.max(previous,best?.i ?? previous))));
+      row.classList.toggle('stay-current',isStay && i===stayIndex);
+      row.classList.toggle('stay-complete',Boolean(stayCompleted));
       const segments=row.querySelectorAll('.timeline-segments i');
       updateTimelineSegments(segments,i,best,arrived,waitingToDepart,stayIndex);
     });
