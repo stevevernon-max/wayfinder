@@ -85,6 +85,35 @@
     departureTracking.targetArrival=departure().getTime()+total()*60000;
   }
 
+  const metresBetween=(a,b)=> {
+    const rad=Math.PI/180, lat=(a.latitude+b.latitude)/2*rad;
+    return Math.hypot((a.latitude-b.latitude)*111195*rad/(Math.PI/180),
+      (a.longitude-b.longitude)*111195*Math.cos(lat));
+  };
+  function recordStop(index,position,automatic=false){
+    const route=currentRoute();
+    if(!route || !state.stops[index] || departureTracking.manualStop?.signature===route.signature)return;
+    const coord=position?.coords && position.coords.accuracy<=65
+      ? {latitude:position.coords.latitude,longitude:position.coords.longitude}
+      : null;
+    departureTracking.manualStop={signature:route.signature,index,arrivedAt:position?.timestamp||Date.now(),
+      parkedAt:coord,automatic};
+    departureTracking.liveLeg=index;
+    state.journeyTracking=departureTracking;
+    persist();
+  }
+  function detectStopArrival(position){
+    const route=currentRoute(),tracking=departureTracking;
+    if(!route || !tracking.leftAt || tracking.arrivedAt || tracking.signature!==route.signature
+      || tracking.manualStop || position.coords.accuracy>50 || Date.now()-position.timestamp>30000)return;
+    const index=tracking.liveLeg||0;
+    if(index>=state.stops.length || !n(state.stops[index].stay))return;
+    const point=route.coords[index+1];
+    if(!point)return;
+    const [latitude,longitude]=point.split(',').map(Number);
+    if(!Number.isFinite(latitude)||!Number.isFinite(longitude))return;
+    if(metresBetween(position.coords,{latitude,longitude})<=50)recordStop(index,position,true);
+  }
   const weather=new Map();
   const total=()=>state.stops.reduce((a,s)=>a+n(s.drive)+n(s.stay),0)+n(state.destinationDrive);
   function departure(){const now=new Date(),d=new Date();d.setHours(0,0,0,0);d.setMinutes(mins(state.arrive));if(d.getTime()<=now.getTime())d.setDate(d.getDate()+1);return new Date(d.getTime()-total()*60000)}
@@ -286,12 +315,14 @@
     }
     if(atStop){
       const stop=timelineEvents[manualStop.index+1];
-      const remainingStay=Math.max(0,stop.time-stop.forecastTime-(now-manualStop.arrivedAt));
-      liveEta=now+remainingStay+Math.max(0,timelineEvents.at(-1).time-stop.time);
       const target=departureTracking.targetArrival||timelineEvents.at(-1).time;
+      const downstream=Math.max(0,timelineEvents.at(-1).time-stop.time);
+      const plannedLeave=target-downstream;
+      // A walk away from the car is still part of the stop, not an off-route journey.
+      liveEta=Math.max(now,plannedLeave)+downstream;
       arrivalMargin=Math.round((target-liveEta)/60000);
       $('live-stop').textContent='At stop · '+stop.title;
-      $('gps-status').textContent='Stop marked manually';
+      $('gps-status').textContent=manualStop.automatic?'Stop detected by GPS':'Stop marked manually';
     }
     if(liveEta===null){
       best=undefined;
@@ -311,6 +342,28 @@
     const leaveBy=stay && destination
       ? (departureTracking.targetArrival||destination.time)-Math.max(0,destination.time-stay.time)
       : null;
+    const info=$('parked-info');
+    if(atStop && leaveBy!==null){
+      const remaining=Math.max(0,Math.ceil((leaveBy-now)/60000));
+      let distance=null,walkBack=null;
+      if(manualStop.parkedAt && fresh){
+        distance=Math.round(metresBetween(gpsFix.coords,manualStop.parkedAt));
+        walkBack=distance<=50?0:Math.ceil(distance/1.2/60);
+      }
+      const warning=walkBack!==null && distance>50 && remaining<=walkBack+2;
+      info.hidden=false;
+      info.dataset.warning=warning?'true':'false';
+      $('stop-remaining').textContent=now>leaveBy?'Departure overdue by '+Math.ceil((now-leaveBy)/60000)+' min'
+        : remaining+' min until departure';
+      $('car-distance').textContent=distance===null
+        ? (manualStop.parkedAt?'Open Wayfinder for GPS distance to car':'Car position unavailable — use At stop near the car')
+        : distance<=50?'Back at car (within 50 m)'
+        : 'Car '+distance+' m away · approx. '+walkBack+' min walk back';
+      $('car-warning').textContent=warning?'Head back to the car now to leave on time.':'';
+      $('car-warning').hidden=!warning;
+    }else{
+      info.hidden=true;
+    }
     const shownTime=leaveBy ?? liveEta;
     $('live-eta-label').textContent=leaveBy===null?'ETA':'Leave by';
     $('live-eta').textContent=shownTime===null?'—':new Date(shownTime).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
@@ -1077,6 +1130,7 @@
     state.liveLocation=true;
     gpsFix=position;
     trackDeparture(position);
+    detectStopArrival(position);
     state.journeyTracking=departureTracking;
     persist();
     tick();
@@ -1200,7 +1254,7 @@
     }else{
       const index=tracking.liveLeg||0;
       if(index>=state.stops.length)return;
-      tracking.manualStop={signature:route.signature,index,arrivedAt:Date.now()};
+      recordStop(index,gpsFix && Date.now()-gpsFix.timestamp<30000?gpsFix:null);
     }
     state.journeyTracking=tracking;
     persist();
