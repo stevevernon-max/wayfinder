@@ -212,10 +212,10 @@
       const times='<time>'+timeText(event.forecastTime)+'</time>'
         +(event.range?'<time class="stop-end-time" aria-label="Leave '+timeText(event.time)+'">'+timeText(event.time)+'</time>':'');
       const delayReason=route?.reasons[event.location-1]||'Reason unavailable';
-      const roadworks=delayReason.includes('Roadworks');
+      const roadworks=event.delay>0 && delayReason.includes('Roadworks');
       const delayText=event.delay>0?'+'+event.delay+(event.delay===1?' minute':' minutes'):'';
       const delay=roadworks
-        ? '<span class="timeline-pill roadworks-pill" title="'+esc(delayReason)+'">Roadworks'+(delayText?' · '+delayText:'')+'</span>'
+        ? '<span class="timeline-pill roadworks-pill" title="'+esc(delayReason)+'">Roadworks · '+delayText+'</span>'
         : delayText?' <span class="inline-delay" title="'+esc(delayReason)+'">'+delayText+'</span>':'';
       const facility=event.facility || (
         /\b(public toilets?|restrooms?)\b/i.test(event.title)?'toilet':
@@ -230,7 +230,7 @@
       const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(endpoint==='S'?'Start':endpoint==='E'?'End':facility==='toilet'?'Public toilet':'EV charger')+'">'+marker+'</span>':'')
         +(event.location<events.length-1?'<span class="timeline-segments" aria-hidden="true">'+'<i></i>'.repeat(Math.max(2,Math.round(driveHeight/9)))+'</span>':'')+'</span>';
       return '<div class="event" style="--leg-height:'+driveHeight+'px;--stay-height:'+stayHeight+'px"><div class="event-times">'+times+'</div>'+track+'<div>'
-        +'<div class="event-heading"><b'+(event.delay>0 && roadworks?' class="roadworks-location"':'')+'>'+esc(event.title)+(roadworks?'':delay)+'</b>'+rain+'</div>'
+        +'<div class="event-heading"><b'+(roadworks?' class="roadworks-location"':'')+'>'+esc(event.title)+(roadworks?'':delay)+'</b>'+rain+'</div>'
         +(details?'<div class="event-details">'+details+'</div>':'')+'</div></div>';
     }).join('');
     drawProgress();
@@ -813,7 +813,8 @@
     if(selectedPlaces.has(address))return selectedPlaces.get(address);const r=await tomTom({query:address});if(!r.ok)throw Error(r.status===401?'TomTom rejected the key. Check its website and product restrictions.':`Place search failed (${r.status})`);const d=await r.json(),p=d.results?.[0]?.position;if(!p)throw Error(`Could not find “${address}”.`);return `${p.lat},${p.lon}`}
   function trafficReasons(route){
     const categories={JAM:'Congestion',ROAD_WORK:'Roadworks',ROAD_CLOSURE:'Road closure'};
-    const incidents=(route.sections||[]).filter(section=>section.sectionType==='TRAFFIC');
+    const incidents=(route.sections||[]).filter(section=>section.sectionType==='TRAFFIC'
+      && (section.simpleCategory!=='ROAD_WORK' || section.delayInSeconds>0));
     let offset=0;
     return route.legs.map(leg=>{
       const start=offset;
