@@ -177,6 +177,8 @@
     tick();
   }
   function renderTimeline(){
+    const conditions=$('trip-conditions');
+    conditions.hidden=true;
     if(!state.destination.trim()){ timelineEvents=[]; $('timeline').innerHTML='<div class="empty">Add a destination to see your plan.</div>'; return; }
     const start=departureTracking.targetArrival && departureTracking.signature===JSON.stringify(routeNames()) ? departureTracking.targetArrival-total()*60000 : departure().getTime();
     let time=start;
@@ -194,6 +196,8 @@
     events.push({time,forecastTime:time,title:(state.destination).split(',')[0].trim(),
       location:names.length-1,delay:route?.delays.at(-1)});
     timelineEvents=events;
+    const rainChances=[];
+    let roadworksLegs=0;
     $('timeline').innerHTML=events.map((event,index)=>{
       const next=events[index+1];
       const driveMinutes=next?Math.max(0,(next.forecastTime-event.time)/60000):0;
@@ -204,14 +208,17 @@
       const hourly=weather.get(coord);
       const hour=Math.ceil(event.forecastTime/3600000)*3600;
       const probability=hourly?.precipitation_probability[hourly.time.indexOf(hour)];
+      if(Number.isFinite(probability))rainChances.push(probability);
       const rain=Number.isFinite(probability)?'<span class="rain'+(probability>50?' rain-high':'')+'" title="Hourly precipitation probability">☂ '+probability+'%</span>':'';
       const timeText=stamp=>{
         const date=new Date(stamp);
         return clock(date.getHours()*60+date.getMinutes());
       };
-      const range=event.range ? timeText(event.forecastTime)+'–'+timeText(event.time) : timeText(event.time);
+      const times='<time>'+timeText(event.forecastTime)+'</time>'
+        +(event.range?'<time class="stop-end-time" aria-label="Leave '+timeText(event.time)+'">'+timeText(event.time)+'</time>':'');
       const delayReason=route?.reasons[event.location-1]||'Reason unavailable';
       const roadworks=delayReason.includes('Roadworks');
+      if(roadworks)roadworksLegs++;
       const delay=event.delay>0
         ? ' <span class="inline-delay" title="'+esc(delayReason)+'" aria-label="'+esc(delayReason+', '+event.delay+' minutes included')+'">+'+event.delay+(event.delay===1?' minute':' minutes')+'</span>'
         : roadworks?' <small title="Roadworks on this leg · no traffic delay reported">Roadworks</small>':'';
@@ -221,9 +228,17 @@
       const marker=endpoint || (facility==='toilet' ? $('toilet-lookup').innerHTML : facility==='charger' ? '⚡' : '');
       const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(endpoint==='S'?'Start':endpoint==='E'?'End':facility==='toilet'?'Public toilet':'EV charger')+'">'+marker+'</span>':'')
         +(event.location<events.length-1?'<span class="timeline-segments" aria-hidden="true">'+'<i></i>'.repeat(Math.max(2,Math.round(driveHeight/9)))+'</span>':'')+'</span>';
-      return '<div class="event" style="--leg-height:'+driveHeight+'px;--stay-height:'+stayHeight+'px"><time>'+range+'</time>'+track+'<div>'
+      return '<div class="event" style="--leg-height:'+driveHeight+'px;--stay-height:'+stayHeight+'px"><div class="event-times">'+times+'</div>'+track+'<div>'
         +rain+'<b'+(event.delay>0 && roadworks?' class="roadworks-location"':'')+'>'+esc(event.title)+delay+'</b>'+details+'</div></div>';
     }).join('');
+    const notes=[];
+    if(rainChances.some(chance=>chance>50)){
+      const low=Math.min(...rainChances),high=Math.max(...rainChances);
+      notes.push('Rain chance '+(low===high?high:low+'–'+high)+'% along the route.');
+    }
+    if(roadworksLegs)notes.push('Roadworks on '+roadworksLegs+(roadworksLegs===1?' leg.':' legs.'));
+    conditions.textContent=notes.join(' ');
+    conditions.hidden=!notes.length;
     drawProgress();
   }
   function routeNames(){
@@ -437,19 +452,20 @@
       $('stop-remaining').textContent=timerString(remaining);
       $('stop-remaining').dataset.tone=remaining<0?'late':remaining<300000?'warning':'normal';
       $('departure-timer-label').textContent=remaining<0?'DEPARTURE OVERDUE':'TIME UNTIL DEPARTURE';
-      $('car-distance').textContent=distance===null
-        ? (manualStop.parkedAt?'Waiting for accurate GPS to locate the car':'Car position unavailable — use At stop near the car')
-        : straight<=50?'Back at car (within 50 m)'
-        : 'Car '+(distance>=1000?(distance/1000).toFixed(1)+' km':distance+' m')
-          +' away · '+Math.ceil(walkMs/60000)+' min walk back'+(routed?' (walking route)':' (estimated)');
+      $('parked-leave-by').textContent=new Date(leaveBy).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+      $('parked-badge').textContent=straight===null?'Parked':straight<=50?'Parked · at car':'Parked · away from car';
+      $('car-distance').textContent=distance===null?'—':distance>=1000?(distance/1000).toFixed(1)+' km':distance+' m';
+      $('car-distance-detail').textContent=straight===null?'Waiting for car position':straight<=50?'Within 50 m':'Away';
+      $('walk-duration').textContent=walkMs===null?'—':Math.ceil(walkMs/60000)+' min';
       $('return-by').textContent=returnDeadline===null?''
-        :straight<=50?'At car · ready to depart'
-        :'Start walking back by '+new Date(returnDeadline).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+        :straight<=50?'Ready to depart'
+        :'Start by '+new Date(returnDeadline).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+(routed?'':' · estimated');
       $('car-warning').textContent=warning?'Head back to the car now to leave on time.':'';
       $('car-warning').hidden=!warning;
     }else{
       info.hidden=true;
     }
+    $('parked-badge').hidden=info.hidden;
     const shownTime=leaveBy ?? liveEta;
     $('live-eta-label').textContent=leaveBy===null?'ETA':'Leave by';
     $('live-eta').textContent=shownTime===null?'—':new Date(shownTime).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
@@ -515,6 +531,7 @@
       renderTimeline();
     }
     drawProgress();
+    if($('satellite-card').open)renderSatelliteMap();
     const underway=Boolean(departureTracking.leftAt);
     const arrived=departureTracking.arrivedAt;
     $('planned-status').hidden=underway;
@@ -545,6 +562,16 @@
     const late=!underway && total()>0 && leave.getTime()<now;
     $('timeline').classList.toggle('departure-overdue',late);
     $('count-label').textContent=late?'LATE BY':'SET OFF IN';
+    const hasPlan=total()>0;
+    const target=new Date(leave.getTime()+total()*60000);
+    const tomorrow=new Date(now);
+    tomorrow.setDate(tomorrow.getDate()+1);
+    $('trip-title').textContent=!hasPlan?'Plan your trip':target.toDateString()===tomorrow.toDateString()?'Tomorrow’s trip':'Today’s trip';
+    $('trip-badge').hidden=!hasPlan;
+    $('trip-badge').textContent=late?'Running late':'On schedule';
+    $('trip-arrive').textContent=state.arrive;
+    $('trip-summary').hidden=!hasPlan;
+    $('trip-summary').textContent=$('total-time').textContent+' total · '+$('drive-time').textContent+' driving · '+$('stay-time').textContent+' stops';
     const tone=late?'late':total()?'early':'unknown';
     $('leave-time').dataset.tone=tone;
     $('countdown').dataset.tone=tone;
@@ -1353,6 +1380,34 @@
     persist();
     tick();
   };
+  let satelliteCentre;
+  function renderSatelliteMap(){
+    const frame=$('satellite-map'), status=$('satellite-status');
+    const fix=gpsFix?.coords;
+    if(!fix || Date.now()-gpsFix.timestamp>30000){
+      status.hidden=false;
+      status.textContent=!frame.hidden?'Showing last GPS location.'
+        :gpsWatch===undefined?($('gps-status').textContent || 'Allow location access to see the map.')
+        :'Waiting for a fresh GPS location.';
+      return;
+    }
+    if(!satelliteCentre || metresBetween(fix,satelliteCentre)>=100){
+      const {latitude,longitude}=fix;
+      satelliteCentre={latitude,longitude};
+      const longitudeSpan=.006/Math.max(.2,Math.cos(latitude*Math.PI/180));
+      const extent=[longitude-longitudeSpan,Math.max(-85,latitude-.004),longitude+longitudeSpan,Math.min(85,latitude+.004)];
+      const params=new URLSearchParams({webmap:'28e2fdce73a5455c9722b9fb24131ed5',
+        extent:extent.join(','),disable_scroll:'true',zoom:'true',theme:'dark'});
+      frame.src='https://www.arcgis.com/apps/Embed/index.html?'+params;
+      frame.hidden=false;
+    }
+    status.hidden=true;
+  }
+  $('satellite-card').addEventListener('toggle',()=>{
+    if(!$('satellite-card').open)return;
+    startLocation();
+    renderSatelliteMap();
+  });
   setInterval(tick,1000);
   setInterval(refreshJourneyTraffic,15000);
   document.addEventListener('visibilitychange',refreshRouteOnOpen);
