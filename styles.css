@@ -370,3 +370,7 @@ body.journey-active #leave-time { font-size: 38px; }
 #journey-status #stop-remaining[data-tone="warning"] { color: #ffd19b; }
 #journey-status #stop-remaining[data-tone="late"] { color: #ff817a; }
 #journey-status #return-by { font-weight: 650; }
+
+#timeline .event.stop-active b { animation: stop-name-pulse 1.6s ease-in-out infinite; }
+@keyframes stop-name-pulse { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { #timeline .event.stop-active b { animation: none; } }

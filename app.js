@@ -341,7 +341,6 @@
         $('gps-status').textContent=nearby ? Math.round(progress*100)+'% of current leg'
           : routed ? 'Off route · ETA via remaining stops' : 'Off route · approximate ETA while checking roads';
         if(!nearby)refreshLiveEstimate(route,i,gpsFix);
-        $('live-stop').textContent=(i<state.stops.length?'Next stop · ':'Destination · ')+next.title.replace(/^End · /,'');
       }
     }
     if(atStop){
@@ -361,7 +360,6 @@
       const earliestLeave=Math.max(manualStop.arrivedAt+minimumStay,now+walkingMs);
       liveEta=earliestLeave+downstream;
       arrivalMargin=Math.round((target-liveEta)/60000);
-      $('live-stop').textContent='At stop · '+stop.title;
       $('gps-status').textContent=manualStop.automatic?'Stop detected by GPS':'Stop marked manually';
     }
     if(liveEta===null){
@@ -372,11 +370,15 @@
         : !fresh ? 'Waiting for a fresh, accurate GPS reading.'
         : tracking ? 'Route geometry unavailable. Tap Get travel times.'
         : departureTracking.origin ? 'GPS ready. Waiting for departure.' : 'Waiting for an accurate GPS reading near Start.';
-      $('live-stop').textContent='Waiting for live progress';
     }
     const signed=arrivalMargin===null?'—':(arrivalMargin>=0?'+':'−')+Math.abs(arrivalMargin)+' min';
     $('live-margin').textContent=signed;
     const stayIndex=atStop ? manualStop.index+1 : tracking && fresh ? currentStayIndex(route.coords,best?.i ?? previous,gpsFix.coords) : -1;
+    const activeStopIndex=stayIndex>=0?stayIndex:tracking?(best?.i ?? previous)+1:-1;
+    const activeStop=timelineEvents[activeStopIndex];
+    $('live-stop').textContent=activeStop
+      ? (stayIndex>=0?'At ':'On way to ')+activeStop.title
+      : 'Waiting for live progress';
     const stay=timelineEvents[stayIndex];
     const destination=timelineEvents.at(-1);
     const leaveBy=stay && destination
@@ -423,6 +425,7 @@
       const isStay=i>0 && i<timelineEvents.length-1 && timelineEvents[i].time>timelineEvents[i].forecastTime;
       const stayCompleted=isStay && (arrived || (tracking && i!==stayIndex &&
         (stayIndex>=0 ? i<stayIndex : i<=Math.max(previous,best?.i ?? previous))));
+      row.classList.toggle('stop-active',Boolean(activeStop) && i===activeStopIndex);
       row.classList.toggle('stay-current',isStay && i===stayIndex);
       row.classList.toggle('stay-complete',Boolean(stayCompleted));
       const segments=row.querySelectorAll('.timeline-segments i');
