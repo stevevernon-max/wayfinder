@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Wayfinder">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="./road-mark-180.png">
-  <link rel="stylesheet" href="styles.css?v=69">
+  <link rel="stylesheet" href="styles.css?v=70">
   <title>Wayfinder · Journey planner</title>
 </head>
 <body>
@@ -20,7 +20,6 @@
         <div class="trip-card-heading"><strong id="trip-title">Plan your trip</strong><span class="trip-badge" id="trip-badge" hidden></span></div>
         <div class="trip-schedule">Leave at <strong id="leave-time">—:—</strong> · arrive <span id="trip-arrive">—</span></div>
         <div class="trip-schedule" id="trip-summary" hidden></div>
-        <div class="trip-conditions" id="trip-conditions" hidden></div>
       </div>
       <div id="live-journey" hidden>
         <div class="live-journey-main"><div class="journey-next"><strong id="live-stop">Waiting for live progress</strong><span class="trip-badge" id="parked-badge" hidden>Parked</span><button type="button" class="text-btn" id="advance-stop" hidden>At stop</button></div><div><small id="live-eta-label">ETA</small> <strong id="live-eta">—</strong></div></div>
@@ -42,12 +41,6 @@
       <div class="actions"><button class="text-btn" id="add-stop" aria-label="Add stop">+ Stop</button><button class="text-btn" id="ev-lookup"><span aria-hidden="true">⚡</span> EV chargers</button><button class="text-btn" id="toilet-lookup" aria-label="Public toilets"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;color:#ffc83d"><circle cx="12" cy="4" r="2.5"/><path d="M8 8h8v8h-2v6h-1.5v-6h-1v6H10v-6H8z"/></svg></button></div>
       <p class="status" id="status" aria-live="polite">Enter drive times or connect TomTom in Settings for place suggestions and traffic.</p>
     </section>
-    <details class="card satellite-card" id="satellite-card">
-      <summary>Current location · Satellite</summary>
-      <p class="small-note" id="satellite-status" role="status">Waiting for a fresh GPS location.</p>
-      <iframe id="satellite-map" title="Satellite map centred on your GPS location" loading="lazy" referrerpolicy="no-referrer" hidden></iframe>
-      <small>Imagery and attribution from Esri ArcGIS</small>
-    </details>
     <section class="section-head"><h2>Saved trips</h2></section><section class="card saved"><div class="save-row"><input id="trip-name" placeholder="Name this trip" aria-label="Trip name"><button class="primary" id="save-trip">Save</button></div><div id="saved"></div><div><button type="button" class="text-btn" id="import-trips">Import trips</button> <button type="button" class="text-btn" id="export-trips">Export trips</button><input type="file" id="trip-file" accept=".json,application/json" hidden><p class="status" role="status" id="trip-transfer-status"></p></div></section>
     <footer><button class="text-btn" id="settings-open">Settings</button> Plans and settings are stored locally on this device. <button class="text-btn" id="clear-plan">Clear plan</button></footer>
   </main>
@@ -75,6 +68,6 @@
     <div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" id="settings-save" value="save">Save settings</button></div>
   </form></dialog>
   <script src="tomtom-config.js?v=35" defer></script>
-  <script src="app.js?v=69" defer></script>
+  <script src="app.js?v=70" defer></script>
 </body>
 </html>
