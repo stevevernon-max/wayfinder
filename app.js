@@ -59,6 +59,7 @@
     if(departureTracking.leftAt){
       if(!departureTracking.arrivedAt && distanceTo(route.coords.at(-1))+fix.accuracy<=120){
         departureTracking.arrivedAt=position.timestamp;
+        delete departureTracking.manualStop;
         departureTracking.completedMargin=departureTracking.targetArrival
           ? Math.round((departureTracking.targetArrival-position.timestamp)/60000) : null;
       }
@@ -113,6 +114,38 @@
     const [latitude,longitude]=point.split(',').map(Number);
     if(!Number.isFinite(latitude)||!Number.isFinite(longitude))return;
     if(metresBetween(position.coords,{latitude,longitude})<=50)recordStop(index,position,true);
+  }
+  let parkedDepartureSample;
+  function detectStopDeparture(position){
+    const route=currentRoute(), tracking=departureTracking, stop=tracking.manualStop;
+    if(!route || tracking.arrivedAt || stop?.signature!==route.signature
+      || position.coords.accuracy>50 || Date.now()-position.timestamp>30000)return;
+    const fix=position.coords;
+    const previous=parkedDepartureSample;
+    parkedDepartureSample={stop,position};
+    const point=route.coords[stop.index+1]?.split(',').map(Number);
+    const parked=stop.parkedAt || (point && {latitude:point[0],longitude:point[1]});
+    if(!parked)return;
+    const away=metresBetween(fix,parked)-fix.accuracy;
+    if(away<100)return;
+    // A distant fix also recovers a stop if the app missed the drive while suspended.
+    if(away<5000){
+      if(previous?.stop!==stop)return;
+      const before=previous.position;
+      const seconds=(position.timestamp-before.timestamp)/1000;
+      if(seconds<=0 || seconds>45)return;
+      const measuredSpeed=(metresBetween(fix,before.coords)-fix.accuracy-before.coords.accuracy)/seconds;
+      const movingByCar=(fix.speed>=4 && before.coords.speed>=4) || measuredSpeed>=4;
+      if(!movingByCar || metresBetween(fix,parked)<=metresBetween(before.coords,parked))return;
+    }
+    leaveTrackedStop(tracking,stop);
+  }
+
+  function leaveTrackedStop(tracking,stop){
+    tracking.liveLeg=Math.max(tracking.liveLeg||0,stop.index+1);
+    delete tracking.manualStop;
+    parkedDepartureSample=undefined;
+    walkingEstimate=null;
   }
   const weather=new Map();
   const total=()=>state.stops.reduce((a,s)=>a+n(s.drive)+n(s.stay),0)+n(state.destinationDrive);
@@ -244,12 +277,15 @@
     return totalDistance
       ? {progress:bestAlong/totalDistance,distance} : null;
   }
-  let walkingEstimate=null, walkingRequest=null;
+  let walkingEstimate=null, walkingRequest=null, lastWalkingAttempt;
   function updateWalkingEstimate(position,parkedAt,stopIndex){
     if(!parkedAt || !position || position.coords.accuracy>65)return;
     const point=position.coords, now=Date.now();
-    if(walkingRequest || (walkingEstimate?.stopIndex===stopIndex && now-walkingEstimate.time<45000
+    const stop=departureTracking.manualStop;
+    if(walkingRequest || (lastWalkingAttempt?.stop===stop && now-lastWalkingAttempt.time<30000)
+      || (walkingEstimate?.stopIndex===stopIndex && now-walkingEstimate.time<45000
         && metresBetween(point,walkingEstimate.from)<45))return;
+    lastWalkingAttempt={stop,time:now};
     walkingRequest={stopIndex};
     const request=walkingRequest;
     void (async ()=>{
@@ -259,8 +295,7 @@
         if(!response.ok)return;
         const summary=(await response.json()).routes?.[0]?.summary;
         if(summary && Number.isFinite(summary.travelTimeInSeconds)
-          && departureTracking.manualStop?.index===stopIndex
-          && departureTracking.manualStop?.parkedAt?.latitude===parkedAt.latitude){
+          && departureTracking.manualStop===stop){
           walkingEstimate={stopIndex,from:{latitude:point.latitude,longitude:point.longitude},
             time:Date.now(),seconds:summary.travelTimeInSeconds,metres:summary.lengthInMeters};
           tick();
@@ -1187,7 +1222,9 @@
     state.liveLocation=true;
     gpsFix=position;
     trackDeparture(position);
-    detectStopArrival(position);
+    const wasAtStop=Boolean(departureTracking.manualStop);
+    detectStopDeparture(position);
+    if(!wasAtStop)detectStopArrival(position);
     state.journeyTracking=departureTracking;
     persist();
     tick();
@@ -1306,8 +1343,7 @@
     if(!tracking.leftAt || tracking.arrivedAt || !route)return;
     const manual=tracking.manualStop;
     if(manual?.signature===route.signature){
-      tracking.liveLeg=manual.index+1;
-      delete tracking.manualStop;
+      leaveTrackedStop(tracking,manual);
     }else{
       const index=tracking.liveLeg||0;
       if(index>=state.stops.length)return;
