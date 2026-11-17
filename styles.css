@@ -424,9 +424,9 @@ body.journey-active #leave-time { font-size: 38px; }
 #journey-status:has(#planned-status:not([hidden])) .journey-clock { grid-area: 2 / 1; gap: 0; }
 #planned-status > .trip-schedule { grid-column: 1 / -1; }
 #journey-status #countdown { font-size: clamp(22px, 6.7vw, 35px); }
-#walk-back-progress { display: grid; grid-template-columns: repeat(12,minmax(0,1fr)); gap: 3px; margin-top: 4px; }
-#walk-back-progress span { height: 7px; border-radius: 2px; background: #39454e; }
-#walk-back-progress :is(.complete,.current) { background: #77dbb4; }
-@media (prefers-reduced-motion: no-preference) {
-  #walk-back-progress .current { animation: segment-blink 1.2s ease-in-out infinite; }
-}
+.walk-back-time { color: var(--ink); }
+.walk-back-time strong { color: #91dfba; font-size: clamp(20px, 6vw, 28px); line-height: 1.15; font-variant-numeric: tabular-nums; }
+#walk-back-progress { appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 7px; margin-top: 5px; border: 0; border-radius: 999px; background: #39454e; }
+#walk-back-progress::-webkit-progress-bar { border-radius: 999px; background: #39454e; }
+#walk-back-progress::-webkit-progress-value { border-radius: 999px; background: #77dbb4; }
+#walk-back-progress::-moz-progress-bar { border-radius: 999px; background: #77dbb4; }

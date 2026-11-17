@@ -620,16 +620,9 @@
       const minutes=Math.max(1,Math.ceil(walk.milliseconds/60000));
       const distance=walk.distance>=1000?(walk.distance/1000).toFixed(1)+' km':Math.round(walk.distance/10)*10+' m';
       const percent=Math.round(walk.progress);
-      $('start-away-detail').textContent=distance+' from start · '+(walk.routed?'':'About ')+minutes+' min walk back · '+percent+'% back';
-      const bar=$('walk-back-progress');
-      if(bar.getAttribute('aria-valuenow')!==String(percent)){
-        bar.setAttribute('aria-valuenow',percent);
-        const completed=Math.floor(percent*bar.children.length/100);
-        Array.from(bar.children).forEach((segment,index)=>{
-          segment.classList.toggle('complete',index<completed);
-          segment.classList.toggle('current',index===completed);
-        });
-      }
+      $('walk-back-minutes').textContent=(walk.routed?'':'About ')+minutes+' min';
+      $('start-away-detail').textContent=distance+' from start · '+percent+'% back';
+      $('walk-back-progress').value=percent;
       $('gps-status').textContent='Away from start';
     }
     const hasPlan=total()>0;
