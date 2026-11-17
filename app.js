@@ -298,16 +298,14 @@
       ? {progress:bestAlong/totalDistance,distance,along:bestAlong*111000} : null;
   }
   let walkingEstimate=null, walkingRequest=null, lastWalkingAttempt;
-  function updateWalkingEstimate(position,parkedAt,stopIndex){
+  function updateWalkingEstimate(position,parkedAt,context){
     if(!parkedAt || !position || position.coords.accuracy>65)return;
     const point=position.coords, now=Date.now();
-    const stop=departureTracking.manualStop;
-    if(walkingRequest || (lastWalkingAttempt?.stop===stop && now-lastWalkingAttempt.time<30000)
-      || (walkingEstimate?.stopIndex===stopIndex && now-walkingEstimate.time<45000
+    if(walkingRequest || (lastWalkingAttempt?.context===context && now-lastWalkingAttempt.time<30000)
+      || (walkingEstimate?.context===context && now-walkingEstimate.time<45000
         && metresBetween(point,walkingEstimate.from)<45))return;
-    lastWalkingAttempt={stop,time:now};
-    walkingRequest={stopIndex};
-    const request=walkingRequest;
+    lastWalkingAttempt={context,time:now};
+    const request=walkingRequest={context};
     void (async ()=>{
       try{
         const coords=[point.latitude+','+point.longitude,parkedAt.latitude+','+parkedAt.longitude];
@@ -315,14 +313,30 @@
         if(!response.ok)return;
         const summary=(await response.json()).routes?.[0]?.summary;
         if(summary && Number.isFinite(summary.travelTimeInSeconds)
-          && departureTracking.manualStop===stop){
-          walkingEstimate={stopIndex,from:{latitude:point.latitude,longitude:point.longitude},
+          && (departureTracking.manualStop===context || (!departureTracking.leftAt && currentRoute()===context))){
+          walkingEstimate={context,from:{latitude:point.latitude,longitude:point.longitude},
             time:Date.now(),seconds:summary.travelTimeInSeconds,metres:summary.lengthInMeters};
           tick();
         }
       }catch{/* Fall back to approximate walking distance. */}
       finally{if(walkingRequest===request)walkingRequest=null;}
     })();
+  }
+  function recentWalkingRoute(context,point,now){
+    return walkingEstimate?.context===context && now-walkingEstimate.time<90000
+      && metresBetween(point,walkingEstimate.from)<100;
+  }
+  function startWalkBack(route,position,now){
+    const point=position?.coords;
+    const start=route?.coords[0];
+    if(!start || !point || point.accuracy>30 || now-position.timestamp>30000)return null;
+    const [latitude,longitude]=start.split(',').map(Number);
+    const car={latitude,longitude};
+    const distance=metresBetween(point,car);
+    if(!Number.isFinite(distance) || distance-point.accuracy<50)return null;
+    if(!document.hidden)updateWalkingEstimate(position,car,route);
+    const routed=recentWalkingRoute(route,point,now);
+    return {routed, milliseconds:routed?walkingEstimate.seconds*1000:distance*1.25/1.2*1000};
   }
   const timerString=milliseconds=>{
     const seconds=Math.max(0,Math.ceil(Math.abs(milliseconds)/1000));
@@ -406,9 +420,7 @@
       // Use actual stop arrival and full stay, plus the time to return to the car.
       const parked=manualStop.parkedAt, freshFix=fresh && parked;
       const straight=freshFix?metresBetween(gpsFix.coords,parked):null;
-      const routed=freshFix && walkingEstimate?.stopIndex===manualStop.index
-        && now-walkingEstimate.time<90000
-        && metresBetween(gpsFix.coords,walkingEstimate.from)<100;
+      const routed=freshFix && recentWalkingRoute(manualStop,gpsFix.coords,now);
       const walkingMs=straight===null?0:straight<=50?0
         :routed?walkingEstimate.seconds*1000:straight*1.25/1.2*1000;
       const minimumStay=n(state.stops[manualStop.index]?.stay)*60000;
@@ -443,9 +455,8 @@
     if(atStop && leaveBy!==null){
       const remaining=leaveBy-now;
       const straight=manualStop.parkedAt && fresh?metresBetween(gpsFix.coords,manualStop.parkedAt):null;
-      if(straight!==null && straight>50)updateWalkingEstimate(gpsFix,manualStop.parkedAt,manualStop.index);
-      const routed=straight!==null && walkingEstimate?.stopIndex===manualStop.index
-        && now-walkingEstimate.time<90000 && metresBetween(gpsFix.coords,walkingEstimate.from)<100;
+      if(straight!==null && straight>50)updateWalkingEstimate(gpsFix,manualStop.parkedAt,manualStop);
+      const routed=straight!==null && recentWalkingRoute(manualStop,gpsFix.coords,now);
       const distance=straight===null?null:straight<=50?Math.round(straight)
         :routed && Number.isFinite(walkingEstimate.metres)?Math.round(walkingEstimate.metres):Math.round(straight);
       const walkMs=straight===null?null:straight<=50?0:
@@ -568,10 +579,19 @@
     $('live-margin').dataset.tone=arrivalMargin===null?'unknown':arrivalMargin<0?'late':'early';
     $('gps-reading').textContent=gpsFix ? 'GPS ±'+Math.round(gpsFix.coords.accuracy)+' m' : 'No GPS reading';
     const leave=departure();
-    const seconds=Math.ceil(Math.abs(leave.getTime()-now)/1000);
-    const late=!underway && total()>0 && leave.getTime()<now;
+    const walk=!underway && total()>0 ? startWalkBack(route,gpsFix,now) : null;
+    const deadline=leave.getTime()-(walk?.milliseconds ?? 0);
+    const seconds=Math.ceil(Math.abs(deadline-now)/1000);
+    const late=!underway && total()>0 && deadline<now;
     $('timeline').classList.toggle('departure-overdue',late);
-    $('count-label').textContent=late?'LATE BY':'SET OFF IN';
+    $('count-label').textContent=walk?(late?'WALK BACK OVERDUE':'WALK BACK IN'):(late?'LATE BY':'SET OFF IN');
+    const startAway=$('start-away');
+    startAway.hidden=!walk;
+    if(walk){
+      const minutes=Math.max(1,Math.ceil(walk.milliseconds/60000));
+      startAway.textContent='Away from start · '+(walk.routed?'':'About ')+minutes+' min walk back';
+      $('gps-status').textContent='Away from start';
+    }
     const hasPlan=total()>0;
     const target=new Date(leave.getTime()+total()*60000);
     const tomorrow=new Date(now);
