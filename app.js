@@ -326,17 +326,26 @@
     return walkingEstimate?.context===context && now-walkingEstimate.time<90000
       && metresBetween(point,walkingEstimate.from)<100;
   }
+  let walkBackProgress;
   function startWalkBack(route,position,now){
     const point=position?.coords;
     const start=route?.coords[0];
+    if(walkBackProgress?.start!==start)walkBackProgress=undefined;
     if(!start || !point || point.accuracy>30 || now-position.timestamp>30000)return null;
     const [latitude,longitude]=start.split(',').map(Number);
     const car={latitude,longitude};
     const distance=metresBetween(point,car);
-    if(!Number.isFinite(distance) || distance-point.accuracy<50)return null;
+    if(!Number.isFinite(distance))return null;
+    if(distance-point.accuracy<50){
+      walkBackProgress=undefined;
+      return null;
+    }
+    const farthest=Math.max(walkBackProgress?.farthest ?? 0,distance);
+    walkBackProgress={start,farthest};
     if(!document.hidden)updateWalkingEstimate(position,car,route);
     const routed=recentWalkingRoute(route,point,now);
-    return {routed, milliseconds:routed?walkingEstimate.seconds*1000:distance*1.25/1.2*1000};
+    return {distance, progress:(1-distance/farthest)*100, routed,
+      milliseconds:routed?walkingEstimate.seconds*1000:distance*1.25/1.2*1000};
   }
   const timerString=milliseconds=>{
     const seconds=Math.max(0,Math.ceil(Math.abs(milliseconds)/1000));
@@ -555,12 +564,8 @@
     const atStop=route && departureTracking.manualStop?.signature===route.signature;
     $('advance-stop').hidden=!underway || Boolean(arrived) || !route || (!atStop && (departureTracking.liveLeg||0)>=state.stops.length);
     $('advance-stop').textContent=atStop?'Leave stop':'At stop';
-    const departureAction=$('departure-action');
-    departureAction.hidden=underway
-      ? Boolean(arrived || departureTracking.manualStop || departureTracking.liveLeg)
-      : !route;
-    const departureActionLabel=underway?'Still at start':'Start journey';
-    if(departureAction.textContent!==departureActionLabel)departureAction.textContent=departureActionLabel;
+    $('departure-action').hidden=!underway || Boolean(arrived || departureTracking.manualStop || departureTracking.liveLeg);
+    $('start-journey').hidden=underway || !route;
     $('live-margin').hidden=!underway;
     $('margin-label').hidden=!underway;
     $('countdown').hidden=underway;
@@ -579,6 +584,7 @@
     $('live-margin').dataset.tone=arrivalMargin===null?'unknown':arrivalMargin<0?'late':'early';
     $('gps-reading').textContent=gpsFix ? 'GPS ±'+Math.round(gpsFix.coords.accuracy)+' m' : 'No GPS reading';
     const leave=departure();
+    if(underway || !route || !total())walkBackProgress=undefined;
     const walk=!underway && total()>0 ? startWalkBack(route,gpsFix,now) : null;
     const deadline=leave.getTime()-(walk?.milliseconds ?? 0);
     const seconds=Math.ceil(Math.abs(deadline-now)/1000);
@@ -589,7 +595,9 @@
     startAway.hidden=!walk;
     if(walk){
       const minutes=Math.max(1,Math.ceil(walk.milliseconds/60000));
-      startAway.textContent='Away from start · '+(walk.routed?'':'About ')+minutes+' min walk back';
+      const distance=walk.distance>=1000?(walk.distance/1000).toFixed(1)+' km':Math.round(walk.distance/10)*10+' m';
+      $('start-away-detail').textContent=distance+' from start · '+(walk.routed?'':'About ')+minutes+' min walk back';
+      $('walk-back-progress').value=Math.round(walk.progress);
       $('gps-status').textContent='Away from start';
     }
     const hasPlan=total()>0;
@@ -600,8 +608,6 @@
     $('trip-badge').hidden=!hasPlan;
     $('trip-badge').textContent=late?'Running late':'On schedule';
     $('trip-arrive').textContent=state.arrive;
-    $('trip-summary').hidden=!hasPlan;
-    $('trip-summary').textContent=$('total-time').textContent+' total · '+$('drive-time').textContent+' driving · '+$('stay-time').textContent+' stops';
     const tone=late?'late':total()?'early':'unknown';
     $('leave-time').dataset.tone=tone;
     $('countdown').dataset.tone=tone;
@@ -617,7 +623,7 @@
       : '—';
   }
 
-  $('departure-action').addEventListener('click',()=>{
+  function changeDepartureStatus(){
     const route=currentRoute();
     if(departureTracking.leftAt){
       if(departureTracking.arrivedAt || departureTracking.manualStop || departureTracking.liveLeg)return;
@@ -633,7 +639,9 @@
     persist();
     renderTimeline();
     tick();
-  });
+  }
+  $('start-journey').addEventListener('click',changeDepartureStatus);
+  $('departure-action').addEventListener('click',changeDepartureStatus);
 
   for(const field of ['start','destination']){
     $(field).addEventListener('input', event=>{

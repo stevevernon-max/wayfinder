@@ -409,3 +409,28 @@ body.journey-active #leave-time { font-size: 38px; }
 .route-actions-top #calculate { padding: 6px 14px; border: 1px solid #365e89; border-radius: 999px; background: #17283b; }
 
 #departure-action { grid-column: 1 / -1; justify-self: start; min-height: 36px; padding: 5px 11px; border: 1px solid var(--line); border-radius: 999px; }
+
+.trip-card-heading { align-items: start; }
+.trip-status-actions { display: grid; gap: 4px; flex: none; }
+.trip-status-actions .trip-badge { display: grid; place-items: center; min-height: 32px; text-align: center; white-space: nowrap; }
+#start-journey { color: #9cc8ff; background: #192a3f; }
+#journey-status #start-away { text-align: left; }
+#walk-back-progress {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 7px;
+  margin-top: 5px;
+  border: 0;
+  border-radius: 999px;
+  background: #39454e;
+  color: #77dbb4;
+}
+#walk-back-progress::-webkit-progress-bar { border-radius: 999px; background: #39454e; }
+#walk-back-progress::-webkit-progress-value { border-radius: 999px; background: #77dbb4; }
+#walk-back-progress::-moz-progress-bar { border-radius: 999px; background: #77dbb4; }
+@media (prefers-reduced-motion: no-preference) {
+  #walk-back-progress { animation: walk-back-pulse 1.8s ease-in-out infinite; }
+}
+@keyframes walk-back-pulse { 50% { opacity: .65; } }
