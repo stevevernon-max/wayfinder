@@ -326,22 +326,30 @@
     return walkingEstimate?.context===context && now-walkingEstimate.time<90000
       && metresBetween(point,walkingEstimate.from)<100;
   }
-  let walkBackProgress;
+  function clearWalkBackProgress(){
+    if(!state.walkBackProgress)return;
+    delete state.walkBackProgress;
+    persist();
+  }
   function startWalkBack(route,position,now){
     const point=position?.coords;
     const start=route?.coords[0];
-    if(walkBackProgress?.start!==start)walkBackProgress=undefined;
+    if(start && state.walkBackProgress?.start!==start)clearWalkBackProgress();
     if(!start || !point || point.accuracy>30 || now-position.timestamp>30000)return null;
     const [latitude,longitude]=start.split(',').map(Number);
     const car={latitude,longitude};
     const distance=metresBetween(point,car);
     if(!Number.isFinite(distance))return null;
     if(distance-point.accuracy<50){
-      walkBackProgress=undefined;
+      if(distance+point.accuracy<=50)clearWalkBackProgress();
       return null;
     }
-    const farthest=Math.max(walkBackProgress?.farthest ?? 0,distance);
-    walkBackProgress={start,farthest};
+    const previous=Number(state.walkBackProgress?.farthest)||0;
+    const farthest=Math.max(previous,Math.ceil(distance/5)*5);
+    if(farthest!==previous){
+      state.walkBackProgress={start,farthest};
+      persist();
+    }
     if(!document.hidden)updateWalkingEstimate(position,car,route);
     const routed=recentWalkingRoute(route,point,now);
     return {distance, progress:(1-distance/farthest)*100, routed,
@@ -584,7 +592,7 @@
     $('live-margin').dataset.tone=arrivalMargin===null?'unknown':arrivalMargin<0?'late':'early';
     $('gps-reading').textContent=gpsFix ? 'GPS ±'+Math.round(gpsFix.coords.accuracy)+' m' : 'No GPS reading';
     const leave=departure();
-    if(underway || !route || !total())walkBackProgress=undefined;
+    if(underway)clearWalkBackProgress();
     const walk=!underway && total()>0 ? startWalkBack(route,gpsFix,now) : null;
     const deadline=leave.getTime()-(walk?.milliseconds ?? 0);
     const seconds=Math.ceil(Math.abs(deadline-now)/1000);
@@ -597,7 +605,16 @@
       const minutes=Math.max(1,Math.ceil(walk.milliseconds/60000));
       const distance=walk.distance>=1000?(walk.distance/1000).toFixed(1)+' km':Math.round(walk.distance/10)*10+' m';
       $('start-away-detail').textContent=distance+' from start · '+(walk.routed?'':'About ')+minutes+' min walk back';
-      $('walk-back-progress').value=Math.round(walk.progress);
+      const bar=$('walk-back-progress');
+      const percent=Math.round(walk.progress);
+      if(bar.getAttribute('aria-valuenow')!==String(percent)){
+        bar.setAttribute('aria-valuenow',percent);
+        const completed=Math.floor(percent*bar.children.length/100);
+        Array.from(bar.children).forEach((segment,index)=>{
+          segment.classList.toggle('complete',index<completed);
+          segment.classList.toggle('current',index===completed);
+        });
+      }
       $('gps-status').textContent='Away from start';
     }
     const hasPlan=total()>0;
