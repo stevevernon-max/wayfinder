@@ -326,24 +326,39 @@
     return walkingEstimate?.context===context && now-walkingEstimate.time<90000
       && metresBetween(point,walkingEstimate.from)<100;
   }
+  let walkBackArrivalFix;
   function clearWalkBackProgress(){
+    walkBackArrivalFix=undefined;
     if(!state.walkBackProgress)return;
     delete state.walkBackProgress;
     persist();
   }
+  function walkBackPoint(coordinate){
+    const [latitude,longitude]=coordinate.split(',').map(Number);
+    return {latitude,longitude};
+  }
   function startWalkBack(route,position,now){
     const point=position?.coords;
-    const start=route?.coords[0];
-    if(start && state.walkBackProgress?.start!==start)clearWalkBackProgress();
+    let start=route?.coords[0];
     if(!start || !point || point.accuracy>30 || now-position.timestamp>30000)return null;
-    const [latitude,longitude]=start.split(',').map(Number);
-    const car={latitude,longitude};
+    const savedStart=state.walkBackProgress?.start;
+    if(savedStart){
+      if(metresBetween(walkBackPoint(savedStart),walkBackPoint(start))<=50)start=savedStart;
+      else clearWalkBackProgress();
+    }
+    const car=walkBackPoint(start);
     const distance=metresBetween(point,car);
     if(!Number.isFinite(distance))return null;
     if(distance-point.accuracy<50){
-      if(distance+point.accuracy<=50)clearWalkBackProgress();
+      if(state.walkBackProgress && distance+point.accuracy<=50){
+        const timestamp=position.timestamp;
+        const elapsed=timestamp-(walkBackArrivalFix ?? timestamp);
+        if(elapsed>=10000 && elapsed<=45000)clearWalkBackProgress();
+        else if(walkBackArrivalFix===undefined || elapsed>45000)walkBackArrivalFix=timestamp;
+      }else walkBackArrivalFix=undefined;
       return null;
     }
+    walkBackArrivalFix=undefined;
     const previous=Number(state.walkBackProgress?.farthest)||0;
     const farthest=Math.max(previous,Math.ceil(distance/5)*5);
     if(farthest!==previous){
@@ -604,9 +619,9 @@
     if(walk){
       const minutes=Math.max(1,Math.ceil(walk.milliseconds/60000));
       const distance=walk.distance>=1000?(walk.distance/1000).toFixed(1)+' km':Math.round(walk.distance/10)*10+' m';
-      $('start-away-detail').textContent=distance+' from start · '+(walk.routed?'':'About ')+minutes+' min walk back';
-      const bar=$('walk-back-progress');
       const percent=Math.round(walk.progress);
+      $('start-away-detail').textContent=distance+' from start · '+(walk.routed?'':'About ')+minutes+' min walk back · '+percent+'% back';
+      const bar=$('walk-back-progress');
       if(bar.getAttribute('aria-valuenow')!==String(percent)){
         bar.setAttribute('aria-valuenow',percent);
         const completed=Math.floor(percent*bar.children.length/100);
