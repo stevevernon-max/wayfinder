@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Wayfinder">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="./road-mark-180.png">
-  <link rel="stylesheet" href="styles.css?v=70">
+  <link rel="stylesheet" href="styles.css?v=72">
   <title>Wayfinder · Journey planner</title>
 </head>
 <body>
@@ -25,6 +25,7 @@
         <div class="live-journey-main"><div class="journey-next"><strong id="live-stop">Waiting for live progress</strong><span class="trip-badge" id="parked-badge" hidden>Parked</span><button type="button" class="text-btn" id="advance-stop" hidden>At stop</button></div><div><small id="live-eta-label">ETA</small> <strong id="live-eta">—</strong></div></div>
       </div>
       <div class="journey-clock"><strong id="countdown">—</strong><small id="count-label">SET OFF IN</small><div class="margin-row"><small id="margin-label" hidden></small><strong id="live-margin" hidden>—</strong></div></div>
+      <button type="button" class="text-btn" id="departure-action" hidden>Start journey</button>
       <div id="parked-info" class="parked-info" hidden aria-live="polite"><div class="departure-timer"><small id="departure-timer-label">TIME UNTIL DEPARTURE</small><strong id="stop-remaining" role="timer">—</strong></div><div class="trip-schedule">You planned to leave by <strong id="parked-leave-by">—</strong></div>
         <div class="parked-stats"><div><small>Car</small><strong id="car-distance">—</strong><span id="car-distance-detail"></span></div><div><small>Walk back</small><strong id="walk-duration">—</strong><span id="return-by"></span></div></div><strong id="car-warning" hidden></strong></div>
     </section>
@@ -68,6 +69,6 @@
     <div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" id="settings-save" value="save">Save settings</button></div>
   </form></dialog>
   <script src="tomtom-config.js?v=35" defer></script>
-  <script src="app.js?v=71" defer></script>
+  <script src="app.js?v=72" defer></script>
 </body>
 </html>

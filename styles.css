@@ -407,3 +407,5 @@ body.journey-active #leave-time { font-size: 38px; }
 .event-times { display: flex; flex-direction: column; gap: 2px; }
 #timeline .event .stop-end-time { color: var(--muted); font-weight: 500; }
 .route-actions-top #calculate { padding: 6px 14px; border: 1px solid #365e89; border-radius: 999px; background: #17283b; }
+
+#departure-action { grid-column: 1 / -1; justify-self: start; min-height: 36px; padding: 5px 11px; border: 1px solid var(--line); border-radius: 999px; }
