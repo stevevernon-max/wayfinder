@@ -336,7 +336,7 @@ function geoPoint(lat,lon,b){
 const SATELLITE_URL="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/";
 function appendMapTiles(svg,view){
  const f=geoFrame(view.bounds);
- const z=Math.max(7,Math.min(17,Math.round(Math.log2(256*f.scale/256))));
+ const z=Math.max(7,Math.min(17,Math.round(Math.log2(f.scale/256))));
  // A single equal Mercator scale must be used for horizontal AND vertical pixels.
  const tilePixels=f.scale/(2**z);
  const tileCount=2**z;
@@ -351,7 +351,7 @@ function appendMapTiles(svg,view){
    width:tilePixels+0.5,height:tilePixels+0.5,preserveAspectRatio:"none",
    href:SATELLITE_URL+z+"/"+ty+"/"+tx});
   image.addEventListener("load",()=>{loaded++;if(loaded===1){$("geoStatus").textContent="Satellite imagery";$("geoNote").textContent="Satellite imagery © Esri and imagery providers. Railway geometry © OpenStreetMap contributors. Satellite tiles may be unavailable or subject to provider limits."}});
-  image.addEventListener("error",()=>{failed++;image.setAttribute("href","https://tile.openstreetmap.org/"+z+"/"+tx+"/"+ty+".png");if(failed===1){$("geoStatus").textContent="Map fallback";$("geoNote").textContent="Satellite images could not be loaded. Standard OpenStreetMap tiles are being used instead; railway track overlays remain available."}});
+  image.addEventListener("error",()=>{failed++;if(image.dataset.fallback==="1")return;image.dataset.fallback="1";image.setAttribute("href","https://tile.openstreetmap.org/"+z+"/"+tx+"/"+ty+".png");if(failed===1){$("geoStatus").textContent="Map fallback";$("geoNote").textContent="Satellite images could not be loaded. Standard OpenStreetMap tiles are being used instead; railway track overlays remain available."}});
   group.appendChild(image);
  }
  svg.appendChild(group);
