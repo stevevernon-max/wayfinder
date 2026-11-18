@@ -95,7 +95,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 <div class="geo-map-overlay"><div class="geo-overlay-heading"><div class="eyebrow">GEOGRAPHIC MAP</div><strong>West Highland Line</strong><span class="small" id="geoStatus">Loading map</span></div>
 <div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view">Reset</button></div></div>
 <div class="geo-map-bottom"><span><i class="geo-line"></i> Railway</span><span>Drag · Pinch to zoom</span></div>
-<p class="geo-note" id="geoNote">Real OpenStreetMap geographic data · © OpenStreetMap contributors</p>
+<p class="geo-note" id="geoNote">© OpenStreetMap contributors · Dashed rail = approximate guide</p>
 </section>
 <div class="cols">
 <section class="tile"><div class="eyebrow">GLENFINNAN VIADUCT</div><div class="heading">Next train countdown</div><div class="value countdown" id="glenCountdown">—</div><div class="muted" id="glenStatus">Waiting for verified passage time.</div><div class="notice" id="delayStatus">Service updates are unavailable until an authorised railway feed is connected.</div></section>
@@ -304,6 +304,13 @@ startGps();
  * Geo data is fetched from OpenStreetMap Overpass. No map tile provider or SDK. */
 const defaultGeoBounds={north:57.025,south:56.8,west:-5.94,east:-5.04};
 const geoViews=[{id:"mapOverview",bounds:{...defaultGeoBounds},label:"Overview"}];
+/* Approximate station-to-station guide for times when OSM railway geometry is unavailable.
+   Not a survey-accurate railway alignment; dashed so it is never mistaken for a real trace. */
+const geoRailGuide=[
+ {lat:57.0052,lon:-5.8290},{lat:56.9685,lon:-5.8212},{lat:56.9136,lon:-5.8406},
+ {lat:56.8990,lon:-5.7630},{lat:56.8812,lon:-5.6633},{lat:56.8717,lon:-5.4490},
+ {lat:56.8570,lon:-5.1880},{lat:56.8430,lon:-5.1220},{lat:56.8201,lon:-5.1061}
+];
 const geoStations=[
  {name:"Mallaig",lat:57.0052,lon:-5.8290},{name:"Morar",lat:56.9685,lon:-5.8212},
  {name:"Arisaig",lat:56.9136,lon:-5.8406},{name:"Lochailort",lat:56.8812,lon:-5.6633},
@@ -333,25 +340,39 @@ function geoPoint(lat,lon,b){
  const p=mercator(lat,lon),f=geoFrame(b);
  return [450+(p.x-f.centerX)*f.scale,f.height/2+(p.y-f.centerY)*f.scale];
 }
-const SATELLITE_URL="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/";
+/* OSM slippy tiles. Mercator f.scale is SVG pixels per tile at zoom 10.
+   At zoom z the displayed tile width is f.scale * 2^(10-z).
+   Keep tile requests bounded so iPhones cannot freeze while loading the map. */
 function appendMapTiles(svg,view){
- const f=geoFrame(view.bounds);
- const z=Math.max(7,Math.min(17,Math.round(Math.log2(f.scale/256))));
- // A single equal Mercator scale must be used for horizontal AND vertical pixels.
- const tilePixels=f.scale/(2**z);
- const tileCount=2**z;
- const centerX=f.centerX*tileCount,centerY=f.centerY*tileCount;
- const left=Math.floor(centerX-450/tilePixels)-1,right=Math.ceil(centerX+450/tilePixels)+1;
- const top=Math.floor(centerY-f.height/2/tilePixels)-1,bottom=Math.ceil(centerY+f.height/2/tilePixels)+1;
+ const f=geoFrame(view.bounds),baseZoom=10;
+ const z=Math.max(7,Math.min(16,Math.round(baseZoom+Math.log2(f.scale/310))));
+ const tilePixels=f.scale*2**(baseZoom-z),count=2**z;
+ const centerX=f.centerX*2**(z-baseZoom),centerY=f.centerY*2**(z-baseZoom);
+ const left=Math.max(0,Math.floor(centerX-450/tilePixels));
+ const right=Math.min(count-1,Math.floor(centerX+450/tilePixels));
+ const top=Math.max(0,Math.floor(centerY-f.height/2/tilePixels));
+ const bottom=Math.min(count-1,Math.floor(centerY+f.height/2/tilePixels));
  const group=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")",class:"geo-basemap"});
  let loaded=0,failed=0;
+ const total=(right-left+1)*(bottom-top+1);
+ if(total>90||total<=0){$("geoStatus").textContent="Map temporarily unavailable";return}
  for(let tx=left;tx<=right;tx++)for(let ty=top;ty<=bottom;ty++){
-  if(tx<0||tx>=tileCount||ty<0||ty>=tileCount)continue;
-  const image=geoSVG("image",{x:(tx-centerX)*tilePixels+450,y:(ty-centerY)*tilePixels+f.height/2,
-   width:tilePixels+0.5,height:tilePixels+0.5,preserveAspectRatio:"none",
-   href:SATELLITE_URL+z+"/"+ty+"/"+tx});
-  image.addEventListener("load",()=>{loaded++;if(loaded===1){$("geoStatus").textContent="Satellite imagery";$("geoNote").textContent="Satellite imagery © Esri and imagery providers. Railway geometry © OpenStreetMap contributors. Satellite tiles may be unavailable or subject to provider limits."}});
-  image.addEventListener("error",()=>{failed++;if(image.dataset.fallback==="1")return;image.dataset.fallback="1";image.setAttribute("href","https://tile.openstreetmap.org/"+z+"/"+tx+"/"+ty+".png");if(failed===1){$("geoStatus").textContent="Map fallback";$("geoNote").textContent="Satellite images could not be loaded. Standard OpenStreetMap tiles are being used instead; railway track overlays remain available."}});
+  const image=geoSVG("image",{
+   x:450+(tx-centerX)*tilePixels,y:f.height/2+(ty-centerY)*tilePixels,
+   width:tilePixels+.6,height:tilePixels+.6,preserveAspectRatio:"none",
+   href:"https://tile.openstreetmap.org/"+z+"/"+tx+"/"+ty+".png"
+  });
+  image.addEventListener("load",()=>{
+   loaded++;
+   if(loaded===1){$("geoStatus").textContent="Map loaded"}
+  });
+  image.addEventListener("error",()=>{
+   failed++;
+   if(failed===total&&loaded===0){
+    $("geoStatus").textContent="Map offline";
+    $("geoNote").textContent="Map imagery could not load. Check your connection. Station positions and a simplified railway guide remain visible.";
+   }
+  });
   group.appendChild(image);
  }
  svg.appendChild(group);
@@ -376,7 +397,10 @@ function makeMap(view){
  for(const coast of geoMapFeatures.coast)appendMapPath(water,coast,view.bounds,"#3f6e91",1.4);
  svg.appendChild(water);
  const railShadow=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")"});const rail=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")"});
- for(const way of geoMapFeatures.rail){appendMapPath(railShadow,way,view.bounds,"#071a13",18);appendMapPath(rail,way,view.bounds,"#4ce69a",11)}
+ const actualRail=geoMapFeatures.rail.length>0;
+ const railSegments=actualRail?geoMapFeatures.rail:[geoRailGuide];
+ for(const way of railSegments){appendMapPath(railShadow,way,view.bounds,"#071a13",actualRail?15:11);appendMapPath(rail,way,view.bounds,actualRail?"#4ce69a":"#73cfa1",actualRail?9:5)}
+ if(!actualRail)rail.setAttribute("stroke-dasharray","12 9");
  svg.appendChild(railShadow);svg.appendChild(rail);
  for(const station of geoStations){
   if(station.lat>view.bounds.north||station.lat<view.bounds.south||station.lon<view.bounds.west||station.lon>view.bounds.east)continue;
@@ -466,7 +490,7 @@ async function loadGeoRailway(){
  const hasRail=geoMapFeatures.rail.length>0,hasWater=geoMapFeatures.water.length>0;
  if(hasRail&&hasWater){$("geoStatus").textContent="OSM detail loaded";$("geoNote").textContent="Mapped railway and loch boundaries from OpenStreetMap, including multipolygon shoreline segments. The diagram uses geographic coordinates, with photo pins as approximate areas. No API key required. © OpenStreetMap contributors."}
  else if(hasRail||hasWater){$("geoStatus").textContent="Partial geography";$("geoNote").textContent="Some OpenStreetMap geometry is temporarily unavailable. Showing "+(hasRail?"railway":"loch outlines")+" from available or cached geographic data. Try refreshing later."}
- else {$("geoStatus").textContent="Geometry unavailable";$("geoNote").textContent="The detailed railway outline could not be downloaded; the OpenStreetMap basemap still shows mapped roads, lochs and railway features."}
+ else {$("geoStatus").textContent="Geometry unavailable";$("geoNote").textContent="Detailed railway geometry is unavailable. The dashed green line is only an approximate station-to-station guide; road and loch detail comes from OpenStreetMap tiles."}
 }
 /* Geographic map interaction: preserve real OSM geometry, change viewport only. */
 function geoZoom(factor,nx=.5,ny=.5){
