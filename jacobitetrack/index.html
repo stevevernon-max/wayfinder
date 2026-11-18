@@ -1,10 +1,21 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1017"><meta name="apple-mobile-web-app-capable" content="yes"><title>JacobiteTrack</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1017"><meta name="apple-mobile-web-app-capable" content="yes"><title>JacobiteTrack</title>
 <style>
-:root{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:#0b1017;color:#edf3fa}*{box-sizing:border-box}body{margin:0;background:#0b1017}header{padding:17px;background:#101721;border-bottom:1px solid #273143}header strong{font-size:23px;letter-spacing:-.8px}header strong span{color:#69b9fd}header small{display:block;font-size:11px;color:#91a1b6;letter-spacing:1.7px;margin-top:3px}main{max-width:1050px;margin:auto;padding:12px}.tile{background:#171d27;border:1px solid #30394a;border-radius:23px;padding:17px;margin-bottom:12px}.row{display:flex;align-items:center;justify-content:space-between;gap:9px}.eyebrow{font-size:11px;letter-spacing:1.7px;font-weight:800;color:#9aaabd}.heading{font-size:21px;letter-spacing:-.5px;font-weight:750;margin-top:5px}.badge{font-size:11px;background:#44341e;color:#f3cc91;border-radius:30px;padding:7px 10px;font-weight:750}.rail-scroll{overflow:hidden;margin:10px 0 0;width:100%;min-width:0}.rail-svg{display:block;width:100%;max-width:100%;min-width:0;height:auto}.user-ripple{fill:#3d9fff;opacity:.55;animation:pulse 1.65s ease-out infinite;transform-origin:center;transform-box:fill-box}.user-spot{fill:#3d9fff;stroke:#e7f7ff;stroke-width:2.6}.user-center{fill:#fff}.gps-row{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:11px;color:#84bfff;font-size:12px;line-height:1.5}.gps-btn{background:#193954;border:1px solid #426b8a;color:#b9e4ff;border-radius:12px;padding:8px 12px;font-size:12px;font-weight:700;white-space:nowrap}.bed{stroke:#0b141b;stroke-width:15;stroke-linecap:round}.track{stroke:#398f72;stroke-width:10;stroke-linecap:round}.node{stroke:#429b7d;stroke-width:5;fill:#171d27}.station-label{fill:#e8edf4;font-size:18px;font-weight:500}.train-halo{fill:#5dbeff;opacity:.3;animation:pulse 1.5s ease-out infinite;transform-origin:center;transform-box:fill-box}.train-body{fill:#60c1fb;stroke:#f1f9ff;stroke-width:2}.train-arrow{fill:#112d45;font-weight:900;font-size:17px;text-anchor:middle;dominant-baseline:middle}@keyframes pulse{0%{transform:scale(.8);opacity:.6}80%{transform:scale(2);opacity:0}100%{opacity:0}}.grid{display:block}.muted{font-size:13px;line-height:1.5;color:#9caec1}.list{display:grid;gap:9px;margin-top:15px}.service{padding:12px;border:1px solid #334057;border-radius:12px;background:#111924;display:flex;justify-content:space-between;gap:12px;align-items:center}.service b{font-size:14px}.service small{display:block;color:#9aaec1;font-size:12px;margin-top:4px}.empty{margin-top:12px;padding:15px;border:1px dashed #46556b;border-radius:12px;color:#afbdcc;font-size:13px;line-height:1.5}.small{font-size:12px;color:#95a6bc;margin-top:10px;line-height:1.5}.value{font-size:41px;font-weight:800;color:#76baff;letter-spacing:-2px;margin:12px 0 2px}.field{display:block;font-size:12px;font-weight:700;color:#a4b4c6;margin-top:16px}select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:11px;width:100%;font-size:15px;padding:11px;margin-top:7px}.button{background:#183e61;color:#b5ddff;border:1px solid #426990;border-radius:12px;padding:11px 16px;font-size:14px;font-weight:750;cursor:pointer;margin-top:13px}footer{padding:5px 5px 20px;font-size:11px;line-height:1.6;color:#8194aa}@media(max-width:740px){.grid{grid-template-columns:1fr}.tile{border-radius:21px}.rail-svg{min-width:0}main{padding:10px}}
-</style></head><body><header><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small></header><main>
-<section class="tile"><div class="row"><div><div class="eyebrow">TRAIN TRACKER</div><div class="heading">Mallaig ↔ Fort William</div></div><span class="badge" id="feedBadge">Connecting</span></div>
-<div class="rail-scroll"><svg class="rail-svg" id="rail" viewBox="0 0 900 177" role="img" aria-label="Schematic railway from Mallaig to Fort William via Morar, Arisaig, Lochailort and Glenfinnan">
+:root{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:#0b1017;color:#edf3fa}*{box-sizing:border-box}
+body{margin:0;background:#0b1017}header{padding:16px;background:#101721;border-bottom:1px solid #273143}header strong{font-size:23px;letter-spacing:-.8px}header strong span{color:#69b9fd}header small{display:block;font-size:11px;color:#91a1b6;letter-spacing:1.5px;margin-top:3px}
+main{max-width:1080px;margin:auto;padding:11px}.tile{background:#171d27;border:1px solid #30394a;border-radius:22px;padding:16px;margin-bottom:12px}.row{display:flex;justify-content:space-between;align-items:center;gap:9px}.eyebrow{font-size:10px;letter-spacing:1.5px;font-weight:800;color:#9aaabd}.heading{font-size:21px;font-weight:750;letter-spacing:-.5px;margin:5px 0 10px}.badge{font-size:11px;background:#44341e;color:#f3cc91;border-radius:25px;padding:7px 9px;font-weight:750;white-space:nowrap}.muted{font-size:13px;line-height:1.5;color:#9caec1}.small{font-size:12px;color:#95a6bc;line-height:1.55}.field{display:block;font-size:12px;font-weight:700;color:#a4b4c6;margin:11px 0}
+select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:11px;width:100%;font-size:15px;padding:11px;margin-top:6px}
+.button{background:#183e61;color:#c0e4ff;border:1px solid #426990;border-radius:12px;padding:11px 13px;font-size:13px;font-weight:750;cursor:pointer}.button:disabled{opacity:.4;cursor:not-allowed}
+.rail-scroll{overflow:hidden;margin:6px 0;width:100%}.rail-svg{display:block;width:100%;height:auto}.bed{stroke:#0b141b;stroke-width:15;stroke-linecap:round}.track{stroke:#398f72;stroke-width:10;stroke-linecap:round}.node{stroke:#429b7d;stroke-width:5;fill:#171d27}.station-label{fill:#e8edf4;font-size:18px;font-weight:500}
+.train-halo{fill:#5dbeff;opacity:.3;animation:pulse 1.5s ease-out infinite;transform-origin:center;transform-box:fill-box}.train-body{fill:#60c1fb;stroke:#f1f9ff;stroke-width:2}.train-arrow{fill:#112d45;font-weight:900;font-size:17px;text-anchor:middle;dominant-baseline:middle}.user-ripple{fill:#3d9fff;opacity:.55;animation:pulse 1.65s ease-out infinite;transform-origin:center;transform-box:fill-box}.user-spot{fill:#3d9fff;stroke:#e7f7ff;stroke-width:2.6}.user-center{fill:#fff}
+@keyframes pulse{0%{transform:scale(.8);opacity:.6}80%{transform:scale(2);opacity:0}100%{opacity:0}}.gps-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;color:#8fc8ff;font-size:12px;line-height:1.5}.value{font-size:45px;font-weight:800;color:#81beff;letter-spacing:-2px;line-height:1.1;margin:10px 0}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}.spot{background:#111924;border:1px solid #324154;border-radius:14px;padding:13px;margin:10px 0}.spot h3{font-size:15px;margin:0 0 5px}.spot .sub{font-size:12px;color:#a7b8c9;line-height:1.5}.spot .actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.tag{color:#95cfff;font-size:11px;font-weight:750;letter-spacing:.3px}.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.stat{padding:12px;background:#101823;border:1px solid #2b394b;border-radius:13px}.stat b{font-size:21px;display:block;margin-top:5px}.notice{padding:10px 12px;background:#122338;border:1px solid #2a4d6e;border-radius:11px;color:#c4def4;font-size:12px;line-height:1.5;margin-top:10px}.weather-row{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}.weather-row>div{min-width:75px}.weather-row b{font-size:19px}.alerts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.alerts select{max-width:135px;margin:0;padding:9px}.alert-tag{font-size:12px;color:#9cb1c8}.countdown{font-variant-numeric:tabular-nums}footer{padding:2px 4px 25px;color:#8295ad;font-size:11px;line-height:1.55}
+@media(max-width:760px){.cols{grid-template-columns:1fr}.tile{border-radius:20px}main{padding:10px}.station-label{font-size:18px}}
+</style></head><body>
+<header><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small></header><main>
+<section class="tile">
+<div class="row"><div><div class="eyebrow">TRAIN TRACKER</div><div class="heading">Mallaig ↔ Fort William</div></div><span class="badge" id="feedBadge">Checking</span></div>
+<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Six station schematic railway from Mallaig to Fort William" role="img">
 <line class="bed" x1="80" y1="83" x2="820" y2="83"/><line class="track" x1="80" y1="83" x2="820" y2="83"/>
 <circle class="node" cx="80" cy="83" r="12"/><text class="station-label" x="80" y="45" text-anchor="middle">Mallaig</text>
 <circle class="node" cx="228" cy="83" r="12"/><text class="station-label" x="228" y="132" text-anchor="middle">Morar</text>
@@ -12,44 +23,121 @@
 <circle class="node" cx="524" cy="83" r="12"/><text class="station-label" x="524" y="132" text-anchor="middle">Lochailort</text>
 <circle class="node" cx="672" cy="83" r="12"/><text class="station-label" x="672" y="45" text-anchor="middle">Glenfinnan</text>
 <circle class="node" cx="820" cy="83" r="12"/><text class="station-label" x="820" y="132" text-anchor="middle">Fort William</text>
-<g id="trains"></g><g id="userPosition" style="display:none"><circle class="user-ripple" r="14"/><circle class="user-spot" r="8"/><circle class="user-center" r="3"/></g></svg></div><div class="muted" id="trackStatus">Checking railway data…</div><div class="gps-row"><span id="gpsStatus">Locating you…</span><button id="locateBtn" type="button" class="gps-btn">Locate me</button></div></section>
-<div class="grid"><section class="tile"><div class="eyebrow">PHOTOGRAPHY VIEWPOINT</div><div class="heading">Next train</div><label class="field">Viewpoint<select id="viewpoint"><option value="glenfinnan">Glenfinnan Viaduct</option><option value="lochailort">Lochailort</option><option value="arisaig">Arisaig</option><option value="morar">Morar</option></select></label><div class="value" id="eta">—</div><div class="muted" id="etaNote">Waiting for a verified railway report.</div><p class="small" id="etaSource">No verified ETA available.</p></section></div>
-<footer>Independent railway photography project. No simulated trains are shown. Train positions are displayed only from a configured, authorised data feed, with the source and freshness disclosed. The diagram is schematic and not to geographic scale.</footer></main>
-<script>
+<g id="trains"></g><g id="userPosition" style="display:none"><circle class="user-ripple" r="14"/><circle class="user-spot" r="8"/><circle class="user-center" r="3"/></g>
+</svg></div>
+<div class="muted" id="trackStatus">Checking railway data…</div>
+<div class="gps-row"><span id="gpsStatus">Locating you…</span><button class="button" id="locateBtn">Locate me</button></div>
+</section>
+<div class="cols">
+<section class="tile"><div class="eyebrow">GLENFINNAN VIADUCT</div><div class="heading">Next train countdown</div><div class="value countdown" id="glenCountdown">—</div><div class="muted" id="glenStatus">Waiting for verified passage time.</div><div class="notice" id="delayStatus">Service updates are unavailable until an authorised railway feed is connected.</div></section>
+<section class="tile"><div class="eyebrow">YOUR VIEWPOINT</div><div class="heading">Photography timing</div><label class="field">Location<select id="viewpoint"><option value="glenfinnan">Glenfinnan Viaduct</option><option value="lochailort">Lochailort</option><option value="arisaig">Arisaig</option><option value="morar">Morar</option></select></label><div class="value countdown" id="eta">—</div><div class="muted" id="etaNote">No verified train ETA available.</div><div class="small" id="etaSource"></div>
+<div class="alerts" style="margin-top:12px"><select id="alertLead" aria-label="Train approaching warning"><option value="5">5 min alert</option><option value="10" selected>10 min alert</option><option value="15">15 min alert</option><option value="20">20 min alert</option></select><button class="button" id="notifyBtn">Enable alerts</button></div><div class="small" id="notificationStatus">Alerts operate while the web app is open. Background alerts need a push-notification backend.</div>
+</section></div>
+<div class="cols">
+<section class="tile"><div class="eyebrow">PHOTOGRAPHY SPOTS</div><div class="heading">Recommended viewpoints</div><div id="spots"></div><p class="small">Coordinates and walking times are approximate starting points; check access and local signage. Never enter railway property.</p></section>
+<section class="tile"><div class="eyebrow">PHOTOGRAPHY CONDITIONS</div><div class="heading">Glenfinnan weather & light</div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="notice" id="photoAdvice">Forecast conditions will appear here when available.</div><div class="small" id="weatherTime"></div></section>
+</div>
+<footer>Independent photography project. Railway ETAs and delays are shown only when supplied by a verified authorised feed. No simulated train movements. In-app navigation and alerts do not link to external websites. Location and weather estimates are not safety guarantees.</footer>
+</main><script>
 "use strict";
-// Set to a deployed, credential-protected backend URL after authorising a railway data source.
-// API keys must NEVER be embedded in this publicly hosted JavaScript.
+// Configure an authorised backend which returns train reports, ETAs and delays.
+// Never put provider credentials in client-side JavaScript.
 const FEED_URL="";
 const $=id=>document.getElementById(id);
-const stations=[{id:"mallaig",x:80},{id:"morar",x:228},{id:"arisaig",x:376},{id:"lochailort",x:524},{id:"glenfinnan",x:672},{id:"fort-william",x:820}];
 const viewpointPositions={morar:228,arisaig:376,lochailort:524,glenfinnan:672};
-let services=[],lastUpdated=null,source=null;
+const siteData={
+ glenfinnan:{name:"Glenfinnan Viaduct",lat:56.8733,lon:-5.4317,walk:15,note:"Hillside viewpoints overlook the viaduct. Allow extra time for the uphill approach.",parking:"Glenfinnan visitor parking",parkingLat:56.8718,parkingLon:-5.4375},
+ lochailort:{name:"Lochailort",lat:56.8812,lon:-5.6633,walk:8,note:"Railway scenery around the village. Public access and sightlines need local checking.",parking:"Lochailort village",parkingLat:56.8806,parkingLon:-5.6635},
+ arisaig:{name:"Arisaig",lat:56.9136,lon:-5.8406,walk:10,note:"Station-area railway views; remain on public paths and respect railway boundaries.",parking:"Arisaig station area",parkingLat:56.9136,parkingLon:-5.8406},
+ morar:{name:"Morar",lat:56.9685,lon:-5.8212,walk:8,note:"Railway views close to Morar station; keep clear of railway land.",parking:"Morar station area",parkingLat:56.9685,parkingLon:-5.8212}
+};
+let services=[],source=null,feedUpdated=null,feedError=null,weatherData=null,notificationAllowed=false;
+let lastAlerts=new Set();
 function safe(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
-function xAt(progress){return 820-(Math.max(0,Math.min(100,progress))/100)*740;}
+function xAt(p){return 820-Math.max(0,Math.min(100,p))*7.4;}
+function etaAt(t,id){
+ if(t.viewpoints&&Number.isFinite(t.viewpoints[id]?.etaMinutes))return t.viewpoints[id].etaMinutes;
+ // A generic train-location percentage is NOT a reliable clock ETA.
+ return null;
+}
+function timeText(min){if(!Number.isFinite(min)||min<0)return "—";if(min<1)return "<1 min";const m=Math.ceil(min);return m>=60?Math.floor(m/60)+"h "+(m%60)+"m":m+" min";}
+function getApproaching(id){
+ return services.map(t=>({...t,remaining:etaAt(t,id)})).filter(t=>t.remaining!==null&&t.remaining>=0).sort((a,b)=>a.remaining-b.remaining);
+}
 function render(){
-const svg=$("trains");svg.innerHTML=services.map(t=>{const x=xAt(t.progress),arrow=t.direction==="back"?"←":"→";return '<g transform="translate('+x+',83)"><circle class="train-halo" r="15"/><circle class="train-body" r="13"/><text class="train-arrow" y="1">'+arrow+'</text><title>'+safe(t.id)+'</title></g>';}).join("");
-
-const vx=viewpointPositions[$("viewpoint").value];const candidates=services.filter(t=>{const px=xAt(t.progress);return t.direction==="out"?px>vx:px<vx;});
-const withEta=candidates.filter(t=>Number.isFinite(t.etaMinutes)&&t.etaMinutes>=0).sort((a,b)=>a.etaMinutes-b.etaMinutes);
-$("eta").textContent=withEta.length?Math.ceil(withEta[0].etaMinutes)+" min":"—";
-$("etaNote").textContent=withEta.length?"Next reported service: "+withEta[0].id:"ETA not available from verified railway data.";
-$("etaSource").textContent=source?"Data source: "+source:"Connect an authorised train-location feed to enable ETAs.";
+ $("trains").innerHTML=services.map(t=>'<g transform="translate('+xAt(t.progress)+',83)"><circle class="train-halo" r="15"/><circle class="train-body" r="13"/><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+'</title></g>').join("");
+ let glen=getApproaching("glenfinnan")[0];
+ $("glenCountdown").textContent=glen?timeText(glen.remaining):"—";
+ $("glenStatus").textContent=glen?"Next confirmed-source prediction: "+glen.id:"No verified Glenfinnan passage prediction available.";
+ const id=$("viewpoint").value;const next=getApproaching(id)[0];
+ $("eta").textContent=next?timeText(next.remaining):"—";
+ $("etaNote").textContent=next?"Expected passing time based on railway reports":"No verified passing time for this viewpoint.";
+ $("etaSource").textContent=source?"Source: "+source+" · Updated "+new Date(feedUpdated).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):"Railway feed not connected.";
+ const delayed=services.filter(t=>Number.isFinite(t.delayMinutes)&&t.delayMinutes>0);
+ const cancelled=services.filter(t=>t.cancelled);
+ $("delayStatus").textContent=!source?"Train delays and changes unavailable until a railway feed is connected.":cancelled.length?cancelled.length+" reported cancellation(s).":delayed.length?delayed.map(t=>t.id+": "+t.delayMinutes+" min late").join(" · "):"No delays reported in the connected feed; this does not guarantee trains are on time.";
+ renderSpots();maybeNotify();
+}
+function renderSpots(){
+ $("spots").innerHTML=Object.entries(siteData).map(([key,v])=>'<div class="spot"><h3>'+safe(v.name)+'</h3><div class="sub">'+safe(v.note)+'</div><div class="sub" style="margin-top:6px">Typical approach from '+safe(v.parking)+': approximately '+v.walk+' min (unverified)</div><div class="tag" style="margin-top:7px">Train ETA: '+timeText(getApproaching(key)[0]?.remaining)+'</div><div class="actions"><button class="button" data-spot="'+key+'">Select viewpoint</button><button class="button" data-walk="'+key+'">Walking directions</button></div></div>').join("");
+ $("spots").querySelectorAll("[data-spot]").forEach(b=>b.onclick=()=>{$("viewpoint").value=b.dataset.spot;render()});
+ $("spots").querySelectorAll("[data-walk]").forEach(b=>b.onclick=()=>showDirections(b.dataset.walk));
+}
+function bearing(a,b,c,d){const r=Math.PI/180;const y=Math.sin((d-b)*r)*Math.cos(c*r),x=Math.cos(a*r)*Math.sin(c*r)-Math.sin(a*r)*Math.cos(c*r)*Math.cos((d-b)*r);return (Math.atan2(y,x)*180/Math.PI+360)%360;}
+function cardinal(deg){return ["north","north-east","east","south-east","south","south-west","west","north-west"][Math.round(deg/45)%8];}
+let userCoords=null;
+function showDirections(key){
+ const v=siteData[key],origin=userCoords||{lat:v.parkingLat,lon:v.parkingLon};
+ const km=111.195*Math.hypot(origin.lat-v.lat,(origin.lon-v.lon)*Math.cos(v.lat*Math.PI/180));
+ const direction=cardinal(bearing(origin.lat,origin.lon,v.lat,v.lon));
+ const text="Approximate straight-line bearing: "+direction+" · "+(km<1?Math.round(km*1000)+" m":km.toFixed(1)+" km")+". This is not a mapped walking route. Use signed public paths and verify access on site.";
+ $("photoAdvice").textContent=v.name+": "+text;
+ $("photoAdvice").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+async function fetchWeather(){
+ try{
+ const u="https://api.open-meteo.com/v1/forecast?latitude=56.8733&longitude=-5.4317&current=temperature_2m,cloud_cover,visibility,precipitation,weather_code&hourly=precipitation_probability,cloud_cover,visibility&daily=sunrise,sunset&forecast_days=2&timezone=Europe%2FLondon";
+ const r=await fetch(u,{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);const d=await r.json();
+ const now=d.current;if(!now||!Number.isFinite(now.temperature_2m))throw Error("Weather feed incomplete");
+ const hourly=d.hourly||{},ix=(hourly.time||[]).findIndex(x=>x>=now.time.slice(0,13)+":00");const i=ix<0?0:ix;
+ const precip=(hourly.precipitation_probability||[])[i];const vis=Number.isFinite(now.visibility)?now.visibility:(hourly.visibility||[])[i];
+ const cloud=now.cloud_cover;
+ $("weather").innerHTML='<div><div class="small">Temperature</div><b>'+Math.round(now.temperature_2m)+'°C</b></div><div><div class="small">Cloud</div><b>'+Math.round(cloud)+'%</b></div><div><div class="small">Visibility</div><b>'+(Number.isFinite(vis)?(vis/1000).toFixed(1)+' km':'—')+'</b></div><div><div class="small">Rain chance</div><b>'+(Number.isFinite(precip)?Math.round(precip)+'%':'—')+'</b></div>';
+ const rise=d.daily?.sunrise?.[0],set=d.daily?.sunset?.[0];
+ const advice=[Number.isFinite(vis)&&vis<3000?"Visibility may be poor for long-distance photographs.":"",cloud>=85?"Heavy cloud may reduce contrast and direct light.":"",Number.isFinite(precip)&&precip>=50?"Rain is likely enough to consider waterproof camera protection.":""].filter(Boolean);
+ $("photoAdvice").textContent=(rise&&set?"Sunrise "+rise.slice(-5)+" · Sunset "+set.slice(-5)+". Approximate golden light: first and last hour of daylight. ":"")+(advice.join(" ")||"Check local cloud and visibility close to your planned train passing time.");
+ $("weatherTime").textContent="Glenfinnan forecast · Updated "+now.time.replace("T"," ")+" (UK local) · Open-Meteo weather data";
+ }catch(e){$("weather").innerHTML='<div class="muted">Weather forecast unavailable.</div>';$("photoAdvice").textContent="Unable to load weather and visibility information."; $("weatherTime").textContent=e.message;}
 }
 async function load(){
-$("feedBadge").textContent="Checking";$("trackStatus").textContent="Checking authorised railway position data…";
-if(!FEED_URL){services=[];source=null;lastUpdated=null;$("feedBadge").textContent="No live feed";$("trackStatus").textContent="Live tracking is not connected. No train positions are shown.";render();return;}
-try{
-const r=await fetch(FEED_URL,{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);const d=await r.json();
-if(!Array.isArray(d.trains)||!d.updated||!Number.isFinite(Date.parse(d.updated)))throw Error("Invalid feed response");
-if(Date.now()-Date.parse(d.updated)>600000||Date.parse(d.updated)>Date.now()+60000)throw Error("Feed is stale");
-const list=d.trains.filter(t=>typeof t.id==="string"&&Number.isFinite(t.progress)&&t.progress>=0&&t.progress<=100&&["back","out"].includes(t.direction)&&typeof t.observedAt==="string"&&Number.isFinite(Date.parse(t.observedAt))&&Date.now()-Date.parse(t.observedAt)<600000);
-services=list.slice(0,20);source=String(d.source||"Railway data feed");lastUpdated=d.updated;
-$("feedBadge").textContent="Railway feed";$("trackStatus").textContent=services.length?services.length+" currently reported train(s). Locations may be inferred from railway events, not GPS.":"No currently verified trains reported.";
-render();
-}catch(e){services=[];source=null;$("feedBadge").textContent="Unavailable";$("trackStatus").textContent="Live railway feed unavailable. No estimated or simulated trains are shown.";render();}
+ $("feedBadge").textContent="Checking";
+ if(!FEED_URL){services=[];source=null;feedUpdated=null;$("feedBadge").textContent="No live feed";$("trackStatus").textContent="No verified railway feed connected. Train positions, passing times and delays are unavailable.";render();return;}
+ try{
+ const r=await fetch(FEED_URL,{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);
+ const d=await r.json();if(!Array.isArray(d.trains)||!d.updated||!Number.isFinite(Date.parse(d.updated)))throw Error("Invalid feed");
+ if(Date.now()-Date.parse(d.updated)>600000||Date.parse(d.updated)>Date.now()+60000)throw Error("Stale feed");
+ services=d.trains.filter(t=>typeof t.id==="string"&&Number.isFinite(t.progress)&&t.progress>=0&&t.progress<=100&&["out","back"].includes(t.direction)&&Number.isFinite(Date.parse(t.observedAt))&&Date.now()-Date.parse(t.observedAt)<600000).slice(0,25);
+ source=String(d.source||"Railway feed");feedUpdated=d.updated;
+ $("feedBadge").textContent="Rail reports";$("trackStatus").textContent=services.length?services.length+" railway service(s) reported. Positions are based on the provider's observations.":"No recent railway positions reported.";
+ render();
+ }catch(e){services=[];source=null;feedUpdated=null;$("feedBadge").textContent="Unavailable";$("trackStatus").textContent="No current railway data. The app will not invent movements or times.";render();}
 }
-$("viewpoint").addEventListener("change",render);load();setInterval(load,60000);
-
+function maybeNotify(){
+ if(!notificationAllowed||document.visibilityState!=="visible")return;
+ const id=$("viewpoint").value,lead=Number($("alertLead").value);
+ for(const t of getApproaching(id)){
+   const key=t.id+":"+id+":"+lead+":"+(feedUpdated||"");
+   if(t.remaining>lead||lastAlerts.has(key))continue;
+   lastAlerts.add(key);new Notification("Train approaching "+siteData[id].name,{body:t.id+" expected in "+timeText(t.remaining)+". Based on reported railway data.",tag:"train-"+t.id+"-"+id});
+ }
+}
+$("notifyBtn").onclick=async()=>{
+ if(!("Notification" in window)){$("notificationStatus").textContent="This browser does not support page notifications.";return;}
+ try{const p=await Notification.requestPermission();notificationAllowed=p==="granted";$("notificationStatus").textContent=notificationAllowed?"Alerts enabled while JacobiteTrack remains open. Background push alerts are not yet supported.":"Notification access not granted.";}catch(e){$("notificationStatus").textContent="Notifications could not be enabled on this device.";}
+};
+$("viewpoint").addEventListener("change",render);
+$("alertLead").addEventListener("change",()=>{lastAlerts.clear();render()});
+load();fetchWeather();setInterval(()=>{load()},60000);setInterval(()=>{fetchWeather()},600000);
 /* GPS stays entirely in the device browser; only its nearest position on this
    simplified station-based railway alignment is displayed. Nothing is uploaded. */
 const railFixes=[
@@ -82,6 +170,7 @@ function startGps(){
  if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
  $("gpsStatus").textContent="Finding your location…";
  gpsWatch=navigator.geolocation.watchPosition(position=>{
+   userCoords={lat:position.coords.latitude,lon:position.coords.longitude};
    const result=projectToRail(position.coords.latitude,position.coords.longitude);
    if(!Number.isFinite(result.x))return;
    const dot=$("userPosition");dot.setAttribute("transform","translate("+result.x+",83)");dot.style.display="";
