@@ -31,6 +31,9 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 .leaflet-control-zoom a{background:#162233!important;color:#cde5fa!important;border-color:#34445c!important}
 .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#182333;color:#e8f2ff}
 @media(max-width:740px){.geo-map{height:220px}.geo-map.geo-close{height:205px}.geo-heading{font-size:13px}.geo-panel{margin:11px 0}}
+
+.geo-basemap{opacity:.93;filter:brightness(.67) saturate(.75) contrast(1.1)}
+.geo-map{position:relative;isolation:isolate}
 </style></head><body>
 <header><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small></header><main>
 <section class="tile">
@@ -51,7 +54,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 <section class="tile" id="geoTile">
 <div class="row"><div><div class="eyebrow">GEOGRAPHIC MAP</div><div class="heading">Railway & photo locations</div></div><span class="badge" id="geoStatus">Loading</span></div>
 <div class="geo-panel"><div class="geo-heading">West Highland Line overview</div><div class="geo-map" id="mapOverview" role="application" aria-label="Interactive geographic overview map of the Fort William to Mallaig railway"></div><div class="geo-legend"><span><i class="geo-line"></i>Railway (OpenStreetMap)</span><span><i class="geo-dot"></i>Photography area</span></div></div>
-<p class="small" id="geoNote">Maps use real geographic basemap data. Railway alignment is requested from OpenStreetMap; photography areas are approximate and require local access checks. No invented train movements are shown.</p>
+<p class="small" id="geoNote">Roads, lochs and railway geography from OpenStreetMap. Photo pins are approximate; access routes are not verified.</p>
 </section>
 <div class="cols">
 <section class="tile"><div class="eyebrow">GLENFINNAN VIADUCT</div><div class="heading">Next train countdown</div><div class="value countdown" id="glenCountdown">—</div><div class="muted" id="glenStatus">Waiting for verified passage time.</div><div class="notice" id="delayStatus">Service updates are unavailable until an authorised railway feed is connected.</div></section>
@@ -271,7 +274,36 @@ const mapLabels=[
 ];
 const geoMapFeatures={rail:[],water:[],coast:[]};let geoLocation=null;
 const svgNS="http://www.w3.org/2000/svg";
-function geoPoint(lat,lon,b){return [((lon-b.west)/(b.east-b.west))*900,((b.north-lat)/(b.north-b.south))*360]}
+function mercator(lat,lon,z=10){
+ const n=2**z,angle=Math.max(-85,Math.min(85,lat))*Math.PI/180;
+ return {x:(lon+180)/360*n,y:(1-Math.asinh(Math.tan(angle))/Math.PI)/2*n};
+}
+function geoPoint(lat,lon,b){
+ const nw=mercator(b.north,b.west),se=mercator(b.south,b.east),p=mercator(lat,lon);
+ return [(p.x-nw.x)/(se.x-nw.x)*900,(p.y-nw.y)/(se.y-nw.y)*360];
+}
+function appendMapTiles(svg,view){
+ const b=view.bounds,topLeft=mercator(b.north,b.west),bottomRight=mercator(b.south,b.east);
+ const width=900/(bottomRight.x-topLeft.x),height=360/(bottomRight.y-topLeft.y);
+ const group=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")",class:"geo-basemap"});
+ const z=10,n=2**z;
+ let loaded=0,failed=0;
+ for(let tileX=Math.floor(topLeft.x);tileX<=Math.floor(bottomRight.x);tileX++){
+  for(let tileY=Math.floor(topLeft.y);tileY<=Math.floor(bottomRight.y);tileY++){
+   if(tileX<0||tileX>=n||tileY<0||tileY>=n)continue;
+   const image=geoSVG("image",{
+    x:(tileX-topLeft.x)*width,y:(tileY-topLeft.y)*height,
+    width:width+0.4,height:height+0.4,
+    href:"https://tile.openstreetmap.org/"+z+"/"+tileX+"/"+tileY+".png",
+    preserveAspectRatio:"none"
+   });
+   image.addEventListener("load",()=>{loaded++;if(loaded===1){$("geoStatus").textContent="Map detail loaded";$("geoNote").textContent="Real OpenStreetMap roads, lochs and terrain are shown in the basemap. The green railway overlay uses OpenStreetMap geometry when available. © OpenStreetMap contributors."}});
+   image.addEventListener("error",()=>{failed++;if(!loaded&&failed>=3){$("geoNote").textContent="Map tiles could not load from OpenStreetMap. Check network access; the map retains real station locations and any cached railway and loch geometry."}});
+   group.appendChild(image);
+  }
+ }
+ svg.appendChild(group);
+}
 function geoSVG(tag,attrs={}){const e=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));return e}
 function appendMapPath(g,points,b,stroke,weight,fill="none"){
  const clipped=points.filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon));
@@ -285,6 +317,7 @@ function makeMap(view){
  svg.style.display="block";svg.style.background="#142235";
  const defs=geoSVG("defs"),clip=geoSVG("clipPath",{id:"clip-"+view.id});
  clip.appendChild(geoSVG("rect",{x:0,y:0,width:900,height:360}));defs.appendChild(clip);svg.appendChild(defs);
+ appendMapTiles(svg,view);
  const water=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")"});
  for(const way of geoMapFeatures.water)appendMapPath(water,way,view.bounds,"#4782ac",1.7,"#1f4969");
  for(const coast of geoMapFeatures.coast)appendMapPath(water,coast,view.bounds,"#3f6e91",1.4);
@@ -318,7 +351,7 @@ function makeMap(view){
    svg.appendChild(geoSVG("circle",{cx:x,cy:y,r:7,fill:"#368bff",stroke:"#fff","stroke-width":2}));
   }
  }
- const note=geoSVG("text",{x:18,y:345,fill:"#95acc8","font-size":12});note.textContent="Geographic coordinates · OpenStreetMap data";svg.appendChild(note);
+ const note=geoSVG("text",{x:18,y:345,fill:"#f3f6fd","font-size":12,stroke:"#0a1525","stroke-width":3,"paint-order":"stroke"});note.textContent="© OpenStreetMap contributors · Roads and lochs";svg.appendChild(note);
  container.appendChild(svg);
 }
 function renderGeoMaps(){geoViews.forEach(makeMap)}
@@ -378,9 +411,9 @@ async function loadGeoRailway(){
  if(w.status==="fulfilled"){const lakes=extractShapes(w.value,"water");if(lakes.length)geoMapFeatures.water=lakes;geoMapFeatures.coast=extractShapes(w.value,"coast")}
  renderGeoMaps();cacheGeo();
  const hasRail=geoMapFeatures.rail.length>0,hasWater=geoMapFeatures.water.length>0;
- if(hasRail&&hasWater){$("geoStatus").textContent="Rail & lochs loaded";$("geoNote").textContent="Mapped railway and loch boundaries from OpenStreetMap, including multipolygon shoreline segments. The diagram uses geographic coordinates, with photo pins as approximate areas. No API key required. © OpenStreetMap contributors."}
+ if(hasRail&&hasWater){$("geoStatus").textContent="OSM detail loaded";$("geoNote").textContent="Mapped railway and loch boundaries from OpenStreetMap, including multipolygon shoreline segments. The diagram uses geographic coordinates, with photo pins as approximate areas. No API key required. © OpenStreetMap contributors."}
  else if(hasRail||hasWater){$("geoStatus").textContent="Partial geography";$("geoNote").textContent="Some OpenStreetMap geometry is temporarily unavailable. Showing "+(hasRail?"railway":"loch outlines")+" from available or cached geographic data. Try refreshing later."}
- else {$("geoStatus").textContent="Geometry unavailable";$("geoNote").textContent="The OpenStreetMap geometry service is currently unavailable. Only verified station coordinates can be shown until the railway and loch outlines load; no shapes have been invented."}
+ else {$("geoStatus").textContent="Geometry unavailable";$("geoNote").textContent="The detailed railway outline could not be downloaded; the OpenStreetMap basemap still shows mapped roads, lochs and railway features."}
 }
 renderGeoMaps();loadGeoRailway();
 
