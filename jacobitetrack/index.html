@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1017"><meta name="apple-mobile-web-app-capable" content="yes"><title>JacobiteTrack</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1017"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="./icon.svg"><title>JacobiteTrack</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:#0b1017;color:#edf3fa}*{box-sizing:border-box}
 body{margin:0;background:#0b1017}header{padding:16px;background:#101721;border-bottom:1px solid #273143}header strong{font-size:23px;letter-spacing:-.8px}header strong span{color:#69b9fd}header small{display:block;font-size:11px;color:#91a1b6;letter-spacing:1.5px;margin-top:3px}
@@ -31,7 +31,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 <div class="cols">
 <section class="tile"><div class="eyebrow">GLENFINNAN VIADUCT</div><div class="heading">Next train countdown</div><div class="value countdown" id="glenCountdown">—</div><div class="muted" id="glenStatus">Waiting for verified passage time.</div><div class="notice" id="delayStatus">Service updates are unavailable until an authorised railway feed is connected.</div></section>
 <section class="tile"><div class="eyebrow">YOUR VIEWPOINT</div><div class="heading">Photography timing</div><label class="field">Location<select id="viewpoint"><option value="glenfinnan">Glenfinnan Viaduct</option><option value="lochailort">Lochailort</option><option value="arisaig">Arisaig</option><option value="morar">Morar</option></select></label><div class="value countdown" id="eta">—</div><div class="muted" id="etaNote">No verified train ETA available.</div><div class="small" id="etaSource"></div>
-<div class="alerts" style="margin-top:12px"><select id="alertLead" aria-label="Train approaching warning"><option value="5">5 min alert</option><option value="10" selected>10 min alert</option><option value="15">15 min alert</option><option value="20">20 min alert</option></select><button class="button" id="notifyBtn">Enable alerts</button></div><div class="small" id="notificationStatus">Alerts operate while the web app is open. Background alerts need a push-notification backend.</div>
+<div class="alerts" style="margin-top:12px"><select id="alertLead" aria-label="Train approaching warning"><option value="5">5 min alert</option><option value="10" selected>10 min alert</option><option value="15">15 min alert</option><option value="20">20 min alert</option></select><button class="button" id="notifyBtn">Enable alerts</button></div><div class="small" id="notificationStatus">Checking whether background notifications are available…</div><div class="small" id="installHint"></div>
 </section></div>
 <div class="cols">
 <section class="tile"><div class="eyebrow">PHOTOGRAPHY SPOTS</div><div class="heading">Recommended viewpoints</div><div id="spots"></div><p class="small">Coordinates and walking times are approximate starting points; check access and local signage. Never enter railway property.</p></section>
@@ -43,6 +43,8 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 // Configure an authorised backend which returns train reports, ETAs and delays.
 // Never put provider credentials in client-side JavaScript.
 const FEED_URL="";
+const PUSH_CONFIG_URL="./push-config.json";
+let pushConfig=null, pushRegistration=null, pushSubscription=null;
 const $=id=>document.getElementById(id);
 const viewpointPositions={morar:228,arisaig:376,lochailort:524,glenfinnan:672};
 const siteData={
@@ -122,22 +124,54 @@ async function load(){
  render();
  }catch(e){services=[];source=null;feedUpdated=null;$("feedBadge").textContent="Unavailable";$("trackStatus").textContent="No current railway data. The app will not invent movements or times.";render();}
 }
-function maybeNotify(){
- if(!notificationAllowed||document.visibilityState!=="visible")return;
- const id=$("viewpoint").value,lead=Number($("alertLead").value);
- for(const t of getApproaching(id)){
-   const key=t.id+":"+id+":"+lead;
-   if(t.remaining>lead||lastAlerts.has(key))continue;
-   lastAlerts.add(key);new Notification("Train approaching "+siteData[id].name,{body:t.id+" expected in "+timeText(t.remaining)+". Based on reported railway data.",tag:"train-"+t.id+"-"+id});
- }
+function decodeVapidBase64(v){const pad="=".repeat((4-v.length%4)%4);const b=atob((v+pad).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(b,c=>c.charCodeAt(0))}
+function standalone(){return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}
+function supportsPush(){return window.isSecureContext&&"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window}
+function pushStatus(message){$("notificationStatus").textContent=message;}
+async function setupPush(){
+ const button=$("notifyBtn");
+ button.disabled=true;
+ if(!supportsPush()){pushStatus("Web Push is not supported in this browser.");return}
+ try{
+  pushRegistration=await navigator.serviceWorker.register("./sw.js",{scope:"./"});
+  await navigator.serviceWorker.ready;
+  pushSubscription=await pushRegistration.pushManager.getSubscription();
+  let response=await fetch(PUSH_CONFIG_URL,{cache:"no-store"});
+  if(!response.ok)throw Error("Push configuration unavailable");
+  const cfg=await response.json();
+  if(!cfg.backendUrl||!/^https:\/\//.test(cfg.backendUrl)){pushStatus("Background alerts need a deployed push backend. Not active yet.");button.textContent="Alerts unavailable";return;}
+  pushConfig={...cfg,backendUrl:cfg.backendUrl.replace(/\/+$/,"")};
+  response=await fetch(pushConfig.backendUrl+"/api/push/config",{cache:"no-store"});
+  if(!response.ok)throw Error("Push backend unavailable");
+  const remote=await response.json();
+  if(!remote.publicKey||!remote.ready)throw Error("Push server not configured");
+  pushConfig.publicKey=remote.publicKey;
+  if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&!standalone()){$("installHint").textContent="On iPhone: Safari Share → Add to Home Screen, then open JacobiteTrack from its icon.";pushStatus("Add JacobiteTrack to your Home Screen before enabling background alerts.");return}
+  button.disabled=false;
+  button.textContent=pushSubscription?"Update alerts":"Enable alerts";
+  pushStatus(pushSubscription?"Push subscription detected. Select a viewpoint and tap Update alerts.":"Background push is available. Choose a viewpoint and enable alerts.");
+ }catch(e){button.disabled=true;pushStatus("Background push unavailable: "+e.message)}
 }
-$("notifyBtn").onclick=async()=>{
- if(!("Notification" in window)){$("notificationStatus").textContent="This browser does not support page notifications.";return;}
- try{const p=await Notification.requestPermission();notificationAllowed=p==="granted";$("notificationStatus").textContent=notificationAllowed?"Alerts enabled while JacobiteTrack remains open. Background push alerts are not yet supported.":"Notification access not granted.";}catch(e){$("notificationStatus").textContent="Notifications could not be enabled on this device.";}
-};
+async function savePush(){
+ const button=$("notifyBtn");if(!pushConfig||!pushRegistration){pushStatus("Push backend is not ready.");return}
+ button.disabled=true;
+ try{
+  if(Notification.permission!=="granted"){
+    const permission=await Notification.requestPermission();
+    if(permission!=="granted")throw Error("Notification permission was not granted");
+  }
+  const newSub=await pushRegistration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decodeVapidBase64(pushConfig.publicKey)});
+  const res=await fetch(pushConfig.backendUrl+"/api/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subscription:newSub.toJSON(),viewpoint:$("viewpoint").value,leadMinutes:Number($("alertLead").value)})});
+  if(!res.ok)throw Error("Push service rejected subscription ("+res.status+")");
+  pushSubscription=newSub;button.textContent="Update alerts";
+  pushStatus("Background alerts registered for "+siteData[$("viewpoint").value].name+" · "+$("alertLead").value+" minutes. Delivery requires valid railway predictions and a running backend.");
+ }catch(e){pushStatus("Could not enable alerts: "+e.message)}
+ finally{button.disabled=false}
+}
+$("notifyBtn").addEventListener("click",savePush);
 $("viewpoint").addEventListener("change",render);
-$("alertLead").addEventListener("change",()=>{lastAlerts.clear();render()});
-load();fetchWeather();setInterval(load,60000);setInterval(fetchWeather,600000);setInterval(()=>{if(source)render()},15000);
+$("alertLead").addEventListener("change",render);
+load();fetchWeather();setupPush();setInterval(load,60000);setInterval(fetchWeather,600000);setInterval(()=>{if(source)render()},15000);
 /* GPS stays entirely in the device browser; only its nearest position on this
    simplified station-based railway alignment is displayed. Nothing is uploaded. */
 const railFixes=[
