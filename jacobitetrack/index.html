@@ -169,7 +169,7 @@ function updateHeaderDistances(){
  $("nearestStation").textContent=closest?closest.name+" / "+closest.km.toFixed(1)+"KM":"—";
  // Only geographically observed train coordinates are eligible. A schematic
  // progress percentage cannot reliably establish distance from the user.
- const trains=services.filter(t=>Number.isFinite(t.lat)&&Number.isFinite(t.lon)&&t.lat>56.7&&t.lat<57.1&&t.lon>-6.1&&t.lon<-4.9)
+ const trains=services.filter(t=>t.locationVerified===true&&Number.isFinite(t.lat)&&Number.isFinite(t.lon)&&t.lat>56.7&&t.lat<57.1&&t.lon>-6.1&&t.lon<-4.9)
  .map(t=>distanceKm(lat,lon,t.lat,t.lon)).sort((a,b)=>a-b);
  $("nearestTrain").textContent=trains.length?trains[0].toFixed(1)+"KM":"—";
 }
@@ -335,6 +335,7 @@ function startGps(){
    
    $("gpsIndicator").classList.remove("error");$("gpsIndicator").classList.add("active");$("gpsStatus").textContent="GPS tracking · ±"+Math.round(position.coords.accuracy)+" m";
  },err=>{
+   userCoords=null;updateHeaderDistances();
    $("gpsIndicator").classList.remove("active");$("gpsIndicator").classList.add("error");
    $("gpsStatus").textContent=err.code===1?"Location permission denied. Allow location in Safari settings.":err.code===2?"Could not determine your location.":"GPS unavailable. Check location permissions.";
    if(gpsWatch!==null){navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;}
