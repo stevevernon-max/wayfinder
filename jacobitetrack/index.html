@@ -31,7 +31,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 <div class="cols">
 <section class="tile"><div class="eyebrow">GLENFINNAN VIADUCT</div><div class="heading">Next train countdown</div><div class="value countdown" id="glenCountdown">—</div><div class="muted" id="glenStatus">Waiting for verified passage time.</div><div class="notice" id="delayStatus">Service updates are unavailable until an authorised railway feed is connected.</div></section>
 <section class="tile"><div class="eyebrow">YOUR VIEWPOINT</div><div class="heading">Photography timing</div><label class="field">Location<select id="viewpoint"><option value="glenfinnan">Glenfinnan Viaduct</option><option value="lochailort">Lochailort</option><option value="arisaig">Arisaig</option><option value="morar">Morar</option></select></label><div class="value countdown" id="eta">—</div><div class="muted" id="etaNote">No verified train ETA available.</div><div class="small" id="etaSource"></div>
-<div class="alerts" style="margin-top:12px"><select id="alertLead" aria-label="Train approaching warning"><option value="5">5 min alert</option><option value="10" selected>10 min alert</option><option value="15">15 min alert</option><option value="20">20 min alert</option></select><button class="button" id="notifyBtn">Enable alerts</button></div><div class="small" id="notificationStatus">Checking whether background notifications are available…</div><div class="small" id="installHint"></div>
+<div class="alerts" style="margin-top:12px"><select id="alertLead" aria-label="Train approaching warning"><option value="5">5 min alert</option><option value="10" selected>10 min alert</option><option value="15">15 min alert</option><option value="20">20 min alert</option></select><button class="button" id="notifyBtn">Enable alerts</button><button class="button" id="disableAlertsBtn" style="display:none">Disable alerts</button></div><div class="small" id="notificationStatus">Checking whether background notifications are available…</div><div class="small" id="installHint"></div>
 </section></div>
 <div class="cols">
 <section class="tile"><div class="eyebrow">PHOTOGRAPHY SPOTS</div><div class="heading">Recommended viewpoints</div><div id="spots"></div><p class="small">Coordinates and walking times are approximate starting points; check access and local signage. Never enter railway property.</p></section>
@@ -136,6 +136,7 @@ async function setupPush(){
   pushRegistration=await navigator.serviceWorker.register("./sw.js",{scope:"./"});
   await navigator.serviceWorker.ready;
   pushSubscription=await pushRegistration.pushManager.getSubscription();
+  $("disableAlertsBtn").style.display=pushSubscription?"inline-block":"none";
   let response=await fetch(PUSH_CONFIG_URL,{cache:"no-store"});
   if(!response.ok)throw Error("Push configuration unavailable");
   const cfg=await response.json();
@@ -163,12 +164,21 @@ async function savePush(){
   const newSub=await pushRegistration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decodeVapidBase64(pushConfig.publicKey)});
   const res=await fetch(pushConfig.backendUrl+"/api/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subscription:newSub.toJSON(),viewpoint:$("viewpoint").value,leadMinutes:Number($("alertLead").value)})});
   if(!res.ok)throw Error("Push service rejected subscription ("+res.status+")");
-  pushSubscription=newSub;button.textContent="Update alerts";
+  pushSubscription=newSub;button.textContent="Update alerts";$("disableAlertsBtn").style.display="inline-block";
   pushStatus("Background alerts registered for "+siteData[$("viewpoint").value].name+" · "+$("alertLead").value+" minutes. Delivery requires valid railway predictions and a running backend.");
  }catch(e){pushStatus("Could not enable alerts: "+e.message)}
  finally{button.disabled=false}
 }
 $("notifyBtn").addEventListener("click",savePush);
+$("disableAlertsBtn").addEventListener("click",async()=>{
+ const sub=pushSubscription||await pushRegistration?.pushManager.getSubscription();
+ if(!sub)return;
+ try{
+  if(pushConfig?.backendUrl)await fetch(pushConfig.backendUrl+"/api/push/unsubscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({endpoint:sub.endpoint})});
+ }catch{}
+ await sub.unsubscribe();pushSubscription=null;$("notifyBtn").textContent="Enable alerts";$("disableAlertsBtn").style.display="none";
+ pushStatus("Background alerts disabled on this iPhone.");
+});
 $("viewpoint").addEventListener("change",render);
 $("alertLead").addEventListener("change",render);
 load();fetchWeather();setupPush();setInterval(load,60000);setInterval(fetchWeather,600000);setInterval(()=>{if(source)render()},15000);
