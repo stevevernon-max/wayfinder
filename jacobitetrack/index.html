@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1017"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="./icon.svg"><title>JacobiteTrack</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1017"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="./icon.svg"><title>JacobiteTrack</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:#0b1017;color:#edf3fa}*{box-sizing:border-box}
 body{margin:0;background:#0b1017}header{padding:16px;background:#101721;border-bottom:1px solid #273143}header strong{font-size:23px;letter-spacing:-.8px}header strong span{color:#69b9fd}header small{display:block;font-size:11px;color:#91a1b6;letter-spacing:1.5px;margin-top:3px}
@@ -74,8 +74,28 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 #trackerTile .rail-scroll{margin:0}
 #trackerTile #trackStatus:empty{display:none}
 @media(max-width:420px){.app-header .header-train strong{font-size:23px}.app-header .header-train>span{font-size:8px}.app-header .header-brand>strong{font-size:21px}}
+
+/* Compact three-row live status in the top-right header. */
+.app-header{background:#101721;backdrop-filter:none;-webkit-backdrop-filter:none;padding:10px 12px}
+.app-header .header-main{gap:8px}
+.app-header .header-brand{flex:1;min-width:0}
+.app-header .header-brand>strong{white-space:nowrap;font-size:clamp(19px,5vw,23px)}
+.app-header .header-metrics{flex:0 0 auto;min-width:0;display:flex;flex-direction:column;gap:3px;padding:7px 9px;border:1px solid #2c4157;border-radius:12px;background:#152333}
+.app-header .header-metric{display:flex;justify-content:space-between;align-items:baseline;gap:8px;line-height:1.25}
+.app-header .header-metric>span{font-size:10px;color:#a4bbce;white-space:nowrap}
+.app-header .header-metric>strong{font-size:11px;color:#e2effa;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;max-width:145px;overflow:hidden;text-overflow:ellipsis}
+.app-header .header-metric:first-child>strong{color:#8dcaff;font-size:14px}
+@media(max-width:450px){.app-header .header-main{gap:5px}.app-header .header-metrics{padding:6px 7px;gap:4px}.app-header .header-metric{gap:5px}.app-header .header-metric>span{font-size:9px}.app-header .header-metric>strong{font-size:10px}.app-header .header-metric:first-child>strong{font-size:12px}.app-header .header-gps{font-size:10px}.app-header .header-brand>strong{font-size:20px}}
+@media(display-mode:standalone){.app-header{padding-top:calc(10px + env(safe-area-inset-top, 0px))}}
+#geoTile{min-height:0}
+#geoTile .geo-map{height:clamp(220px,35vh,380px)}
+@media(max-width:740px){#geoTile .geo-map{height:clamp(220px,34vh,350px)}}
 </style></head><body>
-<header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><div class="header-train"><span>GLENFINNAN VIADUCT</span><strong id="headerCountdown">—</strong><small>Next verified train</small></div></div></header><main>
+<header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><div class="header-metrics" aria-label="Live railway information">
+<div class="header-metric"><span>Viaduct next train in</span><strong id="headerCountdown">—:—</strong></div>
+<div class="header-metric"><span>Nearest station</span><strong id="nearestStation">—</strong></div>
+<div class="header-metric"><span>Nearest train</span><strong id="nearestTrain">—</strong></div>
+</div></div></header><main>
 <section class="tile" id="trackerTile">
 <div class="row"><div><div class="eyebrow">TRAIN TRACKER</div><div class="heading">Mallaig ↔ Fort William</div></div><span class="badge" id="feedBadge">Checking</span></div>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Six station schematic railway from Mallaig to Fort William" role="img">
@@ -95,7 +115,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 <div class="geo-map-overlay"><div class="geo-overlay-heading"><div class="eyebrow">GEOGRAPHIC MAP</div><strong>West Highland Line</strong><span class="small" id="geoStatus">Loading map</span></div>
 <div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view">Reset</button></div></div>
 <div class="geo-map-bottom"><span><i class="geo-line"></i> Railway</span><span>Drag · Pinch to zoom</span></div>
-<p class="geo-note" id="geoNote">© OpenStreetMap contributors · Dashed rail = approximate guide</p>
+<p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
 </section>
 <div class="cols">
 <section class="tile"><div class="eyebrow">GLENFINNAN VIADUCT</div><div class="heading">Next train countdown</div><div class="value countdown" id="glenCountdown">—</div><div class="muted" id="glenStatus">Waiting for verified passage time.</div><div class="notice" id="delayStatus">Service updates are unavailable until an authorised railway feed is connected.</div></section>
@@ -132,6 +152,27 @@ function etaAt(t,id){
  return null;
 }
 function timeText(min){if(!Number.isFinite(min)||min<0)return "—";if(min<1)return "<1 min";const m=Math.ceil(min);return m>=60?Math.floor(m/60)+"h "+(m%60)+"m":m+" min";}
+function countdownClock(minutes){
+ if(!Number.isFinite(minutes)||minutes<0)return "—:—";
+ const mins=Math.ceil(minutes),hours=Math.floor(mins/60);
+ return String(hours).padStart(2,"0")+":"+String(mins%60).padStart(2,"0");
+}
+function distanceKm(lat1,lon1,lat2,lon2){
+ const r=Math.PI/180,a=(lat2-lat1)*r,b=(lon2-lon1)*r;
+ const q=Math.sin(a/2)**2+Math.cos(lat1*r)*Math.cos(lat2*r)*Math.sin(b/2)**2;
+ return 6371*2*Math.atan2(Math.sqrt(q),Math.sqrt(Math.max(0,1-q)));
+}
+function updateHeaderDistances(){
+ if(!userCoords){$("nearestStation").textContent="—";$("nearestTrain").textContent="—";return}
+ const {lat,lon}=userCoords;
+ const closest=geoStations.map(s=>({name:s.name,km:distanceKm(lat,lon,s.lat,s.lon)})).sort((a,b)=>a.km-b.km)[0];
+ $("nearestStation").textContent=closest?closest.name+" / "+closest.km.toFixed(1)+"KM":"—";
+ // Only geographically observed train coordinates are eligible. A schematic
+ // progress percentage cannot reliably establish distance from the user.
+ const trains=services.filter(t=>Number.isFinite(t.lat)&&Number.isFinite(t.lon)&&t.lat>56.7&&t.lat<57.1&&t.lon>-6.1&&t.lon<-4.9)
+ .map(t=>distanceKm(lat,lon,t.lat,t.lon)).sort((a,b)=>a-b);
+ $("nearestTrain").textContent=trains.length?trains[0].toFixed(1)+"KM":"—";
+}
 function getApproaching(id){
  return services.map(t=>({...t,remaining:etaAt(t,id)})).filter(t=>t.remaining!==null&&t.remaining>=0).sort((a,b)=>a.remaining-b.remaining);
 }
@@ -139,7 +180,8 @@ function render(){
  $("trains").innerHTML=services.map(t=>'<g transform="translate('+xAt(t.progress)+',83)"><circle class="train-halo" r="15"/><circle class="train-body" r="13"/><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+'</title></g>').join("");
  let glen=getApproaching("glenfinnan")[0];
  $("glenCountdown").textContent=glen?timeText(glen.remaining):"—";
- $("headerCountdown").textContent=glen?timeText(glen.remaining):"—";
+ $("headerCountdown").textContent=glen?countdownClock(glen.remaining):"—:—";
+ updateHeaderDistances();
  $("glenStatus").textContent=glen?"Next confirmed-source prediction: "+glen.id:"No verified Glenfinnan passage prediction available.";
  const id=$("viewpoint").value;const next=getApproaching(id)[0];
  $("eta").textContent=next?timeText(next.remaining):"—";
@@ -285,6 +327,7 @@ function startGps(){
  $("gpsIndicator").classList.remove("active","error");$("gpsStatus").textContent="Finding GPS…";
  gpsWatch=navigator.geolocation.watchPosition(position=>{
    userCoords={lat:position.coords.latitude,lon:position.coords.longitude};
+   updateHeaderDistances();
    updateGeoLocation(userCoords.lat,userCoords.lon);
    const result=projectToRail(position.coords.latitude,position.coords.longitude);
    if(!Number.isFinite(result.x))return;
@@ -304,13 +347,6 @@ startGps();
  * Geo data is fetched from OpenStreetMap Overpass. No map tile provider or SDK. */
 const defaultGeoBounds={north:57.025,south:56.8,west:-5.94,east:-5.04};
 const geoViews=[{id:"mapOverview",bounds:{...defaultGeoBounds},label:"Overview"}];
-/* Approximate station-to-station guide for times when OSM railway geometry is unavailable.
-   Not a survey-accurate railway alignment; dashed so it is never mistaken for a real trace. */
-const geoRailGuide=[
- {lat:57.0052,lon:-5.8290},{lat:56.9685,lon:-5.8212},{lat:56.9136,lon:-5.8406},
- {lat:56.8990,lon:-5.7630},{lat:56.8812,lon:-5.6633},{lat:56.8717,lon:-5.4490},
- {lat:56.8570,lon:-5.1880},{lat:56.8430,lon:-5.1220},{lat:56.8201,lon:-5.1061}
-];
 const geoStations=[
  {name:"Mallaig",lat:57.0052,lon:-5.8290},{name:"Morar",lat:56.9685,lon:-5.8212},
  {name:"Arisaig",lat:56.9136,lon:-5.8406},{name:"Lochailort",lat:56.8812,lon:-5.6633},
@@ -370,7 +406,7 @@ function appendMapTiles(svg,view){
    failed++;
    if(failed===total&&loaded===0){
     $("geoStatus").textContent="Map offline";
-    $("geoNote").textContent="Map imagery could not load. Check your connection. Station positions and a simplified railway guide remain visible.";
+    $("geoNote").textContent="Map imagery could not load. Check your connection. Station positions remain visible.";
    }
   });
   group.appendChild(image);
@@ -397,10 +433,9 @@ function makeMap(view){
  for(const coast of geoMapFeatures.coast)appendMapPath(water,coast,view.bounds,"#3f6e91",1.4);
  svg.appendChild(water);
  const railShadow=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")"});const rail=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")"});
- const actualRail=geoMapFeatures.rail.length>0;
- const railSegments=actualRail?geoMapFeatures.rail:[geoRailGuide];
- for(const way of railSegments){appendMapPath(railShadow,way,view.bounds,"#071a13",actualRail?15:11);appendMapPath(rail,way,view.bounds,actualRail?"#4ce69a":"#73cfa1",actualRail?9:5)}
- if(!actualRail)rail.setAttribute("stroke-dasharray","12 9");
+ // The rail overlay is drawn ONLY from actual OSM way geometries.
+ // No straight-line connections between station coordinates.
+ for(const way of geoMapFeatures.rail){appendMapPath(railShadow,way,view.bounds,"#071a13",15);appendMapPath(rail,way,view.bounds,"#4ce69a",9)}
  svg.appendChild(railShadow);svg.appendChild(rail);
  for(const station of geoStations){
   if(station.lat>view.bounds.north||station.lat<view.bounds.south||station.lon<view.bounds.west||station.lon>view.bounds.east)continue;
@@ -497,7 +532,7 @@ async function loadGeoRailway(){
  const hasRail=geoMapFeatures.rail.length>0,hasWater=geoMapFeatures.water.length>0;
  if(hasRail&&hasWater){$("geoStatus").textContent="OSM detail loaded";$("geoNote").textContent="Mapped railway and loch boundaries from OpenStreetMap, including multipolygon shoreline segments. The diagram uses geographic coordinates, with photo pins as approximate areas. No API key required. © OpenStreetMap contributors."}
  else if(hasRail||hasWater){$("geoStatus").textContent="Partial geography";$("geoNote").textContent="Some OpenStreetMap geometry is temporarily unavailable. Showing "+(hasRail?"railway":"loch outlines")+" from available or cached geographic data. Try refreshing later."}
- else {$("geoStatus").textContent="Geometry unavailable";$("geoNote").textContent="Detailed railway geometry is unavailable. The dashed green line is only an approximate station-to-station guide; road and loch detail comes from OpenStreetMap tiles."}
+ else {$("geoStatus").textContent="Geometry unavailable";$("geoNote").textContent="Detailed railway geometry is temporarily unavailable. No invented railway path is drawn; roads and lochs remain available from OpenStreetMap tiles."}
 }
 /* Geographic map interaction: preserve real OSM geometry, change viewport only. */
 function geoZoom(factor,nx=.5,ny=.5){
