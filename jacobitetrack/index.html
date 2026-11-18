@@ -2,18 +2,107 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#122820"><title>JacobiteTrack</title><meta name="description" content="JacobiteTrack experimental Fort William to Mallaig train progress and viewpoint countdown. Not live tracking."><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><style>
 :root{font-family:system-ui,-apple-system,Arial;color:#16332b;background:#edf2ed}*{box-sizing:border-box}body{margin:0}header{background:#122820;color:white;padding:18px 18px 15px}header strong{font-size:23px;letter-spacing:-.9px}header span{color:#e5c17a}header small{display:block;color:#b7c8bb;margin-top:4px;font-size:11px;letter-spacing:1.6px}main{max-width:1100px;margin:auto;padding:14px}.banner{background:#fdf0d5;color:#765216;padding:12px;border:1px solid #e9d3a1;border-radius:12px;font-size:13px;line-height:1.5;margin-bottom:14px}.hero{padding:13px 3px 15px}.hero h1{font-size:28px;letter-spacing:-1px;margin:2px 0}.hero p{margin:5px 0;color:#597269;font-size:14px}.grid{display:grid;grid-template-columns:1.55fr 1fr;gap:14px}.panel{background:#fff;border:1px solid #d7e2d9;border-radius:17px;overflow:hidden;margin-bottom:14px;box-shadow:0 4px 16px #15352b0b}.pad{padding:17px}.eyebrow{font-size:10px;letter-spacing:1.6px;color:#70847a;font-weight:800;text-transform:uppercase}.heading{font-size:20px;margin:6px 0 14px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{font-size:12px;color:#61746b;font-weight:600}select,input[type=time],input[type=url]{width:100%;border:1px solid #cfded4;border-radius:10px;padding:10px;background:white;color:#17342b;font-size:15px;margin-top:5px}#map{height:350px;background:#c1d1c4}.mapnote{font-size:11px;color:#6c7e73;padding:10px 14px}input[type=range]{width:100%;accent-color:#19795c}button{border:0;border-radius:9px;background:#163d31;color:white;padding:11px 15px;font-size:14px;font-weight:700;cursor:pointer}button.secondary{background:#e5eee6;color:#184734}button.active{background:#ba8e3f;color:white}.buttons{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.summary{display:grid;grid-template-columns:1fr 1fr;gap:9px}.metric{padding:12px;background:#f4f8f4;border-radius:12px}.metric b{font-size:24px;display:block;margin:6px 0}.metric small{color:#71847b}.big{font-size:56px;line-height:1;font-weight:800;letter-spacing:-3px;margin:10px 0;color:#1b6a50}.muted{color:#697d73;font-size:13px;line-height:1.5}.status{display:inline-block;font-size:11px;letter-spacing:.8px;font-weight:800;padding:7px 9px;border-radius:9px;background:#f4e5c4;color:#74511a}#stations{padding:0;margin:10px 0;list-style:none}#stations li{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #edf1eb;font-size:13px}#stations li.current{color:#137858;font-weight:800}.row{display:flex;gap:9px;align-items:center;justify-content:space-between}.hidden{display:none!important}.caption{font-size:12px;color:#70847a}footer{font-size:12px;color:#789088;padding:10px 3px 20px}@media(max-width:740px){.grid{display:block}#map{height:310px}.hero h1{font-size:26px}.pad{padding:15px}header strong{font-size:22px}} 
 
-.train-map-icon{background:transparent;border:0!important}.train-map-icon .train-halo{position:absolute;left:0;top:0;width:30px;height:30px;background:rgba(255,205,76,.45);border-radius:50%;animation:trainBlink 1.3s ease-out infinite}.train-map-icon .train-circle{position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;border:2px solid #4c3a15;background:#ffc74c;box-shadow:0 0 0 2px #fff7db,0 3px 8px #18201966;display:flex;justify-content:center;align-items:center}.train-map-icon .train-direction{font-size:18px;line-height:1;font-weight:900;color:#3f331b}@keyframes trainBlink{0%{transform:scale(.65);opacity:1}75%{transform:scale(1.8);opacity:0}100%{opacity:0}}</style></head><body><header><strong>Jacobite<span>Track</span></strong><small>THE HIGHLAND TRAIN COMPANION</small></header><main><div class="grid"><div><section class="panel"><div class="pad"><div class="row"><div><div class="eyebrow">The railway</div><h2 class="heading">All trains on the line</h2></div><span class="status" id="stateBadge">SIMULATION</span></div><div class="fields" style="grid-template-columns:1fr"><select id="direction" class="hidden" aria-hidden="true"><option value="out">Fort William → Mallaig</option><option value="back">Mallaig → Fort William</option></select><label class="field">Photography viewpoint<select id="viewpoint"><option value="Glenfinnan Viaduct">Glenfinnan Viaduct</option><option value="Lochailort">Lochailort</option><option value="Arisaig">Arisaig</option><option value="Morar">Morar</option></select></label></div></div><div id="map"></div><div class="mapnote" id="mapStatus">Loading actual railway track geometry from OpenStreetMap…</div><div class="pad"><div class="row"><b>Journey progress</b><b id="pct">38%</b></div><input id="progress" type="range" min="0" max="100" value="38"><div class="row caption"><span id="from">Fort William</span><span id="to">Mallaig</span></div></div></section><section class="panel pad"><div class="eyebrow">Test the tracker</div><h2 class="heading">Tracking controls</h2><div class="buttons"><button id="simulation" class="active">Simulation</button><button id="observations" class="secondary">Station observation</button><button id="json" class="secondary">JSON feed</button></div><div id="simPane"><p class="muted">Play a 40-second mock journey or move the train manually.</p><button id="play">▶ Play simulation</button></div><div id="boardPane" class="hidden"><p class="muted">Select a station where a train was confirmed. This uses sample timing interpolation, not GPS.</p><label class="field">Confirmed station<select id="stationSelect"></select></label><label class="field">Observation time (UK)<input id="observationTime" type="time"></label><div class="buttons"><button id="applyObservation">Use observation</button></div><p id="observed" class="caption">No observations recorded.</p></div><div id="jsonPane" class="hidden"><p class="muted">Enter your own authorised HTTPS JSON feed. Expected fields: progress (0–100), direction (out/back), updated (ISO timestamp). Never enter API secrets here.</p><label class="field">Feed URL<input id="feedUrl" type="url" placeholder="https://example.org/api/train"></label><div class="buttons"><button id="getFeed">Fetch JSON</button></div><p id="feedState" class="caption">No feed connected.</p></div></section></div><div><section class="panel pad"><div class="eyebrow">Your photography viewpoint</div><h2 class="heading" id="pointName">Glenfinnan Viaduct</h2><div class="status" id="confidence">DEMO ESTIMATE</div><div class="big"><span id="eta">—</span><span style="font-size:18px;letter-spacing:0"> min</span></div><p class="muted" id="etaNote">Estimated time until train passes the viewpoint</p><div class="summary"><div class="metric"><small>Illustrative walk</small><b id="walk">15 min</b></div><div class="metric"><small>After walking</small><b id="margin">—</b></div></div><p class="caption" id="quality">Demo estimates only. This does not show an actual train.</p></section><section class="panel pad"><div class="eyebrow">Fort William–Mallaig</div><h2 class="heading">Station timeline</h2><ul id="stations"></ul><p class="caption">Times are only a sample model, not a current timetable.</p></section></div></div><footer>Independent prototype. Not affiliated with any railway operator. No payments or live tracking available.</footer></main><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
+.train-map-icon{background:transparent;border:0!important}.train-map-icon .train-halo{position:absolute;left:0;top:0;width:30px;height:30px;background:rgba(255,205,76,.45);border-radius:50%;animation:trainBlink 1.3s ease-out infinite}.train-map-icon .train-circle{position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;border:2px solid #4c3a15;background:#ffc74c;box-shadow:0 0 0 2px #fff7db,0 3px 8px #18201966;display:flex;justify-content:center;align-items:center}.train-map-icon .train-direction{font-size:18px;line-height:1;font-weight:900;color:#3f331b}@keyframes trainBlink{0%{transform:scale(.65);opacity:1}75%{transform:scale(1.8);opacity:0}100%{opacity:0}}
+
+:root{font-family:-apple-system,BlinkMacSystemFont,system-ui,Arial;color:#e6ecf4;background:#0a1018}
+body{margin:0;background:#0a1018;color:#e6ecf4}
+header{background:#0a1018;padding:18px 18px 13px;border-bottom:1px solid #1e2a38}
+header strong{color:#f3f7fb}header span{color:#66afff}header small{color:#7f92a8}
+main{max-width:980px;padding:12px}
+.panel{background:#141b25;border:1px solid #2c3546;border-radius:26px;box-shadow:none;margin-bottom:14px}
+.pad{padding:17px}
+.heading{font-size:21px;color:#f2f6fa}
+.eyebrow{color:#95a4b9}
+.field{color:#9aa8bb}
+select,input{background:#0c131d;color:#eaf1f9;border:1px solid #2a3647}
+#map{height:440px;background:#111c28}
+.mapnote{color:#9caabe;background:#141b25;padding:11px 17px;border-top:1px solid #2c3546;line-height:1.45}
+.status{background:#213b36;color:#8bdabb;font-size:12px;font-weight:700;border-radius:25px;padding:7px 12px}
+.grid{grid-template-columns:1fr 1fr}
+.metric{background:#101722;border:1px solid #253142;border-radius:13px}
+.metric b{color:#f3f6fa}
+.metric small,.muted,.caption{color:#a1adbd}
+.big{color:#7cb8ff}
+.train-list{display:grid;gap:9px;margin:14px 0}
+.train-row{display:flex;align-items:center;gap:11px;padding:11px 12px;border:1px solid #2b374a;border-radius:13px;background:#111925}
+.train-row .trainid{font-weight:800;font-size:14px;color:#f0f5fc}
+.train-row .trainmeta{font-size:12px;color:#9eabba;margin-top:4px}
+.train-row .trainarrow{margin-left:auto;font-size:20px;color:#74b9ff}
+.train-row .train-dot{width:13px;height:13px;flex:none;border-radius:50%;background:#57c3a4;box-shadow:0 0 0 3px #286c6055;animation:trainListBlink 1.25s infinite}
+@keyframes trainListBlink{50%{opacity:.28;box-shadow:0 0 0 7px #286c6011}}
+.train-map-icon .train-circle{background:#53a9f8;border-color:#123e66;box-shadow:0 0 0 2px #e6f5ff,0 4px 8px #07131f99}
+.train-map-icon .train-halo{background:#57b4ff70}
+.train-map-icon .train-direction{color:#0c2d4c}
+@media(max-width:760px){.grid{display:block}#map{height:390px}main{padding:10px}.panel{border-radius:23px}}
+</style></head><body><header><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE · TRAIN TRACKING</small></header>
+<main>
+<section class="panel primary">
+<div class="pad">
+<div class="row"><div><div class="eyebrow">TRAIN MAP</div><h2 class="heading">Fort William — Mallaig</h2></div><span class="status" id="stateBadge">DEMO</span></div>
+<label class="field" style="margin:10px 0 0">Photography viewpoint<select id="viewpoint"><option value="Glenfinnan Viaduct">Glenfinnan Viaduct</option><option value="Lochailort">Lochailort</option><option value="Arisaig">Arisaig</option><option value="Morar">Morar</option></select></label>
+<select id="direction" class="hidden"><option value="out">Fort William → Mallaig</option><option value="back">Mallaig → Fort William</option></select>
+</div>
+<div id="map"></div>
+<div class="mapnote" id="mapStatus">Loading railway track geometry…</div>
+</section>
+<div class="grid">
+<section class="panel pad">
+<div class="row"><div><div class="eyebrow">TRAIN SERVICES</div><h2 class="heading">Trains on the line</h2></div><span class="status" id="dataStatus">Demo data</span></div>
+<div id="trainList" class="train-list"></div>
+<p class="caption" id="dataDetail">Example train positions only. Live railway data has not been connected.</p>
+</section>
+<section class="panel pad">
+<div class="eyebrow">PHOTOGRAPHY VIEWPOINT</div><h2 class="heading" id="pointName">Glenfinnan Viaduct</h2>
+<div class="row" style="margin:10px 0 0"><span class="status" id="confidence">DEMO PREDICTION</span></div>
+<div class="big"><span id="eta">—</span><span style="font-size:18px;letter-spacing:0"> min</span></div><p class="muted" id="etaNote">Time to next train</p>
+<div class="summary"><div class="metric"><small>Estimated walk</small><b id="walk">15 min</b></div><div class="metric"><small>Time remaining after walk</small><b id="margin">—</b></div></div>
+<p class="caption" id="quality">Forecasts are illustrative until a railway data feed is connected.</p>
+</section></div>
+<footer>Independent prototype. Not affiliated with any railway operator. No live train feed or ticketing functionality is currently enabled.</footer>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
 const stations=[{n:"Fort William",lat:56.8201,lon:-5.1061,t:0},{n:"Banavie",lat:56.8447,lon:-5.0965,t:8},{n:"Corpach",lat:56.843,lon:-5.122,t:12},{n:"Loch Eil Outward Bound",lat:56.857,lon:-5.188,t:21},{n:"Glenfinnan",lat:56.8717,lon:-5.449,t:33},{n:"Lochailort",lat:56.8812,lon:-5.6633,t:51},{n:"Beasdale",lat:56.899,lon:-5.763,t:62},{n:"Arisaig",lat:56.9136,lon:-5.8406,t:70},{n:"Morar",lat:56.9685,lon:-5.8212,t:83},{n:"Mallaig",lat:57.0052,lon:-5.829,t:96}], viewpoints={"Glenfinnan Viaduct":{t:31,lat:56.876,lon:-5.431,walk:15},"Lochailort":{t:51,lat:56.8812,lon:-5.6633,walk:8},"Arisaig":{t:70,lat:56.9136,lon:-5.8406,walk:10},"Morar":{t:83,lat:56.9685,lon:-5.8212,walk:12}};
 const $=id=>document.getElementById(id);let progress=38,mode="simulation",timer,latest=null;const map=typeof L!=="undefined"?L.map("map",{zoomControl:true}):null;let trainMarker=null,viewMarker=null,railLayer=null,railSegments=null,railOutline=null;const extraTrains=[{id:"SR102",direction:"back",position:77,marker:null},{id:"SR103",direction:"out",position:8,marker:null}];if(map){L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap contributors",maxZoom:18}).addTo(map);const pts=stations.map(s=>[s.lat,s.lon]);stations.forEach(s=>L.circleMarker([s.lat,s.lon],{radius:4,color:"#214d3e",fillColor:"#fff",fillOpacity:1}).bindPopup(s.n).addTo(map));map.fitBounds(pts,{padding:[25,25]});}
 function approximateCoordsAt(min){let i=1;while(i<stations.length-1&&stations[i].t<min)i++;const a=stations[i-1],b=stations[i],f=Math.max(0,Math.min(1,(min-a.t)/(b.t-a.t)));return[a.lat+(b.lat-a.lat)*f,a.lon+(b.lon-a.lon)*f]}
 function coordsAt(min){if(!railSegments)return approximateCoordsAt(min);let i=1;while(i<stations.length-1&&stations[i].t<min)i++;const seg=railSegments[i-1];if(!seg||seg.length<2)return approximateCoordsAt(min);const ratio=Math.max(0,Math.min(1,(min-stations[i-1].t)/(stations[i].t-stations[i-1].t)));const lengths=[0];for(let j=1;j<seg.length;j++){const a=seg[j-1],b=seg[j];lengths.push(lengths.at(-1)+Math.hypot((b[0]-a[0])*111,(b[1]-a[1])*111*Math.cos(a[0]*Math.PI/180)));}const target=lengths.at(-1)*ratio;let k=1;while(k<lengths.length-1&&lengths[k]<target)k++;const f=(target-lengths[k-1])/Math.max(0.00000001,lengths[k]-lengths[k-1]);return[seg[k-1][0]+(seg[k][0]-seg[k-1][0])*f,seg[k-1][1]+(seg[k][1]-seg[k-1][1])*f]}
 function trainIcon(direction){return L.divIcon({className:"train-map-icon",iconSize:[30,30],iconAnchor:[15,15],html:'<span class="train-halo"></span><span class="train-circle"><span class="train-direction">'+(direction==="back"?"←":"→")+"</span></span>"})}
-function render(){const back=$("direction").value==="back",p=progress,forwardMin=(back?100-p:p)*.96,view=viewpoints[$("viewpoint").value],left=(back?forwardMin-view.t:view.t-forwardMin);$("pct").textContent=Math.round(p)+"%";$("progress").value=p;$("from").textContent=back?"Mallaig":"Fort William";$("to").textContent=back?"Fort William":"Mallaig";$("pointName").textContent=$("viewpoint").value;$("walk").textContent=view.walk+" min";$("eta").textContent=left>0?Math.ceil(left):"0";$("etaNote").textContent=left<0?"Train has passed this viewpoint in the model":left===0?"Train at viewpoint in model":"Estimated time until the model train passes";$("margin").textContent=left>0?(Math.ceil(left-view.walk)+" min"):"Passed";$("confidence").textContent=mode==="simulation"?"DEMO ESTIMATE":mode==="board"?"INFERRED FROM ENTRY":"FEED / UNVERIFIED";$("stateBadge").textContent=mode==="simulation"?"SIMULATION":mode==="board"?"MANUAL ESTIMATE":"JSON FEED";$("stations").innerHTML=(back?[...stations].reverse():stations).map(s=>{let t=back?96-s.t:s.t;return '<li class="'+(p>=100*t/96?"current":"")+'"><span>'+s.n+'</span><span>'+Math.round(t/96*100)+'% route</span></li>'}).join("");if(map){const pos=coordsAt(forwardMin);if(!trainMarker){trainMarker=L.marker(pos,{icon:trainIcon(back?"back":"out")}).addTo(map).bindPopup("Simulated train 1 — not live")}else{trainMarker.setLatLng(pos);trainMarker.setIcon(trainIcon(back?"back":"out"))}extraTrains.forEach((t)=>{const point=coordsAt(t.position*.96);if(!t.marker)t.marker=L.marker(point,{icon:trainIcon(t.direction)}).addTo(map).bindPopup(t.id+" — simulated, not live");else t.marker.setLatLng(point)});if(!viewMarker)viewMarker=L.circleMarker([view.lat,view.lon],{radius:9,color:"#e7ad37",weight:3,fillOpacity:.8}).addTo(map).bindPopup($("viewpoint").value);else viewMarker.setLatLng([view.lat,view.lon]);} }
-$("direction").onchange=render;$("viewpoint").onchange=render;$("progress").oninput=e=>{progress=+e.target.value;render()};$("play").onclick=()=>{if(timer){clearInterval(timer);timer=null;$("play").textContent="▶ Play simulation";return}if(progress>=100)progress=0;timer=setInterval(()=>{progress=Math.min(100,progress+0.25);extraTrains.forEach(t=>t.position=(t.position+(t.direction==="back"?-0.17:0.17)+100)%100);render();if(progress===100){clearInterval(timer);timer=null;$("play").textContent="▶ Play simulation"}},100);$("play").textContent="Ⅱ Pause simulation"};
-function setMode(m){mode=m;for(const [k,id] of [["simulation","simPane"],["board","boardPane"],["feed","jsonPane"]]){const chosen=(m===k);$(id).classList.toggle("hidden",!chosen);$(k==="board"?"observations":k==="feed"?"json":"simulation").className=chosen?"active":"secondary"}render()}
-$("simulation").onclick=()=>setMode("simulation");$("observations").onclick=()=>setMode("board");$("json").onclick=()=>setMode("feed");$("stationSelect").innerHTML=stations.map(s=>'<option>'+s.n+'</option>').join("");$("applyObservation").onclick=()=>{const name=$("stationSelect").value,station=stations.find(s=>s.n===name),back=$("direction").value==="back";progress=Math.round((back?96-station.t:station.t)/.96);$("observed").textContent="Manual observation: "+name+" at "+($("observationTime").value||"unspecified time")+". ETA model remains illustrative.";render()};
-$("getFeed").onclick=async()=>{const url=$("feedUrl").value.trim();if(!url||!/^https:\/\//.test(url)){ $("feedState").textContent="Enter a valid HTTPS feed URL.";return}try{const response=await fetch(url);if(!response.ok)throw Error("HTTP "+response.status);const data=await response.json();if(typeof data.progress!=="number"||data.progress<0||data.progress>100)throw Error("Missing valid progress 0–100");progress=data.progress;const age=data.updated?Date.now()-Date.parse(data.updated):Infinity;$("feedState").textContent="Feed: "+(data.source||"unspecified source")+"; "+(age>900000?"STALE/UNKNOWN": "received")+"; "+(data.quality||"quality unverified");render()}catch(e){$("feedState").textContent="Feed error: "+e.message}};
-render();
+const LIVE_FEED_URL=""; // Configure an authorised, server-side railway JSON endpoint here, never an API key.
+let externalTrains=null;let feedLastUpdated=null;let dataTimer=null;
+function listTrainData(){
+ if(externalTrains)return externalTrains;
+ return [{id:"Demo 1",direction:"out",position:progress},{id:"Demo 2",direction:extraTrains[0].direction,position:extraTrains[0].position},{id:"Demo 3",direction:extraTrains[1].direction,position:extraTrains[1].position}];
+}
+function render(){
+ const v=viewpoints[$("viewpoint").value], trains=listTrainData();
+ $("pointName").textContent=$("viewpoint").value;$("walk").textContent=v.walk+" min";
+ $("stateBadge").textContent=externalTrains?"BOARD ESTIMATES":"DEMO — NOT LIVE";
+ $("dataStatus").textContent=externalTrains?"Railway feed":"Simulation";
+ $("confidence").textContent=externalTrains?"STATION-BASED ESTIMATE":"DEMO PREDICTION";
+ const approaching=trains.map(t=>{const minute=t.position*.96;const diff=t.direction==="back"?minute-v.t:v.t-minute;return {...t,remaining:diff}}).filter(t=>t.remaining>=0).sort((a,b)=>a.remaining-b.remaining);
+ const next=approaching[0];
+ $("eta").textContent=next?Math.ceil(next.remaining):"—";
+ $("etaNote").textContent=next?"Estimated time until next "+(externalTrains?"reported":"simulated")+" service":"No approaching service shown";
+ $("margin").textContent=next?Math.ceil(next.remaining-v.walk)+" min":"—";
+ $("quality").textContent=externalTrains?"Based on railway reporting points; not a GPS position. Last report: "+(feedLastUpdated||"unknown"):"No live data connected. These times and trains are illustrative.";
+ $("dataDetail").textContent=externalTrains?"Train positions are inferred from station reports, not directly measured GPS positions.":"All listed trains are simulations, not actual ScotRail or Jacobite services.";
+ $("trainList").innerHTML=trains.map(t=>'<div class="train-row"><span class="train-dot"></span><div><div class="trainid">'+String(t.id).replaceAll("<","&lt;")+'</div><div class="trainmeta">'+(t.direction==="back"?"Mallaig → Fort William":"Fort William → Mallaig")+' · '+Math.round(t.position)+'% of route</div></div><span class="trainarrow">'+(t.direction==="back"?"←":"→")+'</span></div>').join("")||'<p class="muted">No services reported.</p>';
+ if(map){
+   const previous=[trainMarker,...extraTrains.map(t=>t.marker)].filter(Boolean);previous.forEach(m=>map.removeLayer(m));trainMarker=null;extraTrains.forEach(t=>t.marker=null);
+   trains.forEach((t,i)=>{const m=L.marker(coordsAt(t.position*.96),{icon:trainIcon(t.direction)}).addTo(map).bindPopup(String(t.id)+" — "+(externalTrains?"reported estimate":"demo only"));if(i===0)trainMarker=m;else if(i<=2)extraTrains[i-1].marker=m});
+   if(!viewMarker)viewMarker=L.circleMarker([v.lat,v.lon],{radius:9,color:"#66b8ff",weight:3,fillOpacity:.75}).addTo(map).bindPopup($("viewpoint").value);else viewMarker.setLatLng([v.lat,v.lon]);
+ }
+}
+$("viewpoint").onchange=render;
+async function pollLiveFeed(){
+ if(!LIVE_FEED_URL)return;
+ try{const response=await fetch(LIVE_FEED_URL,{cache:"no-store"});if(!response.ok)throw Error("HTTP "+response.status);const feed=await response.json();
+ if(!Array.isArray(feed.trains))throw Error("Missing trains array");
+ const valid=feed.trains.filter(t=>typeof t.progress==="number"&&t.progress>=0&&t.progress<=100&&(t.direction==="back"||t.direction==="out")).map(t=>({id:String(t.id||"Train"),position:t.progress,direction:t.direction}));
+ if(feed.updated&&Date.now()-Date.parse(feed.updated)>600000)throw Error("Data over 10 minutes old");
+ externalTrains=valid;feedLastUpdated=feed.updated?new Date(feed.updated).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):"unknown";render();
+ }catch(e){externalTrains=null;$("dataStatus").textContent="Feed unavailable";$("dataDetail").textContent="Railway feed unavailable: "+e.message+". Showing clearly labelled demonstration trains.";render();}
+}
+render();if(LIVE_FEED_URL){pollLiveFeed();dataTimer=setInterval(pollLiveFeed,60000)}
 async function loadRailGeometry(){
  if(!map)return;
  const msg=$("mapStatus");const query='[out:json][timeout:50];way["railway"="rail"](56.805,-5.93,57.025,-5.06);out geom;';
@@ -39,8 +128,8 @@ async function loadRailGeometry(){
   }
   const segments=[];for(let i=1;i<anchors.length;i++){const route=shortest(anchors[i-1].key,anchors[i].key);if(!route||route.length<2)throw Error('Railway segments not connected');segments.push(route)}
   railSegments=segments;
-  railOutline=L.polyline(segments.flat(),{color:"#59441a",weight:11,opacity:.95,lineJoin:"round",lineCap:"round"}).addTo(map);railLayer=L.polyline(segments.flat(),{color:"#ffd56b",weight:6,opacity:1,lineJoin:"round",lineCap:"round"}).addTo(map);
-  msg.textContent="Railway track: highlighted OpenStreetMap alignment. All three train markers are simulations, not live services. © OpenStreetMap contributors.";
+  railOutline=L.polyline(segments.flat(),{color:"#071729",weight:17,opacity:1,lineJoin:"round",lineCap:"round"}).addTo(map);railLayer=L.polyline(segments.flat(),{color:"#37b6ff",weight:10,opacity:1,lineJoin:"round",lineCap:"round"}).addTo(map);
+  msg.textContent="Railway track: highlighted OpenStreetMap alignment. Train markers are simulations, not live services. © OpenStreetMap contributors.";
   render();
  }catch(error){
   msg.textContent='Exact rail track geometry could not be loaded ('+error.message+'). Train is estimated between stations only; no straight connecting route is drawn.';
