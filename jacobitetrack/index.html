@@ -115,10 +115,16 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
  .app-header .header-countdown>strong{font-size:25px}
  .app-header .header-brand>strong{font-size:18px}
 }
+
+.app-header .header-countdown{gap:2px}
+.app-header .header-countdown>span{font-size:clamp(10px,2.6vw,13px);font-weight:800;letter-spacing:.15px;color:#ebf4ff}
+.app-header .header-countdown>small{font-size:clamp(10px,2.5vw,12px);color:#a6c3d8;line-height:1.15}
+.app-header .header-countdown>strong{font-size:clamp(32px,8vw,43px);line-height:1.05;letter-spacing:-1px;color:#89caff}
+#geoTile .geo-load-status{pointer-events:none;font-size:10px;background:#122132e8;color:#bed6e9;padding:5px 8px;border:1px solid #2e4357;border-radius:9px;max-width:55%}
+@media(max-width:440px){.app-header .header-countdown>span{font-size:10px}.app-header .header-countdown>small{font-size:10px}.app-header .header-countdown>strong{font-size:32px}}
 </style></head><body>
 <header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><div class="header-countdown" aria-label="Next train at Glenfinnan Viaduct">
-<span>NEXT TRAIN · GLENFINNAN VIADUCT</span>
-<strong id="headerCountdown">—:—</strong>
+<span>GLENFINNAN VIADUCT</span><small>Next train countdown</small><strong id="headerCountdown">—:—</strong>
 </div></div></header><main>
 <section class="tile" id="proximityTile" aria-label="Nearest railway information">
 <div class="proximity-item"><div class="proximity-label">NEAREST STATION</div><strong id="nearestStation">—</strong></div>
@@ -140,18 +146,17 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 </section>
 <section class="tile" id="geoTile">
 <div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with real roads, lochs, a bold green railway and station markers; drag or pinch to navigate"></div>
-<div class="geo-map-overlay"><div class="geo-overlay-heading"><div class="eyebrow">GEOGRAPHIC MAP</div><strong>West Highland Line</strong><span class="small" id="geoStatus">Loading map</span></div>
+<div class="geo-map-overlay"><span class="geo-load-status" id="geoStatus">Loading map</span>
 <div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view">Reset</button></div></div>
 <div class="geo-map-bottom"><span><i class="geo-line"></i> Railway</span><span>Drag · Pinch to zoom</span></div>
 <p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
 </section>
 <div class="cols">
-<section class="tile"><div class="eyebrow">GLENFINNAN VIADUCT</div><div class="heading">Next train countdown</div><div class="value countdown" id="glenCountdown">—</div><div class="muted" id="glenStatus">Waiting for verified passage time.</div><div class="notice" id="delayStatus">Service updates are unavailable until an authorised railway feed is connected.</div></section>
-<section class="tile"><div class="eyebrow">YOUR VIEWPOINT</div><div class="heading">Photography timing</div><label class="field">Location<select id="viewpoint"><option value="glenfinnan">Glenfinnan Viaduct</option><option value="lochailort">Lochailort</option><option value="arisaig">Arisaig</option><option value="morar">Morar</option></select></label><div class="value countdown" id="eta">—</div><div class="muted" id="etaNote">No verified train ETA available.</div><div class="small" id="etaSource"></div>
+<section class="tile"><div class="eyebrow">YOUR VIEWPOINT</div><div class="heading">Photography timing</div><label class="field">Location<select id="viewpoint"><option value="glenfinnan">Glenfinnan Viaduct</option><option value="lochailort">Lochailort</option><option value="arisaig">Arisaig</option><option value="morar">Morar</option><option value="glenStation">Glenfinnan station</option><option value="beasdale">Beasdale</option><option value="eilt">Loch Eilt</option><option value="corpach">Corpach</option><option value="mallaig">Mallaig</option><option value="fortWilliam">Fort William</option></select></label><div class="value countdown" id="eta">—</div><div class="muted" id="etaNote">No verified train ETA available.</div><div class="small" id="etaSource"></div>
 <div class="alerts" style="margin-top:12px"><select id="alertLead" aria-label="Train approaching warning"><option value="5">5 min alert</option><option value="10" selected>10 min alert</option><option value="15">15 min alert</option><option value="20">20 min alert</option></select><button class="button" id="notifyBtn">Enable alerts</button><button class="button" id="disableAlertsBtn" style="display:none">Disable alerts</button></div><div class="small" id="notificationStatus">Checking whether background notifications are available…</div><div class="small" id="installHint"></div>
 </section></div>
 <div class="cols">
-<section class="tile"><div class="eyebrow">PHOTOGRAPHY SPOTS</div><div class="heading">Recommended viewpoints</div><div id="spots"></div><p class="small">Coordinates and walking times are approximate starting points; check access and local signage. Never enter railway property.</p></section>
+<section class="tile"><div class="eyebrow">PHOTOGRAPHY SPOTS</div><div class="heading">10 potential viewpoints</div><div id="spots"></div><p class="small">Candidate photo locations, not an online-researched ranking. Access and sightlines are unverified; stay on public paths and never enter railway property.</p></section>
 <section class="tile"><div class="eyebrow">PHOTOGRAPHY CONDITIONS</div><div class="heading">Glenfinnan weather & light</div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="notice" id="photoAdvice">Forecast conditions will appear here when available.</div><div class="small" id="weatherTime"></div></section>
 </div>
 <footer>Independent photography project. Railway ETAs and delays are shown only when supplied by a verified authorised feed. No simulated train movements. In-app navigation and alerts do not link to external websites. Location and weather estimates are not safety guarantees.</footer>
@@ -168,7 +173,13 @@ const siteData={
  glenfinnan:{name:"Glenfinnan Viaduct",lat:56.8733,lon:-5.4317,walk:15,note:"Hillside viewpoints overlook the viaduct. Allow extra time for the uphill approach.",parking:"Glenfinnan visitor parking",parkingLat:56.8718,parkingLon:-5.4375},
  lochailort:{name:"Lochailort",lat:56.8812,lon:-5.6633,walk:8,note:"Railway scenery around the village. Public access and sightlines need local checking.",parking:"Lochailort village",parkingLat:56.8806,parkingLon:-5.6635},
  arisaig:{name:"Arisaig",lat:56.9136,lon:-5.8406,walk:10,note:"Station-area railway views; remain on public paths and respect railway boundaries.",parking:"Arisaig station area",parkingLat:56.9136,parkingLon:-5.8406},
- morar:{name:"Morar",lat:56.9685,lon:-5.8212,walk:8,note:"Railway views close to Morar station; keep clear of railway land.",parking:"Morar station area",parkingLat:56.9685,parkingLon:-5.8212}
+ morar:{name:"Morar",lat:56.9685,lon:-5.8212,walk:8,note:"Railway views close to Morar station; keep clear of railway land.",parking:"Morar station area",parkingLat:56.9685,parkingLon:-5.8212},
+ glenStation:{name:"Glenfinnan station",lat:56.8724,lon:-5.4490,walk:null,note:"Historic railway station setting. Verify photography access and sightlines.",parking:"Glenfinnan station",parkingLat:56.8724,parkingLon:-5.4490},
+ beasdale:{name:"Beasdale station",lat:56.8990,lon:-5.7630,walk:null,note:"Rural railway station backdrop. Check public access and safe viewpoints.",parking:"Beasdale station area",parkingLat:56.8990,parkingLon:-5.7630},
+ eilt:{name:"Loch Eilt roadside area",lat:56.881,lon:-5.580,walk:null,note:"Mountain-and-loch backdrop near the line. Parking and sightlines require verification.",parking:"A830 area (access to verify)",parkingLat:56.881,parkingLon:-5.580},
+ corpach:{name:"Corpach station",lat:56.8430,lon:-5.1220,walk:null,note:"Station-area scenery near Loch Linnhe. Respect railway boundaries.",parking:"Corpach station",parkingLat:56.8430,parkingLon:-5.1220},
+ mallaig:{name:"Mallaig station",lat:57.0052,lon:-5.8290,walk:null,note:"Harbour terminus setting. Check station rules and public access.",parking:"Mallaig station",parkingLat:57.0052,parkingLon:-5.8290},
+ fortWilliam:{name:"Fort William station",lat:56.8201,lon:-5.1061,walk:null,note:"Jacobite starting station. Platform photography rules may apply.",parking:"Fort William station",parkingLat:56.8201,parkingLon:-5.1061}
 };
 let services=[],source=null,feedUpdated=null,feedError=null,weatherData=null,notificationAllowed=false;
 let lastAlerts=new Set();
@@ -207,21 +218,21 @@ function getApproaching(id){
 function render(){
  $("trains").innerHTML=services.map(t=>'<g transform="translate('+xAt(t.progress)+',83)"><circle class="train-halo" r="15"/><circle class="train-body" r="13"/><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+'</title></g>').join("");
  let glen=getApproaching("glenfinnan")[0];
- $("glenCountdown").textContent=glen?timeText(glen.remaining):"—";
+
  $("headerCountdown").textContent=glen?countdownClock(glen.remaining):"—:—";
  updateHeaderDistances();
- $("glenStatus").textContent=glen?"Next confirmed-source prediction: "+glen.id:"No verified Glenfinnan passage prediction available.";
+
  const id=$("viewpoint").value;const next=getApproaching(id)[0];
  $("eta").textContent=next?timeText(next.remaining):"—";
  $("etaNote").textContent=next?"Expected passing time based on railway reports":"No verified passing time for this viewpoint.";
  $("etaSource").textContent=source?"Source: "+source+" · Updated "+new Date(feedUpdated).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}):"Railway feed not connected.";
  const delayed=services.filter(t=>Number.isFinite(t.delayMinutes)&&t.delayMinutes>0);
  const cancelled=services.filter(t=>t.cancelled);
- $("delayStatus").textContent=!source?"Train delays and changes unavailable until a railway feed is connected.":cancelled.length?cancelled.length+" reported cancellation(s).":delayed.length?delayed.map(t=>t.id+": "+t.delayMinutes+" min late").join(" · "):"No delays reported in the connected feed; this does not guarantee trains are on time.";
+
  renderSpots();maybeNotify();
 }
 function renderSpots(){
- $("spots").innerHTML=Object.entries(siteData).map(([key,v])=>'<div class="spot"><h3>'+safe(v.name)+'</h3><div class="sub">'+safe(v.note)+'</div><div class="sub" style="margin-top:6px">Typical approach from '+safe(v.parking)+': approximately '+v.walk+' min (unverified)</div><div class="tag" style="margin-top:7px">Train ETA: '+timeText(getApproaching(key)[0]?.remaining)+'</div><div class="actions"><button class="button" data-spot="'+key+'">Select viewpoint</button><button class="button" data-walk="'+key+'">Walking directions</button></div></div>').join("");
+ $("spots").innerHTML=Object.entries(siteData).map(([key,v])=>'<div class="spot"><h3>'+safe(v.name)+'</h3><div class="sub">'+safe(v.note)+'</div><div class="sub" style="margin-top:6px">Starting area: '+safe(v.parking)+(Number.isFinite(v.walk)?' · about '+v.walk+' min (unverified)':' · walk not verified')+'</div><div class="tag" style="margin-top:7px">Train ETA: '+timeText(getApproaching(key)[0]?.remaining)+'</div><div class="actions"><button class="button" data-spot="'+key+'">Select viewpoint</button><button class="button" data-walk="'+key+'">Walking directions</button></div></div>').join("");
  $("spots").querySelectorAll("[data-spot]").forEach(b=>b.onclick=()=>{$("viewpoint").value=b.dataset.spot;render()});
  $("spots").querySelectorAll("[data-walk]").forEach(b=>b.onclick=()=>showDirections(b.dataset.walk));
 }
@@ -464,7 +475,7 @@ function makeMap(view){
  const railShadow=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")"});const rail=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")"});
  // The rail overlay is drawn ONLY from actual OSM way geometries.
  // No straight-line connections between station coordinates.
- for(const way of geoMapFeatures.rail){appendMapPath(railShadow,way,view.bounds,"#071a13",15);appendMapPath(rail,way,view.bounds,"#4ce69a",9)}
+ for(const way of geoMapFeatures.rail){appendMapPath(railShadow,way,view.bounds,"#08170f",23);appendMapPath(rail,way,view.bounds,"#42ef92",14)}
  svg.appendChild(railShadow);svg.appendChild(rail);
  for(const station of geoStations){
   if(station.lat>view.bounds.north||station.lat<view.bounds.south||station.lon<view.bounds.west||station.lon>view.bounds.east)continue;
