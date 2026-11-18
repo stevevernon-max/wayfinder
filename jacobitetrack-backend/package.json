@@ -1,0 +1,9 @@
+{
+  "name": "jacobitetrack-push-service",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "latest",
+    "web-push": "^3.6.7"
+  }
+}
