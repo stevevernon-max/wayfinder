@@ -128,12 +128,16 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 #trackerTile .user-ripple{fill:#39a4ff;opacity:.55}
 #trackerTile .user-spot{fill:#278eff;stroke:#e9f9ff;stroke-width:3}
 #trackerTile #gpsDistanceTag{text-rendering:geometricPrecision}
+
+#trackerTile .gps-line-pill{background:#163c33;color:#b2f1d8;border:1px solid #347e66;font-size:clamp(10px,2.8vw,12px);font-weight:800;letter-spacing:0;padding:7px 9px;white-space:nowrap}
+#trackerTile .row>.gps-line-pill{flex-shrink:0}
+@media(max-width:380px){#trackerTile .gps-line-pill{font-size:10px;padding:6px 7px}}
 </style></head><body>
 <header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><div class="header-countdown" aria-label="Next train at Glenfinnan Viaduct">
 <span>GLENFINNAN VIADUCT</span><small>Next train countdown</small><strong id="headerCountdown">—:—</strong>
 </div></div></header><main>
 <section class="tile" id="trackerTile">
-<div class="row"><div><div class="eyebrow">TRAIN TRACKER</div><div class="heading">Mallaig ↔ Fort William</div></div><span class="badge" id="feedBadge">Checking</span></div>
+<div class="row"><div><div class="eyebrow">TRAIN TRACKER</div><div class="heading">Mallaig ↔ Fort William</div></div><span class="badge gps-line-pill" id="gpsLineBadge">Finding location…</span><span id="feedBadge" hidden aria-live="polite">Checking</span></div>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Six station schematic railway from Mallaig to Fort William" role="img">
 <line class="bed" x1="13" y1="83" x2="887" y2="83"/><line class="track" x1="13" y1="83" x2="887" y2="83"/>
 <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="9" y="45" text-anchor="start">Mallaig</text>
@@ -145,10 +149,6 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 <g id="trains"></g>
 <g id="userPosition" style="display:none" aria-label="Your approximate closest position on railway schematic">
  <circle class="user-ripple" r="22"/><circle class="user-spot" r="12"/><circle class="user-center" r="4"/>
-</g>
-<g id="gpsDistanceTag" style="display:none">
- <rect x="-115" y="4" width="230" height="32" rx="15" fill="#173a52" stroke="#5fb9f4" stroke-width="2"/>
- <text id="gpsDistanceText" x="0" y="25" text-anchor="middle" fill="#eaf7ff" font-size="19" font-weight="750">— km from line</text>
 </g>
 </svg></div>
 <div class="muted" id="trackStatus">Checking railway data…</div>
@@ -399,17 +399,16 @@ function projectToMappedRail(lat,lon){
  return Number.isFinite(best.distance)?best:{...projectToRail(lat,lon),verified:false};
 }
 function updateTrackerGps(){
- const dot=$("userPosition"),tag=$("gpsDistanceTag");
- if(!userCoords){dot.style.display="none";tag.style.display="none";return}
+ const dot=$("userPosition"),pill=$("gpsLineBadge");
+ if(!userCoords){dot.style.display="none";pill.textContent="Location unavailable";pill.removeAttribute("title");return}
  const result=projectToMappedRail(userCoords.lat,userCoords.lon);
- if(!Number.isFinite(result.x)||!Number.isFinite(result.distance)){dot.style.display="none";tag.style.display="none";return}
+ if(!Number.isFinite(result.x)||!Number.isFinite(result.distance)){dot.style.display="none";pill.textContent="Distance unavailable";return}
  const x=Math.max(35,Math.min(865,result.x));
  dot.setAttribute("transform","translate("+x.toFixed(1)+",83)");
  dot.style.display="";
- tag.setAttribute("transform","translate("+Math.max(119,Math.min(781,x)).toFixed(1)+",0)");
- tag.style.display="";
  const km=result.distance/1000;
- $("gpsDistanceText").textContent=(km<10?km.toFixed(1):Math.round(km).toString())+" km from "+(result.verified?"railway":"approx. line");
+ pill.textContent="You are "+km.toFixed(1)+"km from line";
+ pill.title=result.verified?"Distance to nearest mapped railway track":"Estimated distance based on approximate station-to-station alignment";
 }
 function startGps(){
  if(!navigator.geolocation){$("gpsIndicator").classList.add("error");$("gpsStatus").textContent="GPS unavailable";return;}
