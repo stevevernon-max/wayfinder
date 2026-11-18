@@ -295,7 +295,7 @@ function appendMapTiles(svg,view){
  const b=view.bounds;
  const group=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")",class:"geo-basemap"});
  const visibleSpan=Math.max(.005,b.east-b.west);
- const z=Math.max(8,Math.min(16,Math.round(Math.log2(360/visibleSpan/3.2))));
+ const z=Math.max(9,Math.min(16,Math.round(Math.log2(360*3.2/visibleSpan))));
  const n=2**z;
  const atNW=mercator(b.north,b.west,z),atSE=mercator(b.south,b.east,z);
  const width=900/(atSE.x-atNW.x),height=360/(atSE.y-atNW.y);
