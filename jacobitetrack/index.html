@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1017"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="./icon.svg"><title>JacobiteTrack</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b1017"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="./icon.svg"><title>JacobiteTrack</title>
 <style>
 :root{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:#0b1017;color:#edf3fa}*{box-sizing:border-box}
 body{margin:0;background:#0b1017}header{padding:16px;background:#101721;border-bottom:1px solid #273143}header strong{font-size:23px;letter-spacing:-.8px}header strong span{color:#69b9fd}header small{display:block;font-size:11px;color:#91a1b6;letter-spacing:1.5px;margin-top:3px}
@@ -24,7 +24,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 .geo-pin{width:17px;height:17px;background:#153b59;border:3px solid #91caff;border-radius:50%;box-shadow:0 0 0 3px #65baff33}
 .geo-gps{width:16px;height:16px;background:#348cff;border:3px solid white;border-radius:50%;box-shadow:0 0 0 5px #348cff4d;animation:geopulse 1.65s ease-in-out infinite}
 @keyframes geopulse{50%{box-shadow:0 0 0 11px #348cff0c}}
-.leaflet-container{font-family:inherit;background:#0f1d2b!important}
+
 .geo-map .leaflet-tile-pane img.leaflet-tile{filter:brightness(.68) invert(.94) hue-rotate(180deg) saturate(.7) contrast(.9)}
 .geo-map .leaflet-control-attribution{background:#142131d9!important;color:#adc0d1!important;font-size:9px!important}
 .geo-map .leaflet-control-attribution a{color:#9cd3ff!important}
@@ -50,7 +50,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 </section>
 <section class="tile" id="geoTile">
 <div class="row"><div><div class="eyebrow">GEOGRAPHIC MAPS</div><div class="heading">Railway & photo locations</div></div><span class="badge" id="geoStatus">Loading</span></div>
-<div class="geo-panel"><div class="geo-heading">West Highland Line overview</div><div class="geo-map" id="mapOverview" role="application" aria-label="Interactive geographic overview map of the Fort William to Mallaig railway"></div><div class="geo-legend"><span><i class="geo-line"></i>Railway (OpenStreetMap)</span><span><i class="geo-dot"></i>Photography area</span></div></div>
+<div class="geo-panel"><div class="geo-heading">West Highland Line overview · key-free</div><div class="geo-map" id="mapOverview" role="application" aria-label="Interactive geographic overview map of the Fort William to Mallaig railway"></div><div class="geo-legend"><span><i class="geo-line"></i>Railway (OpenStreetMap)</span><span><i class="geo-dot"></i>Photography area</span></div></div>
 <div class="geo-panel"><div class="geo-heading">Glenfinnan Viaduct & Loch Shiel</div><div class="geo-map geo-close" id="mapClose" role="application" aria-label="Interactive geographic map showing Glenfinnan and Loch Shiel"></div><div class="geo-legend"><span><i class="geo-line"></i>Railway</span><span><i class="geo-dot"></i>Approximate photography area</span></div></div>
 <p class="small" id="geoNote">Maps use real geographic basemap data. Railway alignment is requested from OpenStreetMap; photography areas are approximate and require local access checks. No invented train movements are shown.</p>
 </section>
@@ -64,7 +64,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 <section class="tile"><div class="eyebrow">PHOTOGRAPHY CONDITIONS</div><div class="heading">Glenfinnan weather & light</div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="notice" id="photoAdvice">Forecast conditions will appear here when available.</div><div class="small" id="weatherTime"></div></section>
 </div>
 <footer>Independent photography project. Railway ETAs and delays are shown only when supplied by a verified authorised feed. No simulated train movements. In-app navigation and alerts do not link to external websites. Location and weather estimates are not safety guarantees.</footer>
-</main><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
+</main><script>
 "use strict";
 // Configure an authorised backend which returns train reports, ETAs and delays.
 // Never put provider credentials in client-side JavaScript.
@@ -257,66 +257,92 @@ $("locateBtn").addEventListener("click",startGps);
 startGps();
 
 
-/* Real geographic map layers: railways are requested as OSM way geometries. */
-let geoMaps=[],geoGpsMarkers=[],geoTrackLayers=[];
+/* API-key-free native geographic SVG rendering.
+ * Geo data is fetched from OpenStreetMap Overpass. No map tile provider or SDK. */
+const geoViews=[
+ {id:"mapOverview",bounds:{north:57.025,south:56.8,west:-5.94,east:-5.04},label:"Overview"},
+ {id:"mapClose",bounds:{north:56.900,south:56.846,west:-5.52,east:-5.39},label:"Glenfinnan"}
+];
 const geoStations=[
  {name:"Mallaig",lat:57.0052,lon:-5.8290},{name:"Morar",lat:56.9685,lon:-5.8212},
  {name:"Arisaig",lat:56.9136,lon:-5.8406},{name:"Lochailort",lat:56.8812,lon:-5.6633},
  {name:"Glenfinnan",lat:56.8717,lon:-5.4490},{name:"Fort William",lat:56.8201,lon:-5.1061}
 ];
-function geoPhotoIcon(){return L.divIcon({className:"",html:'<div class="geo-pin"></div>',iconSize:[17,17],iconAnchor:[8,8]})}
-function geoLocationIcon(){return L.divIcon({className:"",html:'<div class="geo-gps"></div>',iconSize:[16,16],iconAnchor:[8,8]})}
-function updateGeoLocation(lat,lon){
- if(!geoMaps.length)return;
- geoMaps.forEach((map,index)=>{
-  if(!geoGpsMarkers[index])geoGpsMarkers[index]=L.marker([lat,lon],{icon:geoLocationIcon(),zIndexOffset:1000}).addTo(map).bindPopup("Your current GPS location");
-  else geoGpsMarkers[index].setLatLng([lat,lon]);
- });
+const mapLabels=[
+ {name:"Loch Morar",lat:56.958,lon:-5.731},
+ {name:"Loch Eilt",lat:56.881,lon:-5.58},
+ {name:"Loch Shiel",lat:56.858,lon:-5.457},
+ {name:"Loch Linnhe",lat:56.851,lon:-5.24}
+];
+const geoMapFeatures={rail:[],water:[]};let geoLocation=null;
+const svgNS="http://www.w3.org/2000/svg";
+function geoPoint(lat,lon,b){return [((lon-b.west)/(b.east-b.west))*900,((b.north-lat)/(b.north-b.south))*360]}
+function geoSVG(tag,attrs={}){const e=document.createElementNS(svgNS,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,String(v));return e}
+function appendMapPath(g,points,b,stroke,weight,fill="none"){
+ const clipped=points.filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon));
+ if(clipped.length<2)return;
+ const d=clipped.map((p,i)=>{const [x,y]=geoPoint(p.lat,p.lon,b);return (i?"L":"M")+x.toFixed(2)+" "+y.toFixed(2)}).join(" ");
+ g.appendChild(geoSVG("path",{d,stroke,"stroke-width":weight,fill,"stroke-linecap":"round","stroke-linejoin":"round"}));
 }
-function initialiseGeoMaps(){
- if(typeof L==="undefined"){$("geoStatus").textContent="Map unavailable";$("geoNote").textContent="The geographic map library could not load. Please check your connection.";return}
- const background="https://tile.openstreetmap.org/{z}/{x}/{y}.png";
- const opts={zoomControl:true,attributionControl:true,scrollWheelZoom:false};
- const overview=L.map("mapOverview",opts),close=L.map("mapClose",opts);
- geoMaps=[overview,close];
- geoMaps.forEach(map=>L.tileLayer(background,{maxZoom:19,attribution:"&copy; OpenStreetMap contributors",crossOrigin:true}).addTo(map));
- overview.fitBounds([[56.809,-5.905],[57.02,-5.055]],{padding:[16,16]});
- close.setView([56.873,-5.447],12);
- for(const site of Object.values(siteData)){
-  for(const map of geoMaps)L.marker([site.lat,site.lon],{icon:geoPhotoIcon()}).addTo(map).bindPopup(site.name+" — approximate photography area. Check access on site.");
+function makeMap(view){
+ const container=$(view.id);container.textContent="";
+ const svg=geoSVG("svg",{viewBox:"0 0 900 360",preserveAspectRatio:"xMidYMid meet",width:"100%",height:"100%",role:"img","aria-label":view.label+" geographic map; accurate station coordinates and live OpenStreetMap railway geometry"});
+ svg.style.display="block";svg.style.background="#142235";
+ const water=geoSVG("g");for(const way of geoMapFeatures.water)appendMapPath(water,way,view.bounds,"#376082",1,"#1b3851");svg.appendChild(water);
+ const railShadow=geoSVG("g");const rail=geoSVG("g");
+ for(const way of geoMapFeatures.rail){appendMapPath(railShadow,way,view.bounds,"#0b1920",9);appendMapPath(rail,way,view.bounds,"#65bc99",5)}
+ svg.appendChild(railShadow);svg.appendChild(rail);
+ for(const station of geoStations){
+  if(station.lat>view.bounds.north||station.lat<view.bounds.south||station.lon<view.bounds.west||station.lon>view.bounds.east)continue;
+  const [x,y]=geoPoint(station.lat,station.lon,view.bounds);
+  svg.appendChild(geoSVG("circle",{cx:x,cy:y,r:8,fill:"#17344d",stroke:"#91caff","stroke-width":3}));
+  const label=geoSVG("text",{x:x+10,y:y-12,fill:"#f2f5ff","font-size":16,"font-weight":"600",stroke:"#0a1525","stroke-width":3,"paint-order":"stroke"});label.textContent=station.name;svg.appendChild(label);
  }
- $("geoStatus").textContent="Loading railway";
- loadGeoRailway();
- setTimeout(()=>geoMaps.forEach(map=>map.invalidateSize()),200);
+ for(const label of mapLabels){
+  if(label.lat>view.bounds.north||label.lat<view.bounds.south||label.lon<view.bounds.west||label.lon>view.bounds.east)continue;
+  const [x,y]=geoPoint(label.lat,label.lon,view.bounds);
+  const node=geoSVG("text",{x,y,fill:"#7197bd","font-size":15,"font-style":"italic","text-anchor":"middle"});node.textContent=label.name;svg.appendChild(node);
+ }
+ for(const site of Object.values(siteData)){
+  if(site.lat>view.bounds.north||site.lat<view.bounds.south||site.lon<view.bounds.west||site.lon>view.bounds.east)continue;
+  const [x,y]=geoPoint(site.lat,site.lon,view.bounds);
+  const marker=geoSVG("circle",{cx:x,cy:y,r:11,fill:"#152d49",stroke:"#7ec4ff","stroke-width":3});
+  const title=geoSVG("title");title.textContent=site.name+" (approximate photo location)";marker.appendChild(title);svg.appendChild(marker);
+  svg.appendChild(geoSVG("circle",{cx:x,cy:y,r:4,fill:"#9cd6ff"}));
+ }
+ if(geoLocation){
+  const {lat,lon}=geoLocation;
+  if(lat<=view.bounds.north&&lat>=view.bounds.south&&lon<=view.bounds.east&&lon>=view.bounds.west){
+   const [x,y]=geoPoint(lat,lon,view.bounds);const ring=geoSVG("circle",{cx:x,cy:y,r:13,fill:"#388aff",opacity:.3});
+   const animate=geoSVG("animate",{attributeName:"r",values:"9;22;9",dur:"1.6s",repeatCount:"indefinite"});ring.appendChild(animate);svg.appendChild(ring);
+   svg.appendChild(geoSVG("circle",{cx:x,cy:y,r:7,fill:"#368bff",stroke:"#fff","stroke-width":2}));
+  }
+ }
+ const note=geoSVG("text",{x:18,y:345,fill:"#95acc8","font-size":12});note.textContent="Geographic coordinates · OpenStreetMap data";svg.appendChild(note);
+ container.appendChild(svg);
 }
+function renderGeoMaps(){geoViews.forEach(makeMap)}
+function updateGeoLocation(lat,lon){geoLocation={lat,lon};renderGeoMaps()}
 async function loadGeoRailway(){
- const query='[out:json][timeout:35];(way["railway"="rail"](56.803,-5.93,57.025,-5.05););out geom;';
+ const query='[out:json][timeout:35];(way["railway"="rail"](56.8,-5.94,57.025,-5.04);way["natural"="water"](56.8,-5.94,57.025,-5.04););out geom;';
  const endpoints=["https://overpass.kumi.systems/api/interpreter","https://overpass.private.coffee/api/interpreter"];
- let geometry=null,problem="";
+ $("geoStatus").textContent="Loading real geometry";
  for(const endpoint of endpoints){
   try{
-   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),17000);
-   let response;
-   try{response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"data="+encodeURIComponent(query),signal:controller.signal})}finally{clearTimeout(timeout)}
-   if(!response.ok)throw Error("Railway service returned "+response.status);
-   const json=await response.json();
-   geometry=(json.elements||[]).filter(x=>x.type==="way"&&Array.isArray(x.geometry)&&x.geometry.length>1).map(x=>x.geometry.map(p=>[p.lat,p.lon]));
-   if(!geometry.length)throw Error("No railway segments returned");
-   break;
-  }catch(error){geometry=null;problem=error.message}
+   const controller=new AbortController(),time=setTimeout(()=>controller.abort(),15000);
+   let result;try{result=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"data="+encodeURIComponent(query),signal:controller.signal})}finally{clearTimeout(time)}
+   if(!result.ok)throw Error("HTTP "+result.status);
+   const data=await result.json(),elements=(data.elements||[]).filter(e=>e.type==="way"&&Array.isArray(e.geometry)&&e.geometry.length>=2);
+   const railway=elements.filter(e=>e.tags?.railway==="rail").map(e=>e.geometry);
+   if(!railway.length)throw Error("No railway returned");
+   geoMapFeatures.rail=railway;geoMapFeatures.water=elements.filter(e=>e.tags?.natural==="water"&&e.geometry.length>3).map(e=>e.geometry);
+   renderGeoMaps();$("geoStatus").textContent="OSM railway loaded";
+   $("geoNote").textContent="Geographic map using OpenStreetMap railway and water geometries, with approximate photography pins. No map tile service or API key is used. OpenStreetMap contributors.";
+   return;
+  }catch(err){$("geoNote").textContent="Railway geometry temporarily unavailable ("+err.message+"). Showing geographic station positions; retrying another OpenStreetMap source."}
  }
- if(!geometry){
-  $("geoStatus").textContent="Basemap only";
-  $("geoNote").textContent="The maps show real geographic basemap data, but detailed OSM railway geometry could not be downloaded ("+problem+"). No approximate straight-line railway overlay has been substituted.";
-  return;
- }
- for(const map of geoMaps){
-  L.polyline(geometry,{color:"#0a1c28",weight:9,opacity:.95,interactive:false,lineCap:"round",lineJoin:"round"}).addTo(map);
-  geoTrackLayers.push(L.polyline(geometry,{color:"#5caf91",weight:5,opacity:.97,interactive:false,lineCap:"round",lineJoin:"round"}).addTo(map));
- }
- $("geoStatus").textContent="OSM track loaded";
- $("geoNote").textContent="Actual OpenStreetMap railway track geometry displayed (may include branch tracks). Photo markers are approximate coordinates, not verified public walking paths. Map data and basemap © OpenStreetMap contributors.";
+ $("geoStatus").textContent="Geometry unavailable";$("geoNote").textContent="Real station coordinates are shown, but OpenStreetMap railway geometry could not be downloaded. No invented track has been drawn. Retry later.";
 }
-initialiseGeoMaps();
+renderGeoMaps();loadGeoRailway();
 
 </script></body></html>
