@@ -90,12 +90,40 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 #geoTile{min-height:0}
 #geoTile .geo-map{height:clamp(220px,35vh,380px)}
 @media(max-width:740px){#geoTile .geo-map{height:clamp(220px,34vh,350px)}}
+
+/* Streamlined header: countdown remains top-right; station and train get a readable compact tile. */
+.app-header .header-countdown{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;min-width:0;text-align:right}
+.app-header .header-countdown>span{font-size:9px;letter-spacing:.55px;color:#a8c0d3;font-weight:800;white-space:nowrap}
+.app-header .header-countdown>strong{font-size:30px;line-height:1;color:#8bcaff;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+#proximityTile{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;padding:9px 12px;margin-bottom:8px;border-radius:15px}
+#proximityTile .proximity-item{min-width:0;display:flex;flex-direction:column;gap:4px;padding:3px 9px}
+#proximityTile .proximity-item:first-child{border-right:1px solid #334155;padding-left:3px}
+#proximityTile .proximity-label{font-size:10px;letter-spacing:.7px;font-weight:800;color:#a4b8ca}
+#proximityTile strong{font-size:clamp(13px,3.6vw,18px);font-weight:750;color:#eff6ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;line-height:1.4}
+#proximityTile .proximity-item:last-child strong{color:#86c8ff}
+@media(max-width:520px){
+ .app-header .header-main{gap:7px}
+ .app-header .header-countdown>span{font-size:8px;letter-spacing:0}
+ .app-header .header-countdown>strong{font-size:27px}
+ .app-header .header-brand>strong{font-size:clamp(18px,5.4vw,21px)}
+ #proximityTile{padding:8px 9px}
+ #proximityTile .proximity-label{font-size:9px}
+ #proximityTile .proximity-item{padding:3px 8px}
+}
+@media(max-width:380px){
+ .app-header .header-countdown>span{font-size:7px}
+ .app-header .header-countdown>strong{font-size:25px}
+ .app-header .header-brand>strong{font-size:18px}
+}
 </style></head><body>
-<header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><div class="header-metrics" aria-label="Live railway information">
-<div class="header-metric"><span>Viaduct next train in</span><strong id="headerCountdown">—:—</strong></div>
-<div class="header-metric"><span>Nearest station</span><strong id="nearestStation">—</strong></div>
-<div class="header-metric"><span>Nearest train</span><strong id="nearestTrain">—</strong></div>
+<header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><div class="header-countdown" aria-label="Next train at Glenfinnan Viaduct">
+<span>NEXT TRAIN · GLENFINNAN VIADUCT</span>
+<strong id="headerCountdown">—:—</strong>
 </div></div></header><main>
+<section class="tile" id="proximityTile" aria-label="Nearest railway information">
+<div class="proximity-item"><div class="proximity-label">NEAREST STATION</div><strong id="nearestStation">—</strong></div>
+<div class="proximity-item"><div class="proximity-label">NEAREST TRAIN</div><strong id="nearestTrain">—</strong></div>
+</section>
 <section class="tile" id="trackerTile">
 <div class="row"><div><div class="eyebrow">TRAIN TRACKER</div><div class="heading">Mallaig ↔ Fort William</div></div><span class="badge" id="feedBadge">Checking</span></div>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Six station schematic railway from Mallaig to Fort William" role="img">
