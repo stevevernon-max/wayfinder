@@ -11,6 +11,23 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 @keyframes pulse{0%{transform:scale(.8);opacity:.6}80%{transform:scale(2);opacity:0}100%{opacity:0}}.gps-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;color:#8fc8ff;font-size:12px;line-height:1.5}.value{font-size:45px;font-weight:800;color:#81beff;letter-spacing:-2px;line-height:1.1;margin:10px 0}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}.spot{background:#111924;border:1px solid #324154;border-radius:14px;padding:13px;margin:10px 0}.spot h3{font-size:15px;margin:0 0 5px}.spot .sub{font-size:12px;color:#a7b8c9;line-height:1.5}.spot .actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.tag{color:#95cfff;font-size:11px;font-weight:750;letter-spacing:.3px}.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.stat{padding:12px;background:#101823;border:1px solid #2b394b;border-radius:13px}.stat b{font-size:21px;display:block;margin-top:5px}.notice{padding:10px 12px;background:#122338;border:1px solid #2a4d6e;border-radius:11px;color:#c4def4;font-size:12px;line-height:1.5;margin-top:10px}.weather-row{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}.weather-row>div{min-width:75px}.weather-row b{font-size:19px}.alerts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.alerts select{max-width:135px;margin:0;padding:9px}.alert-tag{font-size:12px;color:#9cb1c8}.countdown{font-variant-numeric:tabular-nums}footer{padding:2px 4px 25px;color:#8295ad;font-size:11px;line-height:1.55}
 @media(max-width:760px){.cols{grid-template-columns:1fr}.tile{border-radius:20px}main{padding:10px}.station-label{font-size:18px}}
+
+/* Tile 2: geographic maps using OpenStreetMap railway geometry */
+.geo-panel{border:1px solid #324055;border-radius:17px;overflow:hidden;background:#111a26;margin:13px 0}
+.geo-heading{padding:11px 13px;font-size:14px;font-weight:750;color:#e8eef7}
+.geo-map{height:265px;width:100%;background:#111c2b;z-index:0}
+.geo-map.geo-close{height:230px}
+.geo-legend{display:flex;flex-wrap:wrap;align-items:center;gap:15px;border-top:1px solid #314158;background:#111924;color:#a1b2c7;padding:9px 12px;font-size:11px}
+.geo-legend span{display:flex;align-items:center;gap:7px}
+.geo-line{width:21px;height:4px;border-radius:4px;background:#56ad91;display:inline-block}
+.geo-dot{width:11px;height:11px;border:2px solid #95ceff;background:#163d60;border-radius:50%;display:inline-block}
+.geo-pin{width:17px;height:17px;background:#153b59;border:3px solid #91caff;border-radius:50%;box-shadow:0 0 0 3px #65baff33}
+.geo-gps{width:16px;height:16px;background:#348cff;border:3px solid white;border-radius:50%;box-shadow:0 0 0 5px #348cff4d;animation:geopulse 1.65s ease-in-out infinite}
+@keyframes geopulse{50%{box-shadow:0 0 0 11px #348cff0c}}
+.leaflet-container{font-family:inherit;background:#0f1d2b!important}
+.leaflet-control-zoom a{background:#162233!important;color:#cde5fa!important;border-color:#34445c!important}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#182333;color:#e8f2ff}
+@media(max-width:740px){.geo-map{height:220px}.geo-map.geo-close{height:205px}.geo-heading{font-size:13px}.geo-panel{margin:11px 0}}
 </style></head><body>
 <header><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small></header><main>
 <section class="tile">
@@ -28,6 +45,12 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 <div class="muted" id="trackStatus">Checking railway data…</div>
 <div class="gps-row"><span id="gpsStatus">Locating you…</span><button class="button" id="locateBtn">Locate me</button></div>
 </section>
+<section class="tile" id="geoTile">
+<div class="row"><div><div class="eyebrow">GEOGRAPHIC MAPS</div><div class="heading">Railway & photo locations</div></div><span class="badge" id="geoStatus">Loading</span></div>
+<div class="geo-panel"><div class="geo-heading">West Highland Line overview</div><div class="geo-map" id="mapOverview" role="application" aria-label="Interactive geographic overview map of the Fort William to Mallaig railway"></div><div class="geo-legend"><span><i class="geo-line"></i>Railway (OpenStreetMap)</span><span><i class="geo-dot"></i>Photography area</span></div></div>
+<div class="geo-panel"><div class="geo-heading">Glenfinnan Viaduct & Loch Shiel</div><div class="geo-map geo-close" id="mapClose" role="application" aria-label="Interactive geographic map showing Glenfinnan and Loch Shiel"></div><div class="geo-legend"><span><i class="geo-line"></i>Railway</span><span><i class="geo-dot"></i>Approximate photography area</span></div></div>
+<p class="small" id="geoNote">Maps use real geographic basemap data. Railway alignment is requested from OpenStreetMap; photography areas are approximate and require local access checks. No invented train movements are shown.</p>
+</section>
 <div class="cols">
 <section class="tile"><div class="eyebrow">GLENFINNAN VIADUCT</div><div class="heading">Next train countdown</div><div class="value countdown" id="glenCountdown">—</div><div class="muted" id="glenStatus">Waiting for verified passage time.</div><div class="notice" id="delayStatus">Service updates are unavailable until an authorised railway feed is connected.</div></section>
 <section class="tile"><div class="eyebrow">YOUR VIEWPOINT</div><div class="heading">Photography timing</div><label class="field">Location<select id="viewpoint"><option value="glenfinnan">Glenfinnan Viaduct</option><option value="lochailort">Lochailort</option><option value="arisaig">Arisaig</option><option value="morar">Morar</option></select></label><div class="value countdown" id="eta">—</div><div class="muted" id="etaNote">No verified train ETA available.</div><div class="small" id="etaSource"></div>
@@ -38,7 +61,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 <section class="tile"><div class="eyebrow">PHOTOGRAPHY CONDITIONS</div><div class="heading">Glenfinnan weather & light</div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="notice" id="photoAdvice">Forecast conditions will appear here when available.</div><div class="small" id="weatherTime"></div></section>
 </div>
 <footer>Independent photography project. Railway ETAs and delays are shown only when supplied by a verified authorised feed. No simulated train movements. In-app navigation and alerts do not link to external websites. Location and weather estimates are not safety guarantees.</footer>
-</main><script>
+</main><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
 "use strict";
 // Configure an authorised backend which returns train reports, ETAs and delays.
 // Never put provider credentials in client-side JavaScript.
@@ -215,6 +238,7 @@ function startGps(){
  $("gpsStatus").textContent="Finding your location…";
  gpsWatch=navigator.geolocation.watchPosition(position=>{
    userCoords={lat:position.coords.latitude,lon:position.coords.longitude};
+   updateGeoLocation(userCoords.lat,userCoords.lon);
    const result=projectToRail(position.coords.latitude,position.coords.longitude);
    if(!Number.isFinite(result.x))return;
    const dot=$("userPosition");dot.setAttribute("transform","translate("+result.x+",83)");dot.style.display="";
@@ -228,5 +252,68 @@ function startGps(){
 }
 $("locateBtn").addEventListener("click",startGps);
 startGps();
+
+
+/* Real geographic map layers: railways are requested as OSM way geometries. */
+let geoMaps=[],geoGpsMarkers=[],geoTrackLayers=[];
+const geoStations=[
+ {name:"Mallaig",lat:57.0052,lon:-5.8290},{name:"Morar",lat:56.9685,lon:-5.8212},
+ {name:"Arisaig",lat:56.9136,lon:-5.8406},{name:"Lochailort",lat:56.8812,lon:-5.6633},
+ {name:"Glenfinnan",lat:56.8717,lon:-5.4490},{name:"Fort William",lat:56.8201,lon:-5.1061}
+];
+function geoPhotoIcon(){return L.divIcon({className:"",html:'<div class="geo-pin"></div>',iconSize:[17,17],iconAnchor:[8,8]})}
+function geoLocationIcon(){return L.divIcon({className:"",html:'<div class="geo-gps"></div>',iconSize:[16,16],iconAnchor:[8,8]})}
+function updateGeoLocation(lat,lon){
+ if(!geoMaps.length)return;
+ geoMaps.forEach((map,index)=>{
+  if(!geoGpsMarkers[index])geoGpsMarkers[index]=L.marker([lat,lon],{icon:geoLocationIcon(),zIndexOffset:1000}).addTo(map).bindPopup("Your current GPS location");
+  else geoGpsMarkers[index].setLatLng([lat,lon]);
+ });
+}
+function initialiseGeoMaps(){
+ if(typeof L==="undefined"){$("geoStatus").textContent="Map unavailable";$("geoNote").textContent="The geographic map library could not load. Please check your connection.";return}
+ const background="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+ const opts={zoomControl:true,attributionControl:false,scrollWheelZoom:false};
+ const overview=L.map("mapOverview",opts),close=L.map("mapClose",opts);
+ geoMaps=[overview,close];
+ geoMaps.forEach(map=>L.tileLayer(background,{subdomains:"abcd",maxZoom:18,crossOrigin:true}).addTo(map));
+ overview.fitBounds([[56.809,-5.905],[57.02,-5.055]],{padding:[16,16]});
+ close.setView([56.873,-5.447],12);
+ for(const site of Object.values(siteData)){
+  for(const map of geoMaps)L.marker([site.lat,site.lon],{icon:geoPhotoIcon()}).addTo(map).bindPopup(site.name+" — approximate photography area. Check access on site.");
+ }
+ $("geoStatus").textContent="Loading railway";
+ loadGeoRailway();
+ setTimeout(()=>geoMaps.forEach(map=>map.invalidateSize()),200);
+}
+async function loadGeoRailway(){
+ const query='[out:json][timeout:35];(way["railway"="rail"](56.803,-5.93,57.025,-5.05););out geom;';
+ const endpoints=["https://overpass.kumi.systems/api/interpreter","https://overpass.private.coffee/api/interpreter"];
+ let geometry=null,problem="";
+ for(const endpoint of endpoints){
+  try{
+   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),17000);
+   let response;
+   try{response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"data="+encodeURIComponent(query),signal:controller.signal})}finally{clearTimeout(timeout)}
+   if(!response.ok)throw Error("Railway service returned "+response.status);
+   const json=await response.json();
+   geometry=(json.elements||[]).filter(x=>x.type==="way"&&Array.isArray(x.geometry)&&x.geometry.length>1).map(x=>x.geometry.map(p=>[p.lat,p.lon]));
+   if(!geometry.length)throw Error("No railway segments returned");
+   break;
+  }catch(error){geometry=null;problem=error.message}
+ }
+ if(!geometry){
+  $("geoStatus").textContent="Basemap only";
+  $("geoNote").textContent="The maps show real geographic basemap data, but detailed OSM railway geometry could not be downloaded ("+problem+"). No approximate straight-line railway overlay has been substituted.";
+  return;
+ }
+ for(const map of geoMaps){
+  L.polyline(geometry,{color:"#0a1c28",weight:9,opacity:.95,interactive:false,lineCap:"round",lineJoin:"round"}).addTo(map);
+  geoTrackLayers.push(L.polyline(geometry,{color:"#5caf91",weight:5,opacity:.97,interactive:false,lineCap:"round",lineJoin:"round"}).addTo(map));
+ }
+ $("geoStatus").textContent="OSM track loaded";
+ $("geoNote").textContent="Actual OpenStreetMap railway track geometry displayed (may include branch tracks). Photo markers are approximate coordinates, not verified public walking paths. Map data © OpenStreetMap contributors; basemap © CARTO.";
+}
+initialiseGeoMaps();
 
 </script></body></html>
