@@ -6,7 +6,7 @@ body{margin:0;background:#0b1017}header{padding:16px;background:#101721;border-b
 main{max-width:1080px;margin:auto;padding:11px}.tile{background:#171d27;border:1px solid #30394a;border-radius:22px;padding:16px;margin-bottom:12px}.row{display:flex;justify-content:space-between;align-items:center;gap:9px}.eyebrow{font-size:10px;letter-spacing:1.5px;font-weight:800;color:#9aaabd}.heading{font-size:21px;font-weight:750;letter-spacing:-.5px;margin:5px 0 10px}.badge{font-size:11px;background:#44341e;color:#f3cc91;border-radius:25px;padding:7px 9px;font-weight:750;white-space:nowrap}.muted{font-size:13px;line-height:1.5;color:#9caec1}.small{font-size:12px;color:#95a6bc;line-height:1.55}.field{display:block;font-size:12px;font-weight:700;color:#a4b4c6;margin:11px 0}
 select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:11px;width:100%;font-size:15px;padding:11px;margin-top:6px}
 .button{background:#183e61;color:#c0e4ff;border:1px solid #426990;border-radius:12px;padding:11px 13px;font-size:13px;font-weight:750;cursor:pointer}.button:disabled{opacity:.4;cursor:not-allowed}
-.rail-scroll{overflow:hidden;margin:6px 0;width:100%}.rail-svg{display:block;width:100%;height:auto}.bed{stroke:#0b141b;stroke-width:15;stroke-linecap:round}.track{stroke:#398f72;stroke-width:10;stroke-linecap:round}.node{stroke:#429b7d;stroke-width:5;fill:#171d27}.station-label{fill:#e8edf4;font-size:25px;font-weight:600}
+.rail-scroll{overflow:hidden;margin:6px -16px;width:calc(100% + 32px)}.rail-svg{display:block;width:100%;height:auto}.bed{stroke:#0b141b;stroke-width:15;stroke-linecap:round}.track{stroke:#398f72;stroke-width:10;stroke-linecap:round}.node{stroke:#429b7d;stroke-width:5;fill:#171d27}.station-label{fill:#e8edf4;font-size:25px;font-weight:600}
 .train-halo{fill:#5dbeff;opacity:.3;animation:pulse 1.5s ease-out infinite;transform-origin:center;transform-box:fill-box}.train-body{fill:#60c1fb;stroke:#f1f9ff;stroke-width:2}.train-arrow{fill:#112d45;font-weight:900;font-size:17px;text-anchor:middle;dominant-baseline:middle}.user-ripple{fill:#3d9fff;opacity:.65;animation:pulse 1.65s ease-out infinite;transform-origin:center;transform-box:fill-box}.user-spot{fill:#3d9fff;stroke:#e7f7ff;stroke-width:3.5}.user-center{fill:#fff}
 @keyframes pulse{0%{transform:scale(.8);opacity:.6}80%{transform:scale(2);opacity:0}100%{opacity:0}}.gps-row{display:flex;align-items:center;gap:9px;margin-top:11px;color:#a9c7e0;font-size:13px;line-height:1.45}.gps-indicator{width:12px;height:12px;flex-shrink:0;border-radius:50%;background:#697789}.gps-indicator.active{background:#5fd5aa;animation:gpsFlash 1.2s ease-in-out infinite;box-shadow:0 0 0 4px #5fd5aa33}.gps-indicator.error{background:#eb807c}@keyframes gpsFlash{50%{opacity:.2;box-shadow:0 0 0 8px #5fd5aa00}}.value{font-size:45px;font-weight:800;color:#81beff;letter-spacing:-2px;line-height:1.1;margin:10px 0}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}.spot{background:#111924;border:1px solid #324154;border-radius:14px;padding:13px;margin:10px 0}.spot h3{font-size:15px;margin:0 0 5px}.spot .sub{font-size:12px;color:#a7b8c9;line-height:1.5}.spot .actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.tag{color:#95cfff;font-size:11px;font-weight:750;letter-spacing:.3px}.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.stat{padding:12px;background:#101823;border:1px solid #2b394b;border-radius:13px}.stat b{font-size:21px;display:block;margin-top:5px}.notice{padding:10px 12px;background:#122338;border:1px solid #2a4d6e;border-radius:11px;color:#c4def4;font-size:12px;line-height:1.5;margin-top:10px}.weather-row{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}.weather-row>div{min-width:75px}.weather-row b{font-size:19px}.alerts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.alerts select{max-width:135px;margin:0;padding:9px}.alert-tag{font-size:12px;color:#9cb1c8}.countdown{font-variant-numeric:tabular-nums}footer{padding:2px 4px 25px;color:#8295ad;font-size:11px;line-height:1.55}
@@ -15,7 +15,15 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 /* Tile 2: geographic maps using OpenStreetMap railway geometry */
 .geo-panel{border:1px solid #324055;border-radius:17px;overflow:hidden;background:#111a26;margin:13px 0}
 .geo-heading{padding:11px 13px;font-size:14px;font-weight:750;color:#e8eef7}
-.geo-map{height:265px;width:100%;background:#111c2b;z-index:0}
+.geo-map{height:400px;width:100%;background:#111c2b;z-index:0;touch-action:none;overflow:hidden;cursor:grab;user-select:none;-webkit-user-select:none}.geo-map:active{cursor:grabbing}
+#geoTile{padding:14px 0 12px}
+#geoTile>.row,#geoTile>#geoNote{margin-left:14px;margin-right:14px}
+.geo-panel-full{margin:12px 0;border-left:0;border-right:0;border-radius:0}
+.geo-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;color:#c5d8e9;font-size:12px;font-weight:700}
+.geo-controls{display:flex;gap:5px;flex-shrink:0}
+.geo-controls button{background:#21374b;color:#dbf2ff;border:1px solid #4c6478;border-radius:8px;font-size:17px;padding:4px 10px;cursor:pointer}
+.geo-controls button:last-child{font-size:11px}
+
 .geo-map.geo-close{height:230px}
 .geo-legend{display:flex;flex-wrap:wrap;align-items:center;gap:15px;border-top:1px solid #314158;background:#111924;color:#a1b2c7;padding:9px 12px;font-size:11px}
 .geo-legend span{display:flex;align-items:center;gap:7px}
@@ -30,7 +38,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 .geo-map .leaflet-control-attribution a{color:#9cd3ff!important}
 .leaflet-control-zoom a{background:#162233!important;color:#cde5fa!important;border-color:#34445c!important}
 .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#182333;color:#e8f2ff}
-@media(max-width:740px){.geo-map{height:220px}.geo-map.geo-close{height:205px}.geo-heading{font-size:13px}.geo-panel{margin:11px 0}}
+@media(max-width:740px){.geo-map{height:390px}.geo-panel{margin:9px 0}.geo-toolbar{font-size:11px}.geo-controls button{padding:5px 8px}}
 
 .geo-basemap{opacity:.93;filter:brightness(.67) saturate(.75) contrast(1.1)}
 .geo-map{position:relative;isolation:isolate}
@@ -39,21 +47,21 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 <section class="tile">
 <div class="row"><div><div class="eyebrow">TRAIN TRACKER</div><div class="heading">Mallaig ↔ Fort William</div></div><span class="badge" id="feedBadge">Checking</span></div>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Six station schematic railway from Mallaig to Fort William" role="img">
-<line class="bed" x1="35" y1="83" x2="865" y2="83"/><line class="track" x1="80" y1="83" x2="820" y2="83"/>
+<line class="bed" x1="0" y1="83" x2="900" y2="83"/><line class="track" x1="0" y1="83" x2="900" y2="83"/>
 <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="9" y="45" text-anchor="start">Mallaig</text>
 <circle class="node" cx="201" cy="83" r="12"/><text class="station-label" x="201" y="132" text-anchor="middle">Morar</text>
 <circle class="node" cx="367" cy="83" r="12"/><text class="station-label" x="367" y="45" text-anchor="middle">Arisaig</text>
 <circle class="node" cx="533" cy="83" r="12"/><text class="station-label" x="533" y="132" text-anchor="middle">Lochailort</text>
 <circle class="node" cx="699" cy="83" r="12"/><text class="station-label" x="699" y="45" text-anchor="middle">Glenfinnan</text>
 <circle class="node" cx="865" cy="83" r="12"/><text class="station-label" x="892" y="132" text-anchor="end">Fort William</text>
-<g id="trains"></g><g id="userPosition" style="display:none"><circle class="user-ripple" r="23"/><circle class="user-spot" r="13"/><circle class="user-center" r="4"/></g>
+<g id="trains"></g>
 </svg></div>
 <div class="muted" id="trackStatus">Checking railway data…</div>
 <div class="gps-row"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div>
 </section>
 <section class="tile" id="geoTile">
 <div class="row"><div><div class="eyebrow">GEOGRAPHIC MAP</div><div class="heading">Railway & photo locations</div></div><span class="badge" id="geoStatus">Loading</span></div>
-<div class="geo-panel"><div class="geo-heading">West Highland Line overview</div><div class="geo-map" id="mapOverview" role="application" aria-label="Interactive geographic overview map of the Fort William to Mallaig railway"></div><div class="geo-legend"><span><i class="geo-line"></i>Railway (OpenStreetMap)</span><span><i class="geo-dot"></i>Photography area</span></div></div>
+<div class="geo-panel geo-panel-full"><div class="geo-toolbar"><span>Fort William – Mallaig · geographical map</span><div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view">Reset</button></div></div><div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with roads, lochs, green railway and stations; drag to pan and pinch or use buttons to zoom"></div><div class="geo-legend"><span><i class="geo-line"></i>Railway</span><span><i class="geo-dot"></i>Photography areas</span><span>Drag to move · Pinch to zoom</span></div></div>
 <p class="small" id="geoNote">Roads, lochs and railway geography from OpenStreetMap. Photo pins are approximate; access routes are not verified.</p>
 </section>
 <div class="cols">
@@ -246,11 +254,11 @@ function startGps(){
    updateGeoLocation(userCoords.lat,userCoords.lon);
    const result=projectToRail(position.coords.latitude,position.coords.longitude);
    if(!Number.isFinite(result.x))return;
-   const dot=$("userPosition");dot.setAttribute("transform","translate("+result.x+",83)");dot.style.display="";
-   const km=result.distance>=1000?(result.distance/1000).toFixed(1)+" km":Math.round(result.distance)+" m";
-   $("gpsIndicator").classList.remove("error");$("gpsIndicator").classList.add("active");$("gpsStatus").textContent="GPS active · "+result.segment+" · ±"+Math.round(position.coords.accuracy)+" m";
+   
+   
+   $("gpsIndicator").classList.remove("error");$("gpsIndicator").classList.add("active");$("gpsStatus").textContent="GPS tracking · ±"+Math.round(position.coords.accuracy)+" m";
  },err=>{
-   $("userPosition").style.display="none";$("gpsIndicator").classList.remove("active");$("gpsIndicator").classList.add("error");
+   $("gpsIndicator").classList.remove("active");$("gpsIndicator").classList.add("error");
    $("gpsStatus").textContent=err.code===1?"Location permission denied. Allow location in Safari settings.":err.code===2?"Could not determine your location.":"GPS unavailable. Check location permissions.";
    if(gpsWatch!==null){navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;}
  },{enableHighAccuracy:true,maximumAge:15000,timeout:15000});
@@ -260,7 +268,8 @@ startGps();
 
 /* API-key-free native geographic SVG rendering.
  * Geo data is fetched from OpenStreetMap Overpass. No map tile provider or SDK. */
-const geoViews=[{id:"mapOverview",bounds:{north:57.025,south:56.8,west:-5.94,east:-5.04},label:"Overview"}];
+const defaultGeoBounds={north:57.025,south:56.8,west:-5.94,east:-5.04};
+const geoViews=[{id:"mapOverview",bounds:{...defaultGeoBounds},label:"Overview"}];
 const geoStations=[
  {name:"Mallaig",lat:57.0052,lon:-5.8290},{name:"Morar",lat:56.9685,lon:-5.8212},
  {name:"Arisaig",lat:56.9136,lon:-5.8406},{name:"Lochailort",lat:56.8812,lon:-5.6633},
@@ -283,16 +292,19 @@ function geoPoint(lat,lon,b){
  return [(p.x-nw.x)/(se.x-nw.x)*900,(p.y-nw.y)/(se.y-nw.y)*360];
 }
 function appendMapTiles(svg,view){
- const b=view.bounds,topLeft=mercator(b.north,b.west),bottomRight=mercator(b.south,b.east);
- const width=900/(bottomRight.x-topLeft.x),height=360/(bottomRight.y-topLeft.y);
+ const b=view.bounds;
  const group=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")",class:"geo-basemap"});
- const z=10,n=2**z;
+ const visibleSpan=Math.max(.005,b.east-b.west);
+ const z=Math.max(8,Math.min(16,Math.round(Math.log2(360/visibleSpan/3.2))));
+ const n=2**z;
+ const atNW=mercator(b.north,b.west,z),atSE=mercator(b.south,b.east,z);
+ const width=900/(atSE.x-atNW.x),height=360/(atSE.y-atNW.y);
  let loaded=0,failed=0;
- for(let tileX=Math.floor(topLeft.x);tileX<=Math.floor(bottomRight.x);tileX++){
-  for(let tileY=Math.floor(topLeft.y);tileY<=Math.floor(bottomRight.y);tileY++){
+ for(let tileX=Math.floor(atNW.x);tileX<=Math.floor(atSE.x);tileX++){
+  for(let tileY=Math.floor(atNW.y);tileY<=Math.floor(atSE.y);tileY++){
    if(tileX<0||tileX>=n||tileY<0||tileY>=n)continue;
    const image=geoSVG("image",{
-    x:(tileX-topLeft.x)*width,y:(tileY-topLeft.y)*height,
+    x:(tileX-atNW.x)*width,y:(tileY-atNW.y)*height,
     width:width+0.4,height:height+0.4,
     href:"https://tile.openstreetmap.org/"+z+"/"+tileX+"/"+tileY+".png",
     preserveAspectRatio:"none"
@@ -323,13 +335,13 @@ function makeMap(view){
  for(const coast of geoMapFeatures.coast)appendMapPath(water,coast,view.bounds,"#3f6e91",1.4);
  svg.appendChild(water);
  const railShadow=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")"});const rail=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")"});
- for(const way of geoMapFeatures.rail){appendMapPath(railShadow,way,view.bounds,"#0b1920",9);appendMapPath(rail,way,view.bounds,"#65bc99",5)}
+ for(const way of geoMapFeatures.rail){appendMapPath(railShadow,way,view.bounds,"#0b1920",11);appendMapPath(rail,way,view.bounds,"#398f72",7)}
  svg.appendChild(railShadow);svg.appendChild(rail);
  for(const station of geoStations){
   if(station.lat>view.bounds.north||station.lat<view.bounds.south||station.lon<view.bounds.west||station.lon>view.bounds.east)continue;
   const [x,y]=geoPoint(station.lat,station.lon,view.bounds);
-  svg.appendChild(geoSVG("circle",{cx:x,cy:y,r:8,fill:"#17344d",stroke:"#91caff","stroke-width":3}));
-  const label=geoSVG("text",{x:x+10,y:y-12,fill:"#f2f5ff","font-size":16,"font-weight":"600",stroke:"#0a1525","stroke-width":3,"paint-order":"stroke"});label.textContent=station.name;svg.appendChild(label);
+  svg.appendChild(geoSVG("circle",{cx:x,cy:y,r:9,fill:"#112b25",stroke:"#68d5ac","stroke-width":3}));
+  const label=geoSVG("text",{x:x+10,y:y-12,fill:"#f2f5ff","font-size":18,"font-weight":"700",stroke:"#0a1525","stroke-width":3,"paint-order":"stroke"});label.textContent=station.name;svg.appendChild(label);
  }
  for(const label of mapLabels){
   if(label.lat>view.bounds.north||label.lat<view.bounds.south||label.lon<view.bounds.west||label.lon>view.bounds.east)continue;
@@ -415,6 +427,46 @@ async function loadGeoRailway(){
  else if(hasRail||hasWater){$("geoStatus").textContent="Partial geography";$("geoNote").textContent="Some OpenStreetMap geometry is temporarily unavailable. Showing "+(hasRail?"railway":"loch outlines")+" from available or cached geographic data. Try refreshing later."}
  else {$("geoStatus").textContent="Geometry unavailable";$("geoNote").textContent="The detailed railway outline could not be downloaded; the OpenStreetMap basemap still shows mapped roads, lochs and railway features."}
 }
+/* Geographic map interaction: preserve real OSM geometry, change viewport only. */
+function geoZoom(factor,nx=.5,ny=.5){
+ const b=geoViews[0].bounds,dx=b.east-b.west,dy=b.north-b.south;
+ const nextX=Math.max(.004,Math.min(3.0,dx*factor)),nextY=Math.max(.001,Math.min(1.0,dy*factor));
+ const lon=b.west+dx*nx,lat=b.north-dy*ny;
+ geoViews[0].bounds={west:lon-nextX*nx,east:lon+nextX*(1-nx),north:lat+nextY*ny,south:lat-nextY*(1-ny)};
+ renderGeoMaps();
+}
+function geoPan(dx,dy){
+ const b=geoViews[0].bounds,lonShift=dx/900*(b.east-b.west),latShift=dy/360*(b.north-b.south);
+ geoViews[0].bounds={west:b.west-lonShift,east:b.east-lonShift,north:b.north+latShift,south:b.south+latShift};
+ renderGeoMaps();
+}
+function initGeoInteraction(){
+ const el=$("mapOverview");const active=new Map();let previous=null;
+ $("geoZoomIn").addEventListener("click",()=>geoZoom(.65));
+ $("geoZoomOut").addEventListener("click",()=>geoZoom(1.55));
+ $("geoReset").addEventListener("click",()=>{geoViews[0].bounds={...defaultGeoBounds};renderGeoMaps()});
+ el.addEventListener("wheel",event=>{event.preventDefault();const r=el.getBoundingClientRect();geoZoom(event.deltaY>0?1.35:.74,Math.max(0,Math.min(1,(event.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(event.clientY-r.top)/r.height)))},{passive:false});
+ el.addEventListener("pointerdown",event=>{el.setPointerCapture(event.pointerId);active.set(event.pointerId,{x:event.clientX,y:event.clientY});previous=null});
+ el.addEventListener("pointermove",event=>{
+  if(!active.has(event.pointerId))return;
+  const before=[...active.values()];active.set(event.pointerId,{x:event.clientX,y:event.clientY});const after=[...active.values()];
+  if(before.length===1){
+   const r=el.getBoundingClientRect();geoPan((after[0].x-before[0].x)*900/r.width,(after[0].y-before[0].y)*360/r.height);
+  }else if(before.length>=2){
+   const oldDist=Math.hypot(before[0].x-before[1].x,before[0].y-before[1].y);
+   const newDist=Math.hypot(after[0].x-after[1].x,after[0].y-after[1].y);
+   if(oldDist>4&&newDist>4){
+    const r=el.getBoundingClientRect();
+    const cx=(after[0].x+after[1].x)/2,cy=(after[0].y+after[1].y)/2;
+    geoZoom(Math.max(.6,Math.min(1.6,oldDist/newDist)),Math.max(0,Math.min(1,(cx-r.left)/r.width)),Math.max(0,Math.min(1,(cy-r.top)/r.height)));
+   }
+  }
+ });
+ const end=event=>{active.delete(event.pointerId);previous=null};
+ el.addEventListener("pointerup",end);el.addEventListener("pointercancel",end);el.addEventListener("lostpointercapture",end);
+ el.addEventListener("keydown",e=>{if(e.key==="+"||e.key==="="){e.preventDefault();geoZoom(.7)}else if(e.key==="-"){e.preventDefault();geoZoom(1.4)}});
+}
+initGeoInteraction();
 renderGeoMaps();loadGeoRailway();
 
 </script></body></html>
