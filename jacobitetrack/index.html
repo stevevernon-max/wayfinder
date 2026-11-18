@@ -146,12 +146,21 @@ body.geo-fullscreen-open{overflow:hidden}
 #geoTile #geoFullscreen{font-size:23px;font-weight:700;line-height:1}
 #proximityTile #viaductTileCountdown{font-size:clamp(22px,5vw,30px);line-height:1.1;color:#8bcaff;letter-spacing:-.5px}
 #proximityTile .proximity-item:first-child .proximity-label{font-size:9px;letter-spacing:.25px;line-height:1.3}
+
+/* GPS-distance badge matches the blue pulsating user marker. */
+#trackerTile .gps-line-pill{
+ background:#143957;color:#d8f0ff;border:1px solid #4faaff;
+ box-shadow:inset 0 0 0 1px #9ad6ff20,0 0 9px #329aff24;
+ border-radius:999px;font-weight:800;
+}
+#trackerTile>.row{align-items:center}
+#trackerTile>.row>.eyebrow{font-size:11px}
+.app-header .header-brand{flex:1}
+.app-header .header-main{justify-content:flex-start}
 </style></head><body>
-<header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><div class="header-countdown" aria-label="Next train at Glenfinnan Viaduct">
-<span>GLENFINNAN VIADUCT</span><small>Next train countdown</small><strong id="headerCountdown">—:—</strong>
-</div></div></header><main>
+<header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div></div></header><main>
 <section class="tile" id="trackerTile">
-<div class="row"><div><div class="eyebrow">TRAIN TRACKER</div><div class="heading">Mallaig ↔ Fort William</div></div><span class="badge gps-line-pill" id="gpsLineBadge">Finding location…</span><span id="feedBadge" hidden aria-live="polite">Checking</span></div>
+<div class="row"><div><div class="eyebrow">TRAIN TRACKER</div></div><span class="badge gps-line-pill" id="gpsLineBadge">Finding location…</span><span id="feedBadge" hidden aria-live="polite">Checking</span></div>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Six station schematic railway from Mallaig to Fort William" role="img">
 <line class="bed" x1="13" y1="83" x2="887" y2="83"/><line class="track" x1="13" y1="83" x2="887" y2="83"/>
 <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="9" y="45" text-anchor="start">Mallaig</text>
@@ -244,7 +253,7 @@ function render(){
  $("trains").innerHTML=services.map(t=>'<g transform="translate('+xAt(t.progress)+',83)"><circle class="train-halo" r="15"/><circle class="train-body" r="13"/><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+'</title></g>').join("");
  let glen=getApproaching("glenfinnan")[0];
 
- $("headerCountdown").textContent=glen?countdownClock(glen.remaining):"—:—";
+
  $("viaductTileCountdown").textContent=glen?countdownClock(glen.remaining):"—:—";
  updateHeaderDistances();
 
@@ -317,7 +326,12 @@ async function setupPush(){
   let response=await fetch(PUSH_CONFIG_URL,{cache:"no-store"});
   if(!response.ok)throw Error("Push configuration unavailable");
   const cfg=await response.json();
-  if(!cfg.backendUrl||!/^https:\/\//.test(cfg.backendUrl)){pushStatus("Background alerts need a deployed push backend. Not active yet.");button.textContent="Alerts unavailable";return;}
+  if(!cfg.backendUrl||!/^https:\/\//.test(cfg.backendUrl)){
+   pushStatus("Background alerts are not available: the push service and verified train feed are not connected.");
+   button.textContent="Alerts not ready";
+   button.title="Requires a deployed notification service and verified railway data";
+   return;
+  }
   pushConfig={...cfg,backendUrl:cfg.backendUrl.replace(/\/+$/,"")};
   response=await fetch(pushConfig.backendUrl+"/api/push/config",{cache:"no-store"});
   if(!response.ok)throw Error("Push backend unavailable");
