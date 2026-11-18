@@ -375,7 +375,7 @@ async function loadGeoRailway(){
  restoreGeo();
  const bounds="(56.795,-5.96,57.03,-5.03)";
  const railQuery='[out:json][timeout:35];way["railway"="rail"]'+bounds+';out geom;';
- const waterQuery='[out:json][timeout:35];(way["natural"="water"]'+bounds+';relation["natural"="water"]'+bounds+';way["water"="lake"]'+bounds+';relation["water"="lake"]'+bounds+';way["natural"="coastline"]'+bounds+';);out geom;';
+ const waterQuery='[out:json][timeout:35];(way["natural"="water"]["name"~"Loch (Shiel|Eilt|Morar|Linnhe|nan Uamh|Ailort)",i]'+bounds+';relation["natural"="water"]["name"~"Loch (Shiel|Eilt|Morar|Linnhe|nan Uamh|Ailort)",i]'+bounds+';way["water"="lake"]["name"~"Loch (Shiel|Eilt|Morar|Linnhe|nan Uamh|Ailort)",i]'+bounds+';relation["water"="lake"]["name"~"Loch (Shiel|Eilt|Morar|Linnhe|nan Uamh|Ailort)",i]'+bounds+';way["natural"="coastline"]'+bounds+';);out geom;';
  $("geoStatus").textContent="Loading OSM geography";
  const results=await Promise.allSettled([overpassGeometry(railQuery),overpassGeometry(waterQuery)]);
  const r=results[0],w=results[1];
