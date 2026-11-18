@@ -1,0 +1,4 @@
+{
+  "backendUrl": "",
+  "note": "Set backendUrl to deployed Netlify backend HTTPS origin after server configuration. Do not enter API keys here."
+}
