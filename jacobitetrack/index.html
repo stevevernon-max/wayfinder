@@ -56,7 +56,7 @@ let lastAlerts=new Set();
 function safe(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function xAt(p){return 820-Math.max(0,Math.min(100,p))*7.4;}
 function etaAt(t,id){
- if(t.viewpoints&&Number.isFinite(t.viewpoints[id]?.etaMinutes))return t.viewpoints[id].etaMinutes;
+ if(t.viewpoints&&Number.isFinite(t.viewpoints[id]?.etaMinutes)){const age=feedUpdated?Math.max(0,(Date.now()-Date.parse(feedUpdated))/60000):0;return Math.max(0,t.viewpoints[id].etaMinutes-age);}
  // A generic train-location percentage is NOT a reliable clock ETA.
  return null;
 }
@@ -126,7 +126,7 @@ function maybeNotify(){
  if(!notificationAllowed||document.visibilityState!=="visible")return;
  const id=$("viewpoint").value,lead=Number($("alertLead").value);
  for(const t of getApproaching(id)){
-   const key=t.id+":"+id+":"+lead+":"+(feedUpdated||"");
+   const key=t.id+":"+id+":"+lead;
    if(t.remaining>lead||lastAlerts.has(key))continue;
    lastAlerts.add(key);new Notification("Train approaching "+siteData[id].name,{body:t.id+" expected in "+timeText(t.remaining)+". Based on reported railway data.",tag:"train-"+t.id+"-"+id});
  }
@@ -137,7 +137,7 @@ $("notifyBtn").onclick=async()=>{
 };
 $("viewpoint").addEventListener("change",render);
 $("alertLead").addEventListener("change",()=>{lastAlerts.clear();render()});
-load();fetchWeather();setInterval(()=>{load()},60000);setInterval(()=>{fetchWeather()},600000);
+load();fetchWeather();setInterval(load,60000);setInterval(fetchWeather,600000);setInterval(()=>{if(source)render()},15000);
 /* GPS stays entirely in the device browser; only its nearest position on this
    simplified station-based railway alignment is displayed. Nothing is uploaded. */
 const railFixes=[
