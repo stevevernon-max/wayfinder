@@ -40,7 +40,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#182333;color:#e8f2ff}
 @media(max-width:740px){.geo-map{height:390px}.geo-panel{margin:9px 0}.geo-toolbar{font-size:11px}.geo-controls button{padding:5px 8px}}
 
-.geo-basemap{opacity:.93;filter:brightness(.67) saturate(.75) contrast(1.1)}
+.geo-basemap{opacity:.98;filter:brightness(.83) saturate(.95) contrast(1.08)}
 .geo-map{position:relative;isolation:isolate}
 
 /* Full-bleed map fills the tile, with floating controls instead of letterboxing. */
@@ -58,9 +58,25 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 #geoTile .geo-map-bottom span{display:flex;align-items:center;gap:7px}
 #geoTile .geo-note{position:absolute;z-index:3;bottom:0;left:0;right:0;margin:0;padding:7px 12px;background:#101b2cdd;color:#aebed2;font-size:10px;pointer-events:none}
 @media(max-width:740px){#geoTile{min-height:0}#geoTile .geo-map{height:clamp(460px,68vh,700px)}}
+
+.app-header{padding:12px 14px}
+.app-header .header-main{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:1080px;margin:auto}
+.app-header .header-brand{min-width:0}
+.app-header .header-brand small{margin-top:2px}
+.app-header .header-gps{margin-top:6px;gap:7px;font-size:11px;color:#b0cedd}
+.app-header .header-gps .gps-indicator{width:9px;height:9px}
+.app-header .header-train{text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.app-header .header-train>span{color:#9db8cc;font-size:9px;letter-spacing:.5px;font-weight:800}
+.app-header .header-train strong{font-size:27px;color:#8bcaff;line-height:1.1;font-variant-numeric:tabular-nums}
+.app-header .header-train small{font-size:10px;letter-spacing:0;color:#91a1b6}
+#trackerTile{padding:10px 12px 6px}
+#trackerTile .heading{margin:2px 0 4px;font-size:19px}
+#trackerTile .rail-scroll{margin:0}
+#trackerTile #trackStatus:empty{display:none}
+@media(max-width:420px){.app-header .header-train strong{font-size:23px}.app-header .header-train>span{font-size:8px}.app-header .header-brand>strong{font-size:21px}}
 </style></head><body>
-<header><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small></header><main>
-<section class="tile">
+<header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><div class="header-train"><span>GLENFINNAN VIADUCT</span><strong id="headerCountdown">—</strong><small>Next verified train</small></div></div></header><main>
+<section class="tile" id="trackerTile">
 <div class="row"><div><div class="eyebrow">TRAIN TRACKER</div><div class="heading">Mallaig ↔ Fort William</div></div><span class="badge" id="feedBadge">Checking</span></div>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Six station schematic railway from Mallaig to Fort William" role="img">
 <line class="bed" x1="13" y1="83" x2="887" y2="83"/><line class="track" x1="13" y1="83" x2="887" y2="83"/>
@@ -73,7 +89,6 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 <g id="trains"></g>
 </svg></div>
 <div class="muted" id="trackStatus">Checking railway data…</div>
-<div class="gps-row"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div>
 </section>
 <section class="tile" id="geoTile">
 <div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with real roads, lochs, a bold green railway and station markers; drag or pinch to navigate"></div>
@@ -124,6 +139,7 @@ function render(){
  $("trains").innerHTML=services.map(t=>'<g transform="translate('+xAt(t.progress)+',83)"><circle class="train-halo" r="15"/><circle class="train-body" r="13"/><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+'</title></g>').join("");
  let glen=getApproaching("glenfinnan")[0];
  $("glenCountdown").textContent=glen?timeText(glen.remaining):"—";
+ $("headerCountdown").textContent=glen?timeText(glen.remaining):"—";
  $("glenStatus").textContent=glen?"Next confirmed-source prediction: "+glen.id:"No verified Glenfinnan passage prediction available.";
  const id=$("viewpoint").value;const next=getApproaching(id)[0];
  $("eta").textContent=next?timeText(next.remaining):"—";
@@ -306,32 +322,37 @@ function mercator(lat,lon,z=10){
  return {x:(lon+180)/360*n,y:(1-Math.asinh(Math.tan(angle))/Math.PI)/2*n};
 }
 const geoCanvasHeight=()=>Math.max(360,900*($("mapOverview").clientHeight||480)/Math.max(1,$("mapOverview").clientWidth||360));
-function geoPoint(lat,lon,b){
- const nw=mercator(b.north,b.west),se=mercator(b.south,b.east),p=mercator(lat,lon);
- return [(p.x-nw.x)/(se.x-nw.x)*900,(p.y-nw.y)/(se.y-nw.y)*geoCanvasHeight()];
+function geoFrame(b){
+ const nw=mercator(b.north,b.west),se=mercator(b.south,b.east);
+ const centerX=(nw.x+se.x)/2,centerY=(nw.y+se.y)/2;
+ const scale=900/Math.max(0.00001,se.x-nw.x);
+ const height=geoCanvasHeight();
+ return {centerX,centerY,scale,height};
 }
+function geoPoint(lat,lon,b){
+ const p=mercator(lat,lon),f=geoFrame(b);
+ return [450+(p.x-f.centerX)*f.scale,f.height/2+(p.y-f.centerY)*f.scale];
+}
+const SATELLITE_URL="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/";
 function appendMapTiles(svg,view){
- const b=view.bounds;
+ const f=geoFrame(view.bounds);
+ const z=Math.max(7,Math.min(17,Math.round(Math.log2(256*f.scale/256))));
+ // A single equal Mercator scale must be used for horizontal AND vertical pixels.
+ const tilePixels=f.scale/(2**z);
+ const tileCount=2**z;
+ const centerX=f.centerX*tileCount,centerY=f.centerY*tileCount;
+ const left=Math.floor(centerX-450/tilePixels)-1,right=Math.ceil(centerX+450/tilePixels)+1;
+ const top=Math.floor(centerY-f.height/2/tilePixels)-1,bottom=Math.ceil(centerY+f.height/2/tilePixels)+1;
  const group=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")",class:"geo-basemap"});
- const visibleSpan=Math.max(.005,b.east-b.west);
- const z=Math.max(9,Math.min(16,Math.round(Math.log2(360*3.2/visibleSpan))));
- const n=2**z;
- const atNW=mercator(b.north,b.west,z),atSE=mercator(b.south,b.east,z);
- const width=900/(atSE.x-atNW.x),height=geoCanvasHeight()/(atSE.y-atNW.y);
  let loaded=0,failed=0;
- for(let tileX=Math.floor(atNW.x);tileX<=Math.floor(atSE.x);tileX++){
-  for(let tileY=Math.floor(atNW.y);tileY<=Math.floor(atSE.y);tileY++){
-   if(tileX<0||tileX>=n||tileY<0||tileY>=n)continue;
-   const image=geoSVG("image",{
-    x:(tileX-atNW.x)*width,y:(tileY-atNW.y)*height,
-    width:width+0.4,height:height+0.4,
-    href:"https://tile.openstreetmap.org/"+z+"/"+tileX+"/"+tileY+".png",
-    preserveAspectRatio:"none"
-   });
-   image.addEventListener("load",()=>{loaded++;if(loaded===1){$("geoStatus").textContent="Map detail loaded";$("geoNote").textContent="Real OpenStreetMap roads, lochs and terrain are shown in the basemap. The green railway overlay uses OpenStreetMap geometry when available. © OpenStreetMap contributors."}});
-   image.addEventListener("error",()=>{failed++;if(!loaded&&failed>=3){$("geoNote").textContent="Map tiles could not load from OpenStreetMap. Check network access; the map retains real station locations and any cached railway and loch geometry."}});
-   group.appendChild(image);
-  }
+ for(let tx=left;tx<=right;tx++)for(let ty=top;ty<=bottom;ty++){
+  if(tx<0||tx>=tileCount||ty<0||ty>=tileCount)continue;
+  const image=geoSVG("image",{x:(tx-centerX)*tilePixels+450,y:(ty-centerY)*tilePixels+f.height/2,
+   width:tilePixels+0.5,height:tilePixels+0.5,preserveAspectRatio:"none",
+   href:SATELLITE_URL+z+"/"+ty+"/"+tx});
+  image.addEventListener("load",()=>{loaded++;if(loaded===1){$("geoStatus").textContent="Satellite imagery";$("geoNote").textContent="Satellite imagery © Esri and imagery providers. Railway geometry © OpenStreetMap contributors. Satellite tiles may be unavailable or subject to provider limits."}});
+  image.addEventListener("error",()=>{failed++;image.setAttribute("href","https://tile.openstreetmap.org/"+z+"/"+tx+"/"+ty+".png");if(failed===1){$("geoStatus").textContent="Map fallback";$("geoNote").textContent="Satellite images could not be loaded. Standard OpenStreetMap tiles are being used instead; railway track overlays remain available."}});
+  group.appendChild(image);
  }
  svg.appendChild(group);
 }
@@ -355,7 +376,7 @@ function makeMap(view){
  for(const coast of geoMapFeatures.coast)appendMapPath(water,coast,view.bounds,"#3f6e91",1.4);
  svg.appendChild(water);
  const railShadow=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")"});const rail=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")"});
- for(const way of geoMapFeatures.rail){appendMapPath(railShadow,way,view.bounds,"#081219",16);appendMapPath(rail,way,view.bounds,"#49c18c",10)}
+ for(const way of geoMapFeatures.rail){appendMapPath(railShadow,way,view.bounds,"#071a13",18);appendMapPath(rail,way,view.bounds,"#4ce69a",11)}
  svg.appendChild(railShadow);svg.appendChild(rail);
  for(const station of geoStations){
   if(station.lat>view.bounds.north||station.lat<view.bounds.south||station.lon<view.bounds.west||station.lon>view.bounds.east)continue;
