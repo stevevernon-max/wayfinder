@@ -432,7 +432,14 @@ function makeMap(view){
  container.appendChild(svg);
 }
 function renderGeoMaps(){geoViews.forEach(makeMap)}
-function updateGeoLocation(lat,lon){geoLocation={lat,lon};renderGeoMaps()}
+let lastGeoGpsRender=0;
+function updateGeoLocation(lat,lon){
+ const previous=geoLocation,now=Date.now();
+ geoLocation={lat,lon};
+ const moved=previous?Math.hypot((lat-previous.lat)*111195,(lon-previous.lon)*111195*Math.cos(lat*Math.PI/180)):Infinity;
+ // Frequent GPS watches must not continually destroy and reload in-flight map tiles.
+ if(!previous||moved>80||now-lastGeoGpsRender>30000){lastGeoGpsRender=now;renderGeoMaps()}
+}
 
 async function overpassGeometry(query){
  const endpoints=["https://overpass.kumi.systems/api/interpreter","https://overpass.private.coffee/api/interpreter"];
