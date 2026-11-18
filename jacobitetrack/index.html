@@ -132,6 +132,18 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 #trackerTile .gps-line-pill{background:#163c33;color:#b2f1d8;border:1px solid #347e66;font-size:clamp(10px,2.8vw,12px);font-weight:800;letter-spacing:0;padding:7px 9px;white-space:nowrap}
 #trackerTile .row>.gps-line-pill{flex-shrink:0}
 @media(max-width:380px){#trackerTile .gps-line-pill{font-size:10px;padding:6px 7px}}
+
+/* Tile 2 map: 15% shorter than previous normal-size settings. */
+#geoTile .geo-map{height:clamp(187px,29.75vh,323px)}
+@media(max-width:740px){#geoTile .geo-map{height:clamp(187px,28.9vh,297.5px)}}
+/* CSS full-screen works in iPhone Safari and installed Home Screen web apps. */
+body.geo-fullscreen-open{overflow:hidden}
+#geoTile.geo-fullscreen{position:fixed;inset:0;z-index:99999;margin:0;border:0;border-radius:0;width:100%;height:100vh;height:100dvh;background:#142235}
+#geoTile.geo-fullscreen .geo-map{height:100%!important;width:100%}
+#geoTile.geo-fullscreen .geo-map-overlay{top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right))}
+#geoTile.geo-fullscreen .geo-map-bottom{bottom:calc(31px + env(safe-area-inset-bottom))}
+#geoTile.geo-fullscreen .geo-note{padding-bottom:calc(7px + env(safe-area-inset-bottom))}
+#geoTile #geoFullscreen{font-size:23px;font-weight:700;line-height:1}
 </style></head><body>
 <header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><div class="header-countdown" aria-label="Next train at Glenfinnan Viaduct">
 <span>GLENFINNAN VIADUCT</span><small>Next train countdown</small><strong id="headerCountdown">—:—</strong>
@@ -160,7 +172,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 <section class="tile" id="geoTile">
 <div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with real roads, lochs, a bold green railway and station markers; drag or pinch to navigate"></div>
 <div class="geo-map-overlay"><span class="geo-load-status" id="geoStatus">Loading map</span>
-<div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view">Reset</button></div></div>
+<div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view">Reset</button><button type="button" id="geoFullscreen" aria-label="Expand map to full screen" aria-pressed="false">⛶</button></div></div>
 <div class="geo-map-bottom"><span><i class="geo-line"></i> Railway</span><span>Drag · Pinch to zoom</span></div>
 <p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
 </section>
@@ -639,12 +651,23 @@ function geoPan(dx,dy){
  geoViews[0].bounds={west:b.west-lonShift,east:b.east-lonShift,north:b.north+latShift,south:b.south+latShift};
  renderGeoMaps();
 }
+function setGeoFullscreen(expanded){
+ const tile=$("geoTile"),button=$("geoFullscreen");
+ tile.classList.toggle("geo-fullscreen",expanded);
+ document.body.classList.toggle("geo-fullscreen-open",expanded);
+ button.textContent=expanded?"✕":"⛶";
+ button.setAttribute("aria-label",expanded?"Exit full-screen map":"Expand map to full screen");
+ button.setAttribute("aria-pressed",String(expanded));
+ requestAnimationFrame(renderGeoMaps);
+}
 function initGeoInteraction(){
  window.addEventListener("resize",renderGeoMaps);
  const el=$("mapOverview");const active=new Map();let previous=null;
  $("geoZoomIn").addEventListener("click",()=>geoZoom(.65));
  $("geoZoomOut").addEventListener("click",()=>geoZoom(1.55));
  $("geoReset").addEventListener("click",()=>{geoViews[0].bounds={...defaultGeoBounds};renderGeoMaps()});
+ $("geoFullscreen").addEventListener("click",()=>setGeoFullscreen(!$("geoTile").classList.contains("geo-fullscreen")));
+ window.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("geoTile").classList.contains("geo-fullscreen"))setGeoFullscreen(false)});
  el.addEventListener("wheel",event=>{event.preventDefault();const r=el.getBoundingClientRect();geoZoom(event.deltaY>0?1.35:.74,Math.max(0,Math.min(1,(event.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(event.clientY-r.top)/r.height)))},{passive:false});
  el.addEventListener("pointerdown",event=>{el.setPointerCapture(event.pointerId);active.set(event.pointerId,{x:event.clientX,y:event.clientY});previous=null});
  el.addEventListener("pointermove",event=>{
