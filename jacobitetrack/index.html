@@ -124,14 +124,14 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 @media(max-width:440px){.app-header .header-countdown>span{font-size:10px}.app-header .header-countdown>small{font-size:10px}.app-header .header-countdown>strong{font-size:32px}}
 .single-viewpoint{grid-template-columns:1fr;gap:0}
 .single-viewpoint>.tile{margin-bottom:12px}
+#trackerTile .rail-svg{overflow:visible}
+#trackerTile .user-ripple{fill:#39a4ff;opacity:.55}
+#trackerTile .user-spot{fill:#278eff;stroke:#e9f9ff;stroke-width:3}
+#trackerTile #gpsDistanceTag{text-rendering:geometricPrecision}
 </style></head><body>
 <header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><div class="header-countdown" aria-label="Next train at Glenfinnan Viaduct">
 <span>GLENFINNAN VIADUCT</span><small>Next train countdown</small><strong id="headerCountdown">—:—</strong>
 </div></div></header><main>
-<section class="tile" id="proximityTile" aria-label="Nearest railway information">
-<div class="proximity-item"><div class="proximity-label">NEAREST STATION</div><strong id="nearestStation">—</strong></div>
-<div class="proximity-item"><div class="proximity-label">NEAREST TRAIN</div><strong id="nearestTrain">—</strong></div>
-</section>
 <section class="tile" id="trackerTile">
 <div class="row"><div><div class="eyebrow">TRAIN TRACKER</div><div class="heading">Mallaig ↔ Fort William</div></div><span class="badge" id="feedBadge">Checking</span></div>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Six station schematic railway from Mallaig to Fort William" role="img">
@@ -143,8 +143,19 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 <circle class="node" cx="699" cy="83" r="12"/><text class="station-label" x="699" y="45" text-anchor="middle">Glenfinnan</text>
 <circle class="node" cx="865" cy="83" r="12"/><text class="station-label" x="892" y="132" text-anchor="end">Fort William</text>
 <g id="trains"></g>
+<g id="userPosition" style="display:none" aria-label="Your approximate closest position on railway schematic">
+ <circle class="user-ripple" r="22"/><circle class="user-spot" r="12"/><circle class="user-center" r="4"/>
+</g>
+<g id="gpsDistanceTag" style="display:none">
+ <rect x="-115" y="4" width="230" height="32" rx="15" fill="#173a52" stroke="#5fb9f4" stroke-width="2"/>
+ <text id="gpsDistanceText" x="0" y="25" text-anchor="middle" fill="#eaf7ff" font-size="19" font-weight="750">— km from line</text>
+</g>
 </svg></div>
 <div class="muted" id="trackStatus">Checking railway data…</div>
+</section>
+<section class="tile" id="proximityTile" aria-label="Nearest railway information">
+<div class="proximity-item"><div class="proximity-label">NEAREST STATION</div><strong id="nearestStation">—</strong></div>
+<div class="proximity-item"><div class="proximity-label">NEAREST TRAIN</div><strong id="nearestTrain">—</strong></div>
 </section>
 <section class="tile" id="geoTile">
 <div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with real roads, lochs, a bold green railway and station markers; drag or pinch to navigate"></div>
@@ -362,6 +373,44 @@ function projectToRail(lat,lon){
   }
   return best;
 }
+/* Project to real OSM railway ways when loaded. Without them, fall back to
+   an explicitly approximate station-based alignment. The schematic x axis
+   is approximate, even when the point-to-rail distance uses OSM geometry. */
+function projectToMappedRail(lat,lon){
+ const ways=geoMapFeatures.rail;
+ if(!ways.length)return {...projectToRail(lat,lon),verified:false};
+ const latScale=111195,lonScale=111195*Math.cos(lat*Math.PI/180);
+ let best={distance:Infinity,x:null,verified:true};
+ for(const way of ways){
+  for(let i=0;i<way.length-1;i++){
+   const a=way[i],b=way[i+1];
+   const bx=(b.lon-a.lon)*lonScale,by=(b.lat-a.lat)*latScale;
+   const px=(lon-a.lon)*lonScale,py=(lat-a.lat)*latScale;
+   const len=bx*bx+by*by;
+   if(len===0)continue;
+   const t=Math.max(0,Math.min(1,(px*bx+py*by)/len));
+   const distance=Math.hypot(px-t*bx,py-t*by);
+   if(distance<best.distance){
+    const snapLat=a.lat+t*(b.lat-a.lat),snapLon=a.lon+t*(b.lon-a.lon);
+    best={distance,x:projectToRail(snapLat,snapLon).x,verified:true};
+   }
+  }
+ }
+ return Number.isFinite(best.distance)?best:{...projectToRail(lat,lon),verified:false};
+}
+function updateTrackerGps(){
+ const dot=$("userPosition"),tag=$("gpsDistanceTag");
+ if(!userCoords){dot.style.display="none";tag.style.display="none";return}
+ const result=projectToMappedRail(userCoords.lat,userCoords.lon);
+ if(!Number.isFinite(result.x)||!Number.isFinite(result.distance)){dot.style.display="none";tag.style.display="none";return}
+ const x=Math.max(35,Math.min(865,result.x));
+ dot.setAttribute("transform","translate("+x.toFixed(1)+",83)");
+ dot.style.display="";
+ tag.setAttribute("transform","translate("+Math.max(119,Math.min(781,x)).toFixed(1)+",0)");
+ tag.style.display="";
+ const km=result.distance/1000;
+ $("gpsDistanceText").textContent=(km<10?km.toFixed(1):Math.round(km).toString())+" km from "+(result.verified?"railway":"approx. line");
+}
 function startGps(){
  if(!navigator.geolocation){$("gpsIndicator").classList.add("error");$("gpsStatus").textContent="GPS unavailable";return;}
  if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
@@ -369,6 +418,7 @@ function startGps(){
  gpsWatch=navigator.geolocation.watchPosition(position=>{
    userCoords={lat:position.coords.latitude,lon:position.coords.longitude};
    updateHeaderDistances();
+   updateTrackerGps();
    updateGeoLocation(userCoords.lat,userCoords.lon);
    const result=projectToRail(position.coords.latitude,position.coords.longitude);
    if(!Number.isFinite(result.x))return;
@@ -376,7 +426,7 @@ function startGps(){
    
    $("gpsIndicator").classList.remove("error");$("gpsIndicator").classList.add("active");$("gpsStatus").textContent="GPS tracking · ±"+Math.round(position.coords.accuracy)+" m";
  },err=>{
-   userCoords=null;updateHeaderDistances();
+   userCoords=null;updateHeaderDistances();updateTrackerGps();
    $("gpsIndicator").classList.remove("active");$("gpsIndicator").classList.add("error");
    $("gpsStatus").textContent=err.code===1?"Location permission denied. Allow location in Safari settings.":err.code===2?"Could not determine your location.":"GPS unavailable. Check location permissions.";
    if(gpsWatch!==null){navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;}
@@ -556,7 +606,7 @@ function restoreGeo(){
   const raw=JSON.parse(localStorage.getItem("jacobitetrack-osm-geometry-v2")||"null");
   if(raw&&Date.now()-raw.saved<14*86400000&&Array.isArray(raw.rail)&&Array.isArray(raw.water)){
    geoMapFeatures.rail=raw.rail;geoMapFeatures.water=raw.water;geoMapFeatures.coast=raw.coast||[];
-   renderGeoMaps();$("geoStatus").textContent="Cached OSM geography";
+   renderGeoMaps();updateTrackerGps();$("geoStatus").textContent="Cached OSM geography";
   }
  }catch{}
 }
@@ -569,6 +619,7 @@ async function loadGeoRailway(){
  const results=await Promise.allSettled([overpassGeometry(railQuery),overpassGeometry(waterQuery)]);
  const r=results[0],w=results[1];
  if(r.status==="fulfilled"){const lines=extractShapes(r.value,"rail");if(lines.length)geoMapFeatures.rail=lines}
+ updateTrackerGps();
  if(w.status==="fulfilled"){const lakes=extractShapes(w.value,"water");if(lakes.length)geoMapFeatures.water=lakes;geoMapFeatures.coast=extractShapes(w.value,"coast")}
  renderGeoMaps();cacheGeo();
  const hasRail=geoMapFeatures.rail.length>0,hasWater=geoMapFeatures.water.length>0;
