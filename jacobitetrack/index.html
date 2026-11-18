@@ -25,6 +25,9 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 .geo-gps{width:16px;height:16px;background:#348cff;border:3px solid white;border-radius:50%;box-shadow:0 0 0 5px #348cff4d;animation:geopulse 1.65s ease-in-out infinite}
 @keyframes geopulse{50%{box-shadow:0 0 0 11px #348cff0c}}
 .leaflet-container{font-family:inherit;background:#0f1d2b!important}
+.geo-map .leaflet-tile-pane img.leaflet-tile{filter:brightness(.68) invert(.94) hue-rotate(180deg) saturate(.7) contrast(.9)}
+.geo-map .leaflet-control-attribution{background:#142131d9!important;color:#adc0d1!important;font-size:9px!important}
+.geo-map .leaflet-control-attribution a{color:#9cd3ff!important}
 .leaflet-control-zoom a{background:#162233!important;color:#cde5fa!important;border-color:#34445c!important}
 .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#182333;color:#e8f2ff}
 @media(max-width:740px){.geo-map{height:220px}.geo-map.geo-close{height:205px}.geo-heading{font-size:13px}.geo-panel{margin:11px 0}}
@@ -272,11 +275,11 @@ function updateGeoLocation(lat,lon){
 }
 function initialiseGeoMaps(){
  if(typeof L==="undefined"){$("geoStatus").textContent="Map unavailable";$("geoNote").textContent="The geographic map library could not load. Please check your connection.";return}
- const background="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
- const opts={zoomControl:true,attributionControl:false,scrollWheelZoom:false};
+ const background="https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+ const opts={zoomControl:true,attributionControl:true,scrollWheelZoom:false};
  const overview=L.map("mapOverview",opts),close=L.map("mapClose",opts);
  geoMaps=[overview,close];
- geoMaps.forEach(map=>L.tileLayer(background,{subdomains:"abcd",maxZoom:18,crossOrigin:true}).addTo(map));
+ geoMaps.forEach(map=>L.tileLayer(background,{maxZoom:19,attribution:"&copy; OpenStreetMap contributors",crossOrigin:true}).addTo(map));
  overview.fitBounds([[56.809,-5.905],[57.02,-5.055]],{padding:[16,16]});
  close.setView([56.873,-5.447],12);
  for(const site of Object.values(siteData)){
@@ -312,7 +315,7 @@ async function loadGeoRailway(){
   geoTrackLayers.push(L.polyline(geometry,{color:"#5caf91",weight:5,opacity:.97,interactive:false,lineCap:"round",lineJoin:"round"}).addTo(map));
  }
  $("geoStatus").textContent="OSM track loaded";
- $("geoNote").textContent="Actual OpenStreetMap railway track geometry displayed (may include branch tracks). Photo markers are approximate coordinates, not verified public walking paths. Map data © OpenStreetMap contributors; basemap © CARTO.";
+ $("geoNote").textContent="Actual OpenStreetMap railway track geometry displayed (may include branch tracks). Photo markers are approximate coordinates, not verified public walking paths. Map data and basemap © OpenStreetMap contributors.";
 }
 initialiseGeoMaps();
 
