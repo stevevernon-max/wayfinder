@@ -388,9 +388,35 @@ main{padding-top:8px}
 .planned-works-status.works-alert{color:#ffdba1;background:#38291a;border:1px solid #ba812e}
 .planned-works-status strong{display:block;margin-bottom:4px;font-size:12px}
 .planned-works-status a{color:#ffe9bc;text-decoration:underline}
+
+/* Separate train status from a pulsing GPS-accuracy badge. */
+.app-header .header-main{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.app-header .header-brand{flex:0 1 auto;min-width:0}
+.app-header .header-brand>strong{font-size:clamp(17px,4.7vw,24px);white-space:nowrap}
+.app-header .header-pills{display:flex;align-items:center;gap:6px;margin-left:auto;min-width:0}
+.app-header #activeTrainsPill{margin:0;max-width:none;flex:0 0 auto;white-space:nowrap;animation:none;box-shadow:none;gap:0}
+.app-header #activeTrainsPill::before{display:none!important;content:none!important;animation:none!important}
+.app-header .gps-accuracy-pill{display:inline-flex;align-items:center;gap:6px;min-height:29px;padding:6px 9px;border-radius:999px;white-space:nowrap;background:#182a44;border:1px solid #415c7a;color:#d1e5fc;font-size:clamp(10px,2.7vw,12px);font-weight:750;font-variant-numeric:tabular-nums}
+.app-header .gps-accuracy-pill .gps-indicator{display:block;flex:0 0 auto;width:8px;height:8px;background:#76879c;animation:none;box-shadow:none}
+.app-header .gps-accuracy-pill.gps-ready{background:#163b4d;border-color:#367d9c;color:#e0f7ff}
+.app-header .gps-accuracy-pill.gps-ready .gps-indicator{background:#44c8f0;animation:gpsFlash 1.2s ease-in-out infinite;box-shadow:0 0 0 3px #44c8f032}
+.app-header .gps-accuracy-pill.gps-poor{background:#403020;border-color:#8e6337;color:#ffe1b4}
+.app-header .gps-accuracy-pill.gps-poor .gps-indicator{background:#f3b35d}
+@media(max-width:430px){
+ .app-header .header-pills{gap:4px}
+ .app-header #activeTrainsPill{padding:6px 7px;font-size:clamp(9px,2.4vw,11px)}
+ .app-header .gps-accuracy-pill{padding:6px 7px;gap:4px;font-size:clamp(9px,2.4vw,11px)}
+}
+@media(max-width:350px){.app-header .header-main{flex-wrap:wrap}.app-header .header-pills{width:100%;justify-content:flex-end}}
+/* Darken only background map raster, leaving the green track and markers clear. */
+#geoTile .geo-basemap{opacity:1;filter:brightness(.68) saturate(.78) contrast(1.15)}
+/* Engineering works belongs to the main content, immediately after geographic map. */
+main>.planned-works-status{margin:0 0 10px}
+/* Weather moved to full-width tile above photography-timing controls. */
+.weather-first{margin-bottom:0}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
-<div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span></div>
+<div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
 <section id="trackerTile" aria-label="Railway train tracker">
 <span id="feedBadge" hidden aria-live="polite">Checking</span>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Nine evenly spaced mapped stations from Mallaig to Fort William" role="img">
@@ -418,7 +444,6 @@ main{padding-top:8px}
  </svg></div><div class="viaduct-details"><div class="viaduct-time-row"><strong id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</strong><span class="viaduct-location">Glenfinnan Viaduct</span></div><div class="viaduct-subtitle"><span id="viaductTileCountdown">Awaiting railway prediction</span><span id="viaductTileNote" hidden></span></div></div></div>
 <span id="nearestTrain" hidden>—</span>
 </section>
-<div id="plannedWorksAlert" class="planned-works-status" role="status" aria-live="polite" hidden></div>
 </div></header><main>
 <section class="tile" id="geoTile">
 <div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with roads, lochs, railway and estimated train position markers; drag or pinch to navigate"></div>
@@ -427,13 +452,15 @@ main{padding-top:8px}
 <div class="geo-map-bottom"><span><i class="geo-line"></i> Railway</span><span><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#60c1fb;border:2px solid #f1f9ff"></i> Reported</span><span><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#f0b84a;border:2px solid #fff4d4"></i> Estimated</span><span>Drag · Pinch to zoom</span></div>
 <p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
 </section>
+<div id="plannedWorksAlert" class="planned-works-status" role="status" aria-live="polite" hidden></div>
+<div class="cols single-viewpoint weather-first"><section class="tile"><div class="eyebrow">PHOTOGRAPHY CONDITIONS</div><div class="heading">Glenfinnan weather & light</div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="notice" id="photoAdvice">Forecast conditions will appear here when available.</div><div class="small" id="weatherTime"></div></section></div>
 <div class="cols single-viewpoint">
 <section class="tile"><div class="eyebrow">YOUR VIEWPOINT</div><div class="heading">Photography timing</div><label class="field">Location<select id="viewpoint"><option value="glenfinnan">Glenfinnan Viaduct</option><option value="lochailort">Lochailort</option><option value="arisaig">Arisaig</option><option value="morar">Morar</option><option value="glenStation">Glenfinnan station</option><option value="beasdale">Beasdale</option><option value="locheilside">Locheilside</option><option value="lochEilOutwardBound">Loch Eil Outward Bound</option><option value="banavie">Banavie</option><option value="eilt">Loch Eilt</option><option value="corpach">Corpach</option><option value="mallaig">Mallaig</option><option value="fortWilliam">Fort William</option></select></label><div class="value countdown" id="eta">—</div><div class="muted" id="etaNote">No verified train ETA available.</div><div class="small" id="etaSource"></div>
 <div class="alerts" style="margin-top:12px"><select id="alertLead" aria-label="Train approaching warning"><option value="5">5 min alert</option><option value="10" selected>10 min alert</option><option value="15">15 min alert</option><option value="20">20 min alert</option></select><button class="button" id="notifyBtn">Enable alerts</button><button class="button" id="disableAlertsBtn" style="display:none">Disable alerts</button></div><div class="small" id="notificationStatus">Checking whether background notifications are available…</div><div class="small" id="installHint"></div>
 </section></div>
 <div class="cols">
 <section class="tile"><div class="eyebrow">PHOTOGRAPHY SPOTS</div><div class="heading">10 potential viewpoints</div><div id="spots"></div><p class="small">Candidate photo locations, not an online-researched ranking. Access and sightlines are unverified; stay on public paths and never enter railway property.</p></section>
-<section class="tile"><div class="eyebrow">PHOTOGRAPHY CONDITIONS</div><div class="heading">Glenfinnan weather & light</div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="notice" id="photoAdvice">Forecast conditions will appear here when available.</div><div class="small" id="weatherTime"></div></section>
+
 </div>
 <footer>Independent photography project. Railway ETAs use authorised Darwin and VSTP schedules, with Network Rail TRUST reports used as actual station-time anchors. Train markers estimate position between timed points along the mapped line; they are not GPS positions, and speed restrictions are not individually modelled. In-app navigation and alerts do not link to external websites. Location and weather estimates are not safety guarantees.</footer>
 </main><script>
@@ -778,7 +805,7 @@ function updateViaductCountdown(){
  const label=$("viaductRemaining"),time=$("viaductTileCountdown"),note=$("viaductTileNote");
  if(!Number.isFinite(minutes)||minutes<0){
   label.textContent="—";
-  time.textContent="Next viaduct crossing not yet available in timetable";
+  time.textContent="No upcoming crossing supplied by railway feed";
   note.textContent="";
   return;
  }
@@ -800,8 +827,14 @@ function updateViaductCountdown(){
 setInterval(updateViaductCountdown,1000);
 function updateActiveTrainsPill(){
  const count=visibleTrainMarkers().length,pill=$("activeTrainsPill");
- pill.textContent=(count?count+(count===1?" train running":" trains running"):"No trains running")+(Number.isFinite(gpsAccuracyMetres)?" · GPS ±"+Math.round(gpsAccuracyMetres)+"m":" · GPS "+(userCoords?"acquiring…":"waiting…"));
+ pill.textContent=count?count+(count===1?" train running":" trains running"):"No trains running";
  pill.classList.toggle("has-trains",count>0);
+ const gpsPill=$("gpsAccuracyPill");
+ const accurate=Number.isFinite(gpsAccuracyMetres)&&gpsAccuracyMetres>=0;
+ $("gpsAccuracyLabel").textContent=accurate?"GPS ±"+Math.round(gpsAccuracyMetres)+"m":userCoords?"GPS finding":"GPS waiting";
+ gpsPill.classList.toggle("gps-ready",accurate);
+ gpsPill.classList.toggle("gps-poor",accurate&&gpsAccuracyMetres>100);
+ gpsPill.title=accurate?"Estimated horizontal location accuracy: ±"+Math.round(gpsAccuracyMetres)+" metres":"Waiting for GPS accuracy";
 }
 function render(){
  updateActiveTrainsPill();
