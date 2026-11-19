@@ -589,7 +589,7 @@ function scheduledTimetableMarkers(now=Date.now()){
   for(let i=0;i<stops.length-1;i++){
    const a=stops[i],b=stops[i+1];
    if(b.at<=a.at||now<a.at||now>=b.at)continue;
-   const direction=service.from==="Mallaig"?"back":"out";
+   const direction=service.from==="Mallaig"?"out":"back";
    const train={
     id:"Scheduled "+(index+1),direction,positionQuality:"timetable_only",
     scheduled:true,locationVerified:false,
@@ -927,7 +927,7 @@ function updateViaductCountdown(){
  const nowLocal=dateOf(Date.now()),crossingLocal=dateOf(trainAt);
  const when=crossingLocal===nowLocal?"Today":dateOf(Date.now()+86400000)===crossingLocal?"Tomorrow"
   :new Date(trainAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"});
- time.textContent=when+" "+fmt(trainAt)+" crossing · position by "+fmt(inPositionAt);
+ time.textContent=when+" "+fmt(trainAt)+" crossing · Get in position by "+fmt(inPositionAt);
  // Keep Tile 2 focused on the countdown and crossing time.
  // Timetable predictions remain estimates internally, without a warning/error label.
  note.hidden=true;
@@ -935,11 +935,10 @@ function updateViaductCountdown(){
 }
 setInterval(updateViaductCountdown,1000);
 function updateActiveTrainsPill(){
- const count=visibleTrainMarkers().length,pill=$("activeTrainsPill");
- const markers=visibleTrainMarkers();
- const estimated=markers.length>0&&markers.every(item=>item.train.positionQuality==="timetable_only");
- pill.textContent=estimated?markers.length+" scheduled (not live)":count?count+(count===1?" train estimated":" trains estimated"):"No confirmed trains";
- pill.title=estimated?"Published timetable projection only; actual train movement is unconfirmed":"Positions estimated from available railway time reports";
+ const markers=visibleTrainMarkers(),count=markers.length,pill=$("activeTrainsPill");
+ const estimated=count>0&&markers.every(item=>item.train.positionQuality==="timetable_only");
+ pill.textContent=count+" "+(count===1?"train":"trains")+" on track";
+ pill.title=estimated?"Timetable-projected positions; actual train movement is unconfirmed":"Positions are inferred from railway timing reports, not GPS";
  pill.classList.toggle("has-trains",count>0);
  const gpsPill=$("gpsAccuracyPill");
  const accurate=Number.isFinite(gpsAccuracyMetres)&&gpsAccuracyMetres>=0;
@@ -1289,7 +1288,16 @@ function updateGeoTrainMarkers(){
   halo.appendChild(geoSVG("animate",{attributeName:"opacity",values:".75;0",dur:"1.4s",repeatCount:"indefinite"}));marker.appendChild(halo);
   const core=geoSVG("circle",{r:12,class:"train-map-body",style:"animation:none"});
   core.appendChild(geoSVG("animate",{attributeName:"r",values:"13;19;13",dur:"1.4s",repeatCount:"indefinite"}));marker.appendChild(core);
-  const angle=(Number.isFinite(point.angle)?point.angle:0)+(train.direction==="back"?180:0);
+  // Orient the map arrow from the actual FROM and TO station coordinates,
+  // not from a railway segment whose OSM geometry may be reversed.
+  const from=railFixes.find(s=>s.name.toLowerCase()===String(train.position?.fromStation||"").toLowerCase());
+  const to=railFixes.find(s=>s.name.toLowerCase()===String(train.position?.toStation||"").toLowerCase());
+  let angle=Number.isFinite(point.angle)?point.angle+(train.direction==="back"?180:0):0;
+  if(from&&to&&from.name!==to.name){
+   const [fx,fy]=geoPoint(from.lat,from.lon,geoViews[0].bounds);
+   const [tx,ty]=geoPoint(to.lat,to.lon,geoViews[0].bounds);
+   angle=Math.atan2(ty-fy,tx-fx)*180/Math.PI;
+  }
   const arrow=geoSVG("text",{y:1,class:"train-map-arrow",transform:"rotate("+angle.toFixed(1)+")"});arrow.textContent="→";marker.appendChild(arrow);
   const title=geoSVG("title");title.textContent=train.id+" · "+(train.positionLabel||"Estimated position")+(mapped?" · projected onto mapped railway":" · approximate station-based position")+"; not GPS";marker.appendChild(title);
   group.appendChild(marker);
