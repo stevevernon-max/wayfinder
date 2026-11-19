@@ -167,6 +167,48 @@ body.geo-fullscreen-open{overflow:hidden}
 @media(prefers-reduced-motion:reduce){#activeTrainsPill{animation:none}}
 #proximityTile .proximity-item[hidden]{display:none}
 #proximityTile .proximity-item:first-child{flex:1;width:100%;border:0}
+
+/* Tile 2: compact viaduct countdown inspired by the supplied reference. */
+#proximityTile{
+ display:flex;align-items:center;gap:clamp(10px,3vw,18px);
+ min-width:0;min-height:112px;padding:clamp(12px,3vw,18px);
+ margin-bottom:10px;background:#171d2b;border:1px solid #34415c;
+ border-radius:22px;position:relative;overflow:hidden;
+}
+#proximityTile .viaduct-icon{
+ display:grid;place-items:center;flex:0 0 auto;width:clamp(64px,17vw,86px);
+ height:clamp(64px,17vw,86px);border-radius:18px;background:#202e4a;color:#a0c8ff;
+}
+#proximityTile .viaduct-icon svg{height:80%;width:80%}
+#proximityTile .viaduct-details{min-width:0;flex:1}
+#proximityTile .viaduct-main-time{font-size:clamp(33px,8.8vw,53px);line-height:1.04;
+ color:#70aaff;letter-spacing:-1.4px;font-variant-numeric:tabular-nums;white-space:nowrap}
+#proximityTile .viaduct-subtitle{font-size:clamp(11px,2.9vw,16px);line-height:1.35;
+ margin-top:5px;color:#a4afc2;overflow-wrap:anywhere}
+#proximityTile .viaduct-alert-button{display:grid;place-items:center;flex:0 0 auto;
+ border:0;background:transparent;color:#9aa8c4;width:37px;height:44px;
+ padding:5px;cursor:pointer;border-radius:10px}
+#proximityTile .viaduct-alert-button svg{width:26px;height:26px}
+#proximityTile .viaduct-alert-button:focus-visible{outline:2px solid #a0c8ff;outline-offset:2px}
+#proximityTile .viaduct-alert-button:hover{background:#263552;color:#d8e8ff}
+@keyframes viaductAmberPulse{
+ 0%,100%{border-color:#e5a532;box-shadow:0 0 0 0 #f4a62912;background:#28231b}
+ 50%{border-color:#ffca65;box-shadow:0 0 0 5px #ffae2533,0 0 20px #ffae2533;background:#332817}
+}
+#proximityTile.viaduct-soon{animation:viaductAmberPulse 1.7s ease-in-out infinite}
+#proximityTile.viaduct-soon .viaduct-icon{background:#533919;color:#ffd38b}
+#proximityTile.viaduct-soon .viaduct-main-time{color:#ffc15e}
+#proximityTile.viaduct-soon .viaduct-alert-button{color:#ffcd80}
+@media(max-width:370px){
+ #proximityTile{gap:9px;padding:12px 10px}
+ #proximityTile .viaduct-icon{width:59px;height:59px;border-radius:14px}
+ #proximityTile .viaduct-alert-button{width:28px;padding:2px}
+ #proximityTile .viaduct-main-time{font-size:32px}
+}
+@media(prefers-reduced-motion:reduce){
+ #proximityTile.viaduct-soon{animation:none;border-color:#e5a532;background:#332817;
+ box-shadow:0 0 0 2px #ffa72c33}
+}
 </style></head><body>
 <header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">NO ACTIVE TRAINS</span></div></header><main>
 <section class="tile" id="trackerTile">
@@ -189,9 +231,22 @@ body.geo-fullscreen-open{overflow:hidden}
 </svg></div>
 <div class="muted" id="trackStatus" hidden></div>
 </section>
-<section class="tile" id="proximityTile" aria-label="Nearest railway information">
-<div class="proximity-item"><div class="proximity-label">GLENFINNAN VIADUCT · NEXT TRAIN</div><div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><strong id="viaductTileCountdown">—:—</strong><span aria-hidden="true" style="color:#6c849b;font-size:24px">|</span><strong id="viaductRemaining" class="countdown"></strong></div><span id="viaductTileNote" class="small" hidden>Estimated from station times</span></div>
-<div class="proximity-item" hidden><div class="proximity-label">NEAREST TRAIN</div><strong id="nearestTrain">—</strong></div>
+<section class="tile" id="proximityTile" aria-label="Glenfinnan Viaduct next train">
+<div class="viaduct-icon" aria-hidden="true"><svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+ <path d="M7 33H65" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+ <rect x="18" y="19" width="32" height="13" rx="2" stroke="currentColor" stroke-width="3"/>
+ <rect x="26" y="23" width="12" height="5" rx="1" fill="currentColor"/>
+ <path d="M49 26H57V33" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+ <path d="M10 63V50C10 42 21 42 21 50V63M21 63V50C21 42 32 42 32 50V63M32 63V50C32 42 43 42 43 50V63M43 63V50C43 42 54 42 54 50V63M54 63V50C54 42 65 42 65 50V63" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
+ </svg></div>
+<div class="viaduct-details">
+ <strong id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</strong>
+ <div class="viaduct-subtitle">Glenfinnan Viaduct · <span id="viaductTileCountdown">—:—</span> · <span id="viaductTileNote">Awaiting railway prediction</span></div>
+</div>
+<button type="button" id="viaductAlertButton" class="viaduct-alert-button" aria-label="View train alert settings" title="View train alert settings">
+<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+</button>
+<span id="nearestTrain" hidden>—</span>
 </section>
 <section class="tile" id="geoTile">
 <div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with roads, lochs, railway and estimated train position markers; drag or pinch to navigate"></div>
@@ -409,8 +464,22 @@ function getViaductApproaching(){
  return arrivals.sort((a,b)=>a.remaining-b.remaining);
 }
 function updateViaductCountdown(){
- const next=getViaductApproaching()[0],seconds=next?Math.max(0,Math.ceil(next.remaining*60)):null;
- $("viaductRemaining").textContent=seconds===null?'':Math.floor(seconds/3600)+':'+String(Math.floor(seconds/60)%60).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
+ const next=getViaductApproaching()[0];
+ const minutes=next?.remaining;
+ const tile=$("proximityTile");
+ const approaching=Number.isFinite(minutes)&&minutes>=0&&minutes<=15;
+ tile.classList.toggle("viaduct-soon",approaching);
+ const label=$("viaductRemaining"),time=$("viaductTileCountdown"),note=$("viaductTileNote");
+ if(!Number.isFinite(minutes)||minutes<0){
+  label.textContent="—";
+  time.textContent="—:—";
+  note.textContent="Awaiting railway prediction";
+  return;
+ }
+ const total=Math.ceil(minutes),hours=Math.floor(total/60),mins=total%60;
+ label.textContent=hours?hours+"h "+String(mins).padStart(2,"0")+"m":Math.max(0,mins)+"m";
+ time.textContent=new Date(Date.now()+minutes*60000).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+ note.textContent=approaching?"Approaching · estimated": "Estimated arrival";
 }
 setInterval(updateViaductCountdown,1000);
 function updateActiveTrainsPill(){
@@ -425,9 +494,7 @@ function render(){
  let glen=getViaductApproaching()[0];
 
 
- $("viaductTileCountdown").textContent=glen?viaductArrivalLabel(glen.remaining):"—:—";
  updateViaductCountdown();
- $("viaductTileNote").textContent=glen?.viewpoints?.glenfinnan?.quality==="estimated_between_station_times"?"Estimated from station times · not GPS":glen?"Next railway-reported passage":"No timetable time available";
  updateHeaderDistances();
 
  const id=$("viewpoint").value;const next=getApproaching(id)[0];
@@ -536,6 +603,11 @@ async function savePush(){
  }catch(e){pushStatus("Could not enable alerts: "+e.message)}
  finally{button.disabled=false}
 }
+$("viaductAlertButton").addEventListener("click",()=>{
+ const target=$("notificationStatus")||$("notifyBtn");
+ target.scrollIntoView({behavior:"smooth",block:"center"});
+ target.setAttribute("tabindex","-1");target.focus({preventScroll:true});
+});
 $("notifyBtn").addEventListener("click",savePush);
 $("disableAlertsBtn").addEventListener("click",async()=>{
  const sub=pushSubscription||await pushRegistration?.pushManager.getSubscription();
