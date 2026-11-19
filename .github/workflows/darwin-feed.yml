@@ -1,6 +1,11 @@
 name: Refresh Darwin railway feed
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/darwin-feed.yml
+      - jacobitetrack/scripts/darwin_feed.py
   schedule:
     # Avoid the busy top of the hour; GitHub may still delay scheduled runs.
     - cron: "2-59/5 * * * *"
