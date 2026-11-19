@@ -851,7 +851,13 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
                         candidates[distance] = (at, station_key, "forecast")
             for at, distance, station_key in schedule_points:
                 old = candidates.get(distance)
-                if at >= now and (old is None or old[0] < now):
+                if (
+                    now - timedelta(hours=2) <= at <= now + SCHEDULE_HORIZON
+                    and (old is None or old[2] == "schedule" and at > old[0])
+                ):
+                    # Keep the latest scheduled point behind a train too; it
+                    # brackets a viaduct crossing when the previous refresh
+                    # happens just after the train passes that station.
                     candidates[distance] = (at, station_key, "schedule")
 
             timed_by_distance = sorted(
