@@ -499,8 +499,16 @@ function visibleTrainMarkers(){
    if(sameGroupDeparture&&now>=sameGroupDeparture.at)continue;
    // Once ANY return service has departed after this arrival, the
    // old inbound marker must disappear, regardless of its feed ID.
-   const relatedDepartures=allMallaigDepartures.map(d=>d.at)
-    .filter(t=>t>=lower.at&&t<=lower.at+120*60000).sort((a,b)=>a-b);
+   const relatedDepartures=[
+    ...allMallaigDepartures.map(d=>d.at),
+    // Feed variants can list only a single Mallaig-to-Morar segment,
+    // without the next station in the same grouped working.
+    ...services.filter(t=>!t.cancelled&&
+      String(t.position?.fromStation||"").toLowerCase()==="mallaig"&&
+      Number.isFinite(t.position?.toProgress)&&t.position.toProgress<99)
+     .map(t=>Date.parse(t.position.fromAt||""))
+   ].filter(t=>Number.isFinite(t)&&t>=lower.at&&t<=lower.at+120*60000)
+    .sort((a,b)=>a-b);
    const departureAlreadyPassed=relatedDepartures.some(t=>t<=now);
    const nextScheduled=relatedDepartures.find(t=>t>now);
    // With no verified return departure, cap inferred dwelling; do not
@@ -518,7 +526,11 @@ function visibleTrainMarkers(){
  // At most one Mallaig hold is shown for an incoming working. Outgoing
  // services automatically replace the hold when their scheduled leg begins.
  const departuresNow=active.some(({train})=>train.position?.fromStation==="Mallaig"&&train.direction==="out");
- if(!departuresNow&&mallaigHolds.length){
+ // A known return train already travelling towards Fort William takes
+ // precedence over any leftover Mallaig arrival marker. This is assessed
+ // across all provider IDs, not just the Mallaig–Morar first segment.
+ const departingReturn=active.some(({train})=>train.direction==="out"&&train.positionQuality!=="terminal_wait");
+ if(!departuresNow&&!departingReturn&&mallaigHolds.length){
   mallaigHolds.sort((a,b)=>b.arrival-a.arrival);
   const {train,progress}=mallaigHolds[0];
   active.push({train,progress});
@@ -551,6 +563,9 @@ function visibleTrainMarkers(){
  const outbound=unique.filter(({train})=>train.direction==="out"&&train.positionQuality!=="terminal_wait");
  const distinct=unique.filter(item=>{
   if(item.train.positionQuality!=="terminal_wait")return true;
+  // Never plot a station hold when a scheduled return movement is already
+  // on a later leg (Morar, Arisaig, Lochailort, etc.).
+  if(outbound.length)return false;
   const arrival=Date.parse(item.train.position?.fromAt||"");
   return !outbound.some(({train})=>{
    const departure=Date.parse(train.position?.fromAt||"");
