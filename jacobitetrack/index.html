@@ -426,6 +426,17 @@ main>.planned-works-status{margin:0 0 10px}
 .app-header .gps-accuracy-pill.gps-ready{color:#d7f4fc}
 .app-header .gps-accuracy-pill.gps-poor{color:#f4d4a1}
 @media(max-width:430px){.app-header .gps-accuracy-pill{padding:0;gap:5px}}
+#timetableTile .table-wrap{overflow-x:auto;margin:10px 0 4px}
+#timetableTile .timetable{width:100%;border-collapse:collapse;font-size:13px}
+#timetableTile th,#timetableTile td{text-align:left;padding:10px 8px;border-bottom:1px solid #2b394b;vertical-align:top}
+#timetableTile th{font-size:10px;color:#a9b9cb;letter-spacing:.5px;text-transform:uppercase}
+#timetableTile td:first-child{font-weight:800;color:#d8ecff;white-space:nowrap}
+#timetableTile td:nth-child(3){font-weight:750;color:#ffd88b;font-variant-numeric:tabular-nums;white-space:nowrap}
+#timetableTile details summary{cursor:pointer;color:#a9c9e5;font-size:11px;white-space:nowrap}
+#timetableTile .stop-list{padding:8px 0 2px;min-width:185px;color:#b8c6d5;font-size:11px;line-height:1.7}
+#timetableTile .stop-list span{display:flex;justify-content:space-between;gap:12px}
+#timetableTile .table-note{margin-top:9px}
+@media(max-width:520px){#timetableTile .timetable{font-size:12px}#timetableTile th,#timetableTile td{padding:9px 5px}#timetableTile th{font-size:9px}#timetableTile th:nth-child(2),#timetableTile td:nth-child(2){min-width:125px}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -465,6 +476,12 @@ main>.planned-works-status{margin:0 0 10px}
 <p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
 </section>
 <div id="plannedWorksAlert" class="planned-works-status" role="status" aria-live="polite" hidden></div>
+<section class="tile" id="timetableTile" aria-labelledby="timetableHeading">
+<div class="eyebrow">PUBLISHED SERVICE TIMES</div><div class="heading" id="timetableHeading">Tomorrow’s West Highland timetable</div>
+<div class="small" id="timetableStatus">Loading the latest downloaded timetable…</div>
+<div class="table-wrap"><table class="timetable"><thead><tr><th>Train</th><th>Route</th><th>Viaduct estimate</th><th></th></tr></thead><tbody id="timetableRows"></tbody></table></div>
+<div class="small" id="timetableSource"></div>
+</section>
 <div class="cols single-viewpoint weather-first"><section class="tile"><div class="eyebrow">PHOTOGRAPHY CONDITIONS</div><div class="heading">Glenfinnan weather & light</div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="notice" id="photoAdvice">Forecast conditions will appear here when available.</div><div class="small" id="weatherTime"></div></section></div>
 <div class="cols single-viewpoint">
 <section class="tile"><div class="eyebrow">YOUR VIEWPOINT</div><div class="heading">Photography timing</div><label class="field">Location<select id="viewpoint"><option value="glenfinnan">Glenfinnan Viaduct</option><option value="lochailort">Lochailort</option><option value="arisaig">Arisaig</option><option value="morar">Morar</option><option value="glenStation">Glenfinnan station</option><option value="beasdale">Beasdale</option><option value="locheilside">Locheilside</option><option value="lochEilOutwardBound">Loch Eil Outward Bound</option><option value="banavie">Banavie</option><option value="eilt">Loch Eilt</option><option value="corpach">Corpach</option><option value="mallaig">Mallaig</option><option value="fortWilliam">Fort William</option></select></label><div class="value countdown" id="eta">—</div><div class="muted" id="etaNote">No verified train ETA available.</div><div class="small" id="etaSource"></div>
@@ -899,6 +916,23 @@ async function fetchWeather(){
  $("weatherTime").textContent="Glenfinnan forecast · Updated "+now.time.replace("T"," ")+" (UK local) · Open-Meteo weather data";
  }catch(e){$("weather").innerHTML='<div class="muted">Weather forecast unavailable.</div>';$("photoAdvice").textContent="Unable to load weather and visibility information."; $("weatherTime").textContent=e.message;}
 }
+async function loadTimetable(){
+ const status=$("timetableStatus"),rows=$("timetableRows"),sourceEl=$("timetableSource");
+ try{
+  const response=await fetch("./timetable.json",{cache:"no-store"});if(!response.ok)throw Error("HTTP "+response.status);
+  const data=await response.json();if(!/^\d{4}-\d{2}-\d{2}$/.test(data.serviceDate)||!Array.isArray(data.trains))throw Error("Invalid timetable");
+  const [y,m,d]=data.serviceDate.split("-").map(Number),date=new Date(y,m-1,d),tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
+  const dayLabel=date.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
+  $("timetableHeading").textContent=(date.toDateString()===tomorrow.toDateString()?"Tomorrow’s":"Published")+" West Highland timetable · "+dayLabel;
+  status.textContent=data.trains.length+" scheduled ScotRail services · "+dayLabel+". Select a train to see its listed calls.";
+  rows.innerHTML=data.trains.map(train=>{
+   const stops=Array.isArray(train.stops)?train.stops:[];
+   const detail=stops.map(stop=>'<span><span>'+safe(stop[0])+'</span><time>'+safe(stop[1])+'</time></span>').join("");
+   return '<tr><td>'+safe(train.id)+'</td><td>'+safe(train.from)+' → '+safe(train.to)+'</td><td>'+safe(train.viaduct)+'</td><td><details><summary>Stops</summary><div class="stop-list">'+detail+'</div></details></td></tr>';
+  }).join("");
+  sourceEl.textContent=data.notice+" Source: "+data.source+" · File "+data.sourceFile+" (issued "+new Date(data.publishedFrom).toLocaleString("en-GB",{timeZone:"Europe/London",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+" UK time).";
+ }catch(error){status.textContent="The downloaded timetable is unavailable.";rows.innerHTML="";sourceEl.textContent="";}
+}
 async function load(){
  $("feedBadge").textContent="Checking";
  if(!FEED_URL){services=[];source=null;feedUpdated=null;$("feedBadge").textContent="No live feed";$("trackStatus").textContent="";render();return;}
@@ -980,7 +1014,7 @@ $("disableAlertsBtn").addEventListener("click",async()=>{
 });
 $("viewpoint").addEventListener("change",render);
 $("alertLead").addEventListener("change",render);
-load();fetchWeather();setupPush();setInterval(load,60000);setInterval(fetchWeather,600000);setInterval(()=>{if(source)render()},15000);
+load();loadTimetable();fetchWeather();setupPush();setInterval(load,60000);setInterval(fetchWeather,600000);setInterval(()=>{if(source)render()},15000);
 /* GPS stays entirely in the device browser; only its nearest position on this
    simplified station-based railway alignment is displayed. Nothing is uploaded. */
 const railFixes=[
