@@ -149,9 +149,9 @@ def _merge_ldb_service(state: dict[str, Any], raw: dict[str, Any], board_crs: st
     identifier = "ldb:" + id_part
     raw_points = _ldb_calling_points(raw, "previousCallingPoints") + [{
         "crs": board_crs,
-        "st": get(raw, "std"),
-        "et": get(raw, "etd"),
-        "at": get(raw, "at"),
+        "st": get(raw, "std", "sta"),
+        "et": get(raw, "etd", "eta"),
+        "at": get(raw, "atd", "ata"),
     }] + _ldb_calling_points(raw, "subsequentCallingPoints")
     locations: dict[str, dict[str, str]] = {}
     schedule_at: dict[str, str] = {}
@@ -1081,8 +1081,8 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
     trains = trains[:100]
     return {
         "updated": now.isoformat().replace("+00:00", "Z"),
-        "source": "Darwin/VSTP and TRUST via Rail Data Marketplace",
-        "quality": "Darwin/VSTP station times and TRUST actual reports; interpolated positions are estimates, not GPS.",
+        "source": "West Highland station arrival and departure boards via Rail Data Marketplace",
+        "quality": "Positions are interpolated from station board actual/forecast/scheduled times, never GPS.",
         "status": "ok" if trains else "no_recent_reports",
         "sources": state.get("sources", {}),
         "trains": trains,
@@ -1113,7 +1113,12 @@ def main() -> int:
     if mode == "ldb":
         now = datetime.now(timezone.utc)
         state = load_json(STATE_PATH, {"services": {}})
-        state.setdefault("services", {})
+        # Station arrival/departure boards are the sole movement source.
+        # Discard older Kafka/Darwin/Network Rail state before collecting.
+        state["services"] = {
+            key: value for key, value in state.get("services", {}).items()
+            if isinstance(value, dict) and value.get("source") == "live_departure_board"
+        }
         try:
             matched = collect_ldb(state, now)
         except RuntimeError as exc:
