@@ -366,6 +366,22 @@ main{padding-top:8px}
 }
 .app-header.viaduct-imminent #proximityTile,
 .app-header.viaduct-arriving #proximityTile{background:transparent;border:0;box-shadow:none;animation:none}
+
+/* Countdown is unboxed in all states; pulse ONLY the outer combined card.
+   Explicitly cancel legacy nested countdown animation including old keyframes. */
+.app-header .header-shell #proximityTile,
+.app-header.viaduct-imminent .header-shell #proximityTile,
+.app-header.viaduct-arriving .header-shell #proximityTile{
+ animation:none!important;
+ background:transparent!important;
+ border:0!important;
+ outline:0!important;
+ box-shadow:none!important;
+ border-radius:0!important;
+}
+.app-header .header-shell #proximityTile::before,
+.app-header .header-shell #proximityTile::after{display:none!important;content:none!important}
+.app-header .header-shell #proximityTile .viaduct-top{border:0;outline:0;box-shadow:none;background:transparent}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span></div>
@@ -672,8 +688,8 @@ function updateViaductCountdown(){
  const header=document.querySelector(".app-header");
  header?.classList.toggle("viaduct-imminent",approaching&&!near);
  header?.classList.toggle("viaduct-arriving",near);
- tile.classList.toggle("viaduct-soon",approaching&&!near);
- tile.classList.toggle("viaduct-arriving",near);
+ // Flash the single outer card only: the countdown has no independent alert state.
+ tile.classList.remove("viaduct-soon","viaduct-arriving");
  const label=$("viaductRemaining"),time=$("viaductTileCountdown"),note=$("viaductTileNote");
  if(!Number.isFinite(minutes)||minutes<0){
   label.textContent="—";
