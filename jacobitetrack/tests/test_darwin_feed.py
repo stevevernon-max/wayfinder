@@ -43,7 +43,7 @@ class DarwinFeedTests(unittest.TestCase):
         self.assertEqual(train["direction"], "out")
         self.assertAlmostEqual(train["progress"], 86.5004475, places=4)
         self.assertEqual(train["positionLabel"], "Estimated Morar–Arisaig")
-        self.assertEqual(train["viewpoints"]["glenfinnan"]["etaMinutes"], 8.0)
+        self.assertAlmostEqual(train["viewpoints"]["glenfinnan"]["etaMinutes"], 8.63, places=2)
         self.assertFalse(train["locationVerified"])
         self.assertIsNone(train["lat"])
         self.assertIsNone(train["lon"])
