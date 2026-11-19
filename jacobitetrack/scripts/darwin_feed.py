@@ -28,8 +28,13 @@ STATION_BY_TIPLOC = {
     "MLAIG": ("mallaig", 0),
     "MORAR": ("morar", 1),
     "ARISAIG": ("arisaig", 2),
+    "BEASDAL": ("beasdale", 2.5),
     "LCHALRT": ("lochailort", 3),
     "GLNFNNN": ("glenfinnan", 4),
+    "LCHESDE": ("locheilside", 4.5),
+    "LCEILOB": ("lochEilOutwardBound", 4.65),
+    "CORPACH": ("corpach", 4.8),
+    "BANAVIE": ("banavie", 4.9),
     "FRTWLM": ("fortWilliam", 5),
     # Accept descriptive variants in case another Darwin version emits them.
     "MALLAIG": ("mallaig", 0),
@@ -42,8 +47,13 @@ STATION_NAME_BY_KEY = {
     "mallaig": "Mallaig",
     "morar": "Morar",
     "arisaig": "Arisaig",
+    "beasdale": "Beasdale",
     "lochailort": "Lochailort",
     "glenfinnan": "Glenfinnan",
+    "locheilside": "Locheilside",
+    "lochEilOutwardBound": "Loch Eil Outward Bound",
+    "corpach": "Corpach",
+    "banavie": "Banavie",
     "fortWilliam": "Fort William",
 }
 VIEWPOINT_BY_KEY = {
@@ -54,6 +64,18 @@ VIEWPOINT_BY_KEY = {
 }
 LINE_TIPLOCS = set(STATION_BY_TIPLOC)
 FRESH_SECONDS = 600
+
+
+def is_line_service(service: dict[str, Any]) -> bool:
+    """Whether a saved Darwin service calls at a station on the tracked segment."""
+    known = set(STATION_BY_TIPLOC)
+    locations = service.get("locations", {})
+    route = service.get("route", [])
+    return (
+        isinstance(locations, dict) and any(str(code).upper() in known for code in locations)
+    ) or (
+        isinstance(route, list) and any(str(code).upper() in known for code in route)
+    )
 
 
 def _key(value: Any) -> str:
@@ -181,6 +203,16 @@ def _merge_ts(state: dict[str, Any], ts: dict[str, Any], payload_time: datetime)
         return
     identifier = str(rid or uid)
     services = state.setdefault("services", {})
+    locations_value = get(ts, "Location", "locations", "location")
+    existing = services.get(identifier)
+    if existing is None and not any(
+        isinstance(location, dict) and _location_tiploc(location) in STATION_BY_TIPLOC
+        for location in as_list(locations_value)
+    ):
+        # The RDM topic is network-wide; don't persist services outside the
+        # Mallaig–Fort William segment. Existing matches remain eligible for
+        # partial status updates that omit their full calling-point list.
+        return
     service = services.setdefault(identifier, {"rid": identifier, "locations": {}, "route": []})
     service["uid"] = str(uid) if uid else service.get("uid")
     service["serviceDate"] = str(service_date) if service_date else service.get("serviceDate")
@@ -193,7 +225,6 @@ def _merge_ts(state: dict[str, Any], ts: dict[str, Any], payload_time: datetime)
     elif get(ts, "cancelled", "isCancelled") is True:
         service["cancelled"] = True
 
-    locations_value = get(ts, "Location", "locations", "location")
     locations = service.setdefault("locations", {})
     order: list[str] = []
     for raw_location in as_list(locations_value):
@@ -285,7 +316,7 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
             if station[0] in VIEWPOINT_BY_KEY and actual_at and abs((now - actual_at).total_seconds()) < 180:
                 key = VIEWPOINT_BY_KEY[station[0]]
                 viewpoints.setdefault(key, {"etaMinutes": 0.0})
-        if not viewpoints:
+        if not viewpoints and progress is None:
             continue
         position = max(current_indices, default=None, key=lambda item: item[0])
         progress = None
@@ -348,6 +379,16 @@ def main() -> int:
         return 2
 
     state = load_json(STATE_PATH, {"services": {}})
+    all_services = state.get("services", {})
+    if not isinstance(all_services, dict):
+        all_services = {}
+    before_filter = len(all_services)
+    state["services"] = {
+        identifier: service
+        for identifier, service in all_services.items()
+        if isinstance(service, dict) and is_line_service(service)
+    }
+    removed_unrelated = before_filter - len(state["services"])
     config = {
         "bootstrap.servers": os.environ["RDM_BOOTSTRAP_SERVERS"],
         "sasl.username": os.environ["RDM_CONSUMER_USERNAME"],
@@ -398,6 +439,7 @@ def main() -> int:
     feed = build_feed(state, now)
     write_json(FEED_PATH, feed)
     print(f"Published {len(feed['trains'])} fresh Darwin service report(s); processed {processed} status update(s).")
+    print(f"Kept {len(state['services'])} West Highland segment service(s); discarded {removed_unrelated} unrelated saved service(s).")
     return 0
 
 
