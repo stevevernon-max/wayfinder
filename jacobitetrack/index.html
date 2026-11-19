@@ -820,9 +820,21 @@ function renderPlannedWorks(){
 }
 function updateViaductCountdown(){
  const liveNext=getViaductApproaching()[0],now=Date.now();
- const scheduled=scheduledCrossings.filter(c=>Number.isFinite(Date.parse(c.at))&&Date.parse(c.at)>now).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))[0];
- const scheduleMinutes=scheduled?(Date.parse(scheduled.at)-now)/60000:null;
- const minutes=Number.isFinite(liveNext?.remaining)&&(!Number.isFinite(scheduleMinutes)||liveNext.remaining<=scheduleMinutes+5)?liveNext.remaining:scheduleMinutes;
+ const feedNext=scheduledCrossings.filter(c=>Number.isFinite(Date.parse(c.at))&&Date.parse(c.at)>now).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))[0];
+ const pdfNext=nextPublishedViaductCrossing(now);
+ const feedMinutes=feedNext?(Date.parse(feedNext.at)-now)/60000:null;
+ const pdfMinutes=pdfNext?(pdfNext.at-now)/60000:null;
+ // Prefer the next future event; give a matching fresh live ETA precedence
+ // over the static timetable so a small delay does not hide the real train.
+ const candidates=[
+  Number.isFinite(liveNext?.remaining)?{minutes:liveNext.remaining,type:"live"}:null,
+  Number.isFinite(feedMinutes)?{minutes:feedMinutes,type:"feed"}:null,
+  Number.isFinite(pdfMinutes)?{minutes:pdfMinutes,type:"timetable"}:null
+ ].filter(x=>x&&x.minutes>=0).sort((a,b)=>a.minutes-b.minutes);
+ const closest=candidates[0];
+ const liveMatch=closest&&closest.type!=="live"?candidates.find(x=>x.type==="live"&&Math.abs(x.minutes-closest.minutes)<=5):null;
+ const chosen=liveMatch||closest;
+ const minutes=chosen?.minutes;
  const tile=$("proximityTile");
  const approaching=Number.isFinite(minutes)&&minutes>=0&&minutes<=15;
  const near=Number.isFinite(minutes)&&minutes>=0&&minutes<=3;
@@ -834,8 +846,9 @@ function updateViaductCountdown(){
  const label=$("viaductRemaining"),time=$("viaductTileCountdown"),note=$("viaductTileNote");
  if(!Number.isFinite(minutes)||minutes<0){
   label.textContent="—";
-  time.textContent="No upcoming crossing supplied by railway feed";
+  time.textContent="No crossing available in the current railway data or published timetable";
   note.textContent="";
+  note.hidden=true;
   return;
  }
  // Countdown may span midnight or several days; do not reset at 00:00.
@@ -851,7 +864,8 @@ function updateViaductCountdown(){
  const when=crossingLocal===nowLocal?"Today":dateOf(Date.now()+86400000)===crossingLocal?"Tomorrow"
   :new Date(trainAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"});
  time.textContent=when+" "+fmt(trainAt)+" crossing · position by "+fmt(inPositionAt);
- note.textContent="";
+ note.hidden=false;
+ note.textContent=chosen.type==="timetable"?"Scheduled estimate from published timetable · not a live train prediction":chosen.type==="feed"?"Scheduled crossing from railway feed · not confirmed live":"Live railway estimate · subject to change";
 }
 setInterval(updateViaductCountdown,1000);
 function updateActiveTrainsPill(){
@@ -919,6 +933,41 @@ async function fetchWeather(){
 let publishedTimetable=null;
 let renderedTimetableDate=null;
 
+// The downloaded ScotRail timetable is the last-resort source of planned
+// crossings. Never extend it outside its explicit validity dates or treat
+// scheduled services as live observations.
+function nextPublishedViaductCrossing(now=Date.now()){
+ const data=publishedTimetable;
+ if(!data?.patterns||!data.validFrom||!data.validThrough)return null;
+ const localParts=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{
+  timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"
+ }).formatToParts(new Date(now)).map(({type,value})=>[type,value]));
+ const start=Date.UTC(+localParts.year,+localParts.month-1,+localParts.day);
+ let earliest=null;
+ for(let offset=0;offset<8;offset++){
+  const day=new Date(start+offset*86400000);
+  const date=day.toISOString().slice(0,10);
+  if(date<data.validFrom||date>data.validThrough)continue;
+  const dow=day.getUTCDay(),pattern=dow===0?"sunday":dow===6?"saturday":dow===5?"friday":"weekday";
+  for(const service of data.patterns[pattern]||[]){
+   if(!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(service.viaduct||""))continue;
+   const [hours,minutes]=service.viaduct.split(":").map(Number);
+   const utcWall=Date.UTC(day.getUTCFullYear(),day.getUTCMonth(),day.getUTCDate(),hours,minutes);
+   // Determine the UK offset at this date and time, including BST.
+   const offsetParts=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{
+    timeZone:"Europe/London",timeZoneName:"shortOffset",hour:"2-digit"
+   }).formatToParts(new Date(utcWall)).map(({type,value})=>[type,value]));
+   const match=String(offsetParts.timeZoneName||"GMT").match(/GMT([+-])(\\d{1,2})(?::(\\d{2}))?/);
+   const minutesOffset=match?(match[1]==="-"?-1:1)*(Number(match[2])*60+Number(match[3]||0)):0;
+   const at=utcWall-minutesOffset*60000;
+   if(at<=now||earliest&&at>=earliest.at)continue;
+   earliest={at,date,from:service.from,to:service.to};
+  }
+ }
+ return earliest;
+}
+
+
 function renderTimetable(){
  const ukDate=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"});
  const parts=Object.fromEntries(ukDate.formatToParts(new Date()).map(({type,value})=>[type,value]));
@@ -965,6 +1014,7 @@ async function loadTimetable(){
   $("timetableSource").replaceChildren("Viaduct times are estimates from scheduled calls. Check ScotRail for changes. Source: ",source);
   publishedTimetable=data;
   renderTimetable();
+  updateViaductCountdown();
   setInterval(renderTimetable,60000);
  }catch(error){
   $("timetableStatus").textContent="The published timetable is unavailable.";
