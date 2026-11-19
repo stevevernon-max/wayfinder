@@ -185,12 +185,6 @@ body.geo-fullscreen-open{overflow:hidden}
  color:#70aaff;letter-spacing:-1.4px;font-variant-numeric:tabular-nums;white-space:nowrap}
 #proximityTile .viaduct-subtitle{font-size:clamp(11px,2.9vw,16px);line-height:1.35;
  margin-top:5px;color:#a4afc2;overflow-wrap:anywhere}
-#proximityTile .viaduct-alert-button{display:grid;place-items:center;flex:0 0 auto;
- border:0;background:transparent;color:#9aa8c4;width:37px;height:44px;
- padding:5px;cursor:pointer;border-radius:10px}
-#proximityTile .viaduct-alert-button svg{width:26px;height:26px}
-#proximityTile .viaduct-alert-button:focus-visible{outline:2px solid #a0c8ff;outline-offset:2px}
-#proximityTile .viaduct-alert-button:hover{background:#263552;color:#d8e8ff}
 @keyframes viaductAmberPulse{
  0%,100%{border-color:#e5a532;box-shadow:0 0 0 0 #f4a62912;background:#28231b}
  50%{border-color:#ffca65;box-shadow:0 0 0 5px #ffae2533,0 0 20px #ffae2533;background:#332817}
@@ -198,17 +192,26 @@ body.geo-fullscreen-open{overflow:hidden}
 #proximityTile.viaduct-soon{animation:viaductAmberPulse 1.7s ease-in-out infinite}
 #proximityTile.viaduct-soon .viaduct-icon{background:#533919;color:#ffd38b}
 #proximityTile.viaduct-soon .viaduct-main-time{color:#ffc15e}
-#proximityTile.viaduct-soon .viaduct-alert-button{color:#ffcd80}
 @media(max-width:370px){
  #proximityTile{gap:9px;padding:12px 10px}
  #proximityTile .viaduct-icon{width:59px;height:59px;border-radius:14px}
- #proximityTile .viaduct-alert-button{width:28px;padding:2px}
  #proximityTile .viaduct-main-time{font-size:32px}
 }
 @media(prefers-reduced-motion:reduce){
  #proximityTile.viaduct-soon{animation:none;border-color:#e5a532;background:#332817;
  box-shadow:0 0 0 2px #ffa72c33}
 }
+
+/* Reference layout: dominant countdown above one compact metadata line. */
+#proximityTile .viaduct-details{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;min-width:0;flex:1}
+#proximityTile .viaduct-main-time{display:block;font-size:clamp(35px,9.2vw,57px);font-weight:750;line-height:1.08;margin:0;letter-spacing:-1.6px}
+#proximityTile .viaduct-subtitle{display:block;margin-top:3px;color:#9daac1;font-size:clamp(11px,3.05vw,17px);line-height:1.35;white-space:nowrap;letter-spacing:-.2px}
+@media(max-width:450px){
+ #proximityTile{gap:11px;padding:13px 11px}
+ #proximityTile .viaduct-icon{width:clamp(56px,16vw,70px);height:clamp(56px,16vw,70px)}
+ #proximityTile .viaduct-subtitle{font-size:clamp(10px,2.8vw,13px)}
+}
+@media(max-width:350px){#proximityTile .viaduct-subtitle{white-space:normal}}
 </style></head><body>
 <header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">NO ACTIVE TRAINS</span></div></header><main>
 <section class="tile" id="trackerTile">
@@ -243,9 +246,6 @@ body.geo-fullscreen-open{overflow:hidden}
  <strong id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</strong>
  <div class="viaduct-subtitle">Glenfinnan Viaduct · <span id="viaductTileCountdown">—:—</span> · <span id="viaductTileNote">Awaiting railway prediction</span></div>
 </div>
-<button type="button" id="viaductAlertButton" class="viaduct-alert-button" aria-label="View train alert settings" title="View train alert settings">
-<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
-</button>
 <span id="nearestTrain" hidden>—</span>
 </section>
 <section class="tile" id="geoTile">
@@ -479,7 +479,7 @@ function updateViaductCountdown(){
  const total=Math.ceil(minutes),hours=Math.floor(total/60),mins=total%60;
  label.textContent=hours?hours+"h "+String(mins).padStart(2,"0")+"m":Math.max(0,mins)+"m";
  time.textContent=new Date(Date.now()+minutes*60000).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
- note.textContent=approaching?"Approaching · estimated": "Estimated arrival";
+ note.textContent="estimated";
 }
 setInterval(updateViaductCountdown,1000);
 function updateActiveTrainsPill(){
@@ -603,11 +603,6 @@ async function savePush(){
  }catch(e){pushStatus("Could not enable alerts: "+e.message)}
  finally{button.disabled=false}
 }
-$("viaductAlertButton").addEventListener("click",()=>{
- const target=$("notificationStatus")||$("notifyBtn");
- target.scrollIntoView({behavior:"smooth",block:"center"});
- target.setAttribute("tabindex","-1");target.focus({preventScroll:true});
-});
 $("notifyBtn").addEventListener("click",savePush);
 $("disableAlertsBtn").addEventListener("click",async()=>{
  const sub=pushSubscription||await pushRegistration?.pushManager.getSubscription();
