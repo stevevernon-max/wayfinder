@@ -28,32 +28,52 @@ STATION_BY_TIPLOC = {
     "MLAIG": ("mallaig", 0),
     "MORAR": ("morar", 1),
     "ARISAIG": ("arisaig", 2),
+    # Beasdale is retained as an unlabelled timing anchor between map stations.
+    "BEASDAL": ("beasdale", 2.5),
     "LCHALRT": ("lochailort", 3),
     "GLNFNNN": ("glenfinnan", 4),
-    "FRTWLM": ("fortWilliam", 5),
+    "LCHESDE": ("locheilside", 5),
+    "LCEILOB": ("lochEilOutwardBound", 6),
+    "BANAVIE": ("banavie", 7),
+    "FRTWLM": ("fortWilliam", 8),
     # Accept descriptive variants in case another Darwin version emits them.
     "MALLAIG": ("mallaig", 0),
     "LOCHAILORT": ("lochailort", 3),
     "GLENFINNAN": ("glenfinnan", 4),
-    "FTWILLIAM": ("fortWilliam", 5),
-    "FORTWILLIAM": ("fortWilliam", 5),
+    "FTWILLIAM": ("fortWilliam", 8),
+    "FORTWILLIAM": ("fortWilliam", 8),
 }
 STATION_NAME_BY_KEY = {
     "mallaig": "Mallaig",
     "morar": "Morar",
     "arisaig": "Arisaig",
+    "beasdale": "Beasdale",
     "lochailort": "Lochailort",
     "glenfinnan": "Glenfinnan",
+    "locheilside": "Locheilside",
+    "lochEilOutwardBound": "Loch Eil Outward Bound",
+    "banavie": "Banavie",
     "fortWilliam": "Fort William",
 }
 VIEWPOINT_BY_KEY = {
+    "mallaig": "mallaig",
     "morar": "morar",
     "arisaig": "arisaig",
     "lochailort": "lochailort",
     "glenfinnan": "glenfinnan",
+    "locheilside": "locheilside",
+    "lochEilOutwardBound": "lochEilOutwardBound",
+    "banavie": "banavie",
+    "fortWilliam": "fortWilliam",
 }
 LINE_TIPLOCS = set(STATION_BY_TIPLOC)
 FRESH_SECONDS = 600
+LINE_LAST_INDEX = 8
+
+
+def line_progress(index: float) -> float:
+    """Convert an ordered line station index to the app's 0–100 route axis."""
+    return 100.0 * (LINE_LAST_INDEX - index) / LINE_LAST_INDEX
 
 
 def is_line_service(service: dict[str, Any]) -> bool:
@@ -441,13 +461,13 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
         position = None
         if lower is not None:
             _, from_index, from_key = lower
-            from_progress = float((5 - from_index) * 20)
+            from_progress = line_progress(from_index)
             to_progress = from_progress
             to_at = None
             to_key = None
             if upper and upper[0] > lower[0]:
                 to_at, to_index, to_key = upper
-                to_progress = float((5 - to_index) * 20)
+                to_progress = line_progress(to_index)
                 fraction = max(0.0, min(1.0, (now - lower[0]).total_seconds() / (to_at - lower[0]).total_seconds()))
                 progress = from_progress + (to_progress - from_progress) * fraction
                 quality = "scheduled_estimate" if basis == "scheduled_timetable" else "darwin_estimate" if basis == "darwin_forecasts" else "actual_plus_forecast_estimate"
