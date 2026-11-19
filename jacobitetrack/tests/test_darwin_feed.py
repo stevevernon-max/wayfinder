@@ -20,9 +20,9 @@ def kafka_record(*, cancel_reason=None, event_ts="2026-11-19T11:00:00Z"):
         "Location": [
             {"tpl": "MORAR", "arr": {"at": "10:55"}},
             {"tpl": "ARISAIG", "arr": {"et": "11:03"}},
-            {"tpl": "LOCHAILORT", "arr": {"et": "11:06"}},
-            {"tpl": "GLENFINNAN", "pass": {"et": "11:08"}},
-            {"tpl": "FTWILLIAM", "arr": {"et": "11:22"}},
+            {"tpl": "LCHALRT", "arr": {"et": "11:06"}},
+            {"tpl": "GLNFNNN", "pass": {"et": "11:08"}},
+            {"tpl": "FRTWLM", "arr": {"et": "11:22"}},
         ],
     }
     if cancel_reason is not None:
