@@ -382,9 +382,16 @@ main{padding-top:8px}
 .app-header .header-shell #proximityTile::before,
 .app-header .header-shell #proximityTile::after{display:none!important;content:none!important}
 .app-header .header-shell #proximityTile .viaduct-top{border:0;outline:0;box-shadow:none;background:transparent}
+.planned-works-status{margin:0 0 8px;border-radius:9px;padding:8px 10px;font-size:11px;line-height:1.35}
+.planned-works-status[hidden]{display:none!important}
+.planned-works-status.works-unknown{color:#a9b6c7;background:#121b27;border:1px solid #344154}
+.planned-works-status.works-alert{color:#ffdba1;background:#38291a;border:1px solid #ba812e}
+.planned-works-status strong{display:block;margin-bottom:4px;font-size:12px}
+.planned-works-status a{color:#ffe9bc;text-decoration:underline}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span></div>
+<div id="plannedWorksAlert" class="planned-works-status" role="status" aria-live="polite" hidden></div>
 <section id="trackerTile" aria-label="Railway train tracker">
 <span id="feedBadge" hidden aria-live="polite">Checking</span>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Nine evenly spaced mapped stations from Mallaig to Fort William" role="img">
@@ -450,6 +457,7 @@ const siteData={
  fortWilliam:{name:"Fort William station",lat:56.8201,lon:-5.1061,walk:null,note:"Jacobite starting station. Platform photography rules may apply.",parking:"Fort William station",parkingLat:56.8201,parkingLon:-5.1061}
 };
 let services=[],source=null,feedUpdated=null,feedError=null,weatherData=null,notificationAllowed=false;
+let scheduledCrossings=[],plannedWorksFeed={status:"unavailable",items:[]};
 let lastAlerts=new Set();
 function safe(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function xAt(p){return 865-Math.max(0,Math.min(100,p))*8.3;}
@@ -731,9 +739,33 @@ function getViaductApproaching(){
  return arrivals.sort((a,b)=>a.remaining-b.remaining).filter((item,i,all)=>
   !all.slice(0,i).some(other=>Math.abs(other.remaining-item.remaining)<2));
 }
+function renderPlannedWorks(){
+ const alert=$("plannedWorksAlert");if(!alert)return;
+ const feed=plannedWorksFeed,items=Array.isArray(feed.items)?feed.items:[];
+ alert.replaceChildren();
+ if(feed.status!=="checked"){
+  alert.hidden=false;alert.className="planned-works-status works-unknown";
+  alert.textContent="Engineering works: data unavailable — check before travelling.";return;
+ }
+ if(!items.length){alert.hidden=true;return}
+ alert.hidden=false;alert.className="planned-works-status works-alert";
+ const title=document.createElement("strong");
+ title.textContent="Planned railway works · "+items.length+" notice"+(items.length===1?"":"s");alert.append(title);
+ for(const item of items.slice(0,3)){
+  const row=document.createElement("div"),at=Date.parse(item.start||"");
+  const date=Number.isFinite(at)?new Date(at).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"}):"";
+  row.textContent=(date?date+" · ":"")+(item.title||"Engineering works");
+  if(typeof item.url==="string"&&item.url.startsWith("https://")){
+   const link=document.createElement("a");link.href=item.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Details";row.append(" · ",link);
+  }
+  alert.append(row);
+ }
+}
 function updateViaductCountdown(){
- const next=getViaductApproaching()[0];
- const minutes=next?.remaining;
+ const liveNext=getViaductApproaching()[0],now=Date.now();
+ const scheduled=scheduledCrossings.filter(c=>Number.isFinite(Date.parse(c.at))&&Date.parse(c.at)>now).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))[0];
+ const scheduleMinutes=scheduled?(Date.parse(scheduled.at)-now)/60000:null;
+ const minutes=Number.isFinite(liveNext?.remaining)&&(!Number.isFinite(scheduleMinutes)||liveNext.remaining<=scheduleMinutes+5)?liveNext.remaining:scheduleMinutes;
  const tile=$("proximityTile");
  const approaching=Number.isFinite(minutes)&&minutes>=0&&minutes<=15;
  const near=Number.isFinite(minutes)&&minutes>=0&&minutes<=3;
@@ -831,11 +863,14 @@ async function load(){
  if(feedAge>7200000||Date.parse(d.updated)>Date.now()+60000)throw Error("Stale feed");
  if(feedAge>600000)d.trains=d.trains.filter(t=>t.scheduled===true);
  services=d.trains.filter(t=>typeof t.id==="string"&&Number.isFinite(Date.parse(t.observedAt))&&(t.scheduled===true||Date.now()-Date.parse(t.observedAt)<600000)&&t.viewpoints&&typeof t.viewpoints==="object").map(t=>({...t,progress:Number.isFinite(t.progress)&&t.progress>=0&&t.progress<=100?t.progress:null,direction:["out","back"].includes(t.direction)?t.direction:"unknown",locationVerified:false,lat:null,lon:null})).slice(0,50);
+ scheduledCrossings=Array.isArray(d.futureCrossings)?d.futureCrossings.filter(c=>c&&typeof c.at==="string"&&Number.isFinite(Date.parse(c.at))):[];
+ plannedWorksFeed=d.plannedWorks&&typeof d.plannedWorks==="object"?d.plannedWorks:{status:"unavailable",items:[]};
+ renderPlannedWorks();
  source=String(d.source||"Railway feed");feedUpdated=d.updated;
  const positioned=visibleTrainMarkers().length;
  $("feedBadge").textContent="Live rail feeds";$("trackStatus").textContent=services.length?positioned+" train(s) estimated on the line. "+(feedAge>600000?"Using published station times; live updates delayed. ":"")+"Updated "+new Date(d.updated).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})+" · Estimates, not GPS.":"No current West Highland Line services in the latest railway feeds.";
  render();
- }catch(e){services=[];source=null;feedUpdated=null;$("feedBadge").textContent="Unavailable";$("trackStatus").textContent="No current railway data. The app will not invent movements or times.";render();}
+ }catch(e){services=[];scheduledCrossings=[];plannedWorksFeed={status:"unavailable",items:[]};renderPlannedWorks();source=null;feedUpdated=null;$("feedBadge").textContent="Unavailable";$("trackStatus").textContent="No current railway data. The app will not invent movements or times.";render();}
 }
 function decodeVapidBase64(v){const pad="=".repeat((4-v.length%4)%4);const b=atob((v+pad).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(b,c=>c.charCodeAt(0))}
 function standalone(){return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}
