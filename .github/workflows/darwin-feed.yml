@@ -97,5 +97,9 @@ jobs:
             echo "No feed changes to publish."
           else
             git commit -m "Refresh live West Highland train feed"
+            # Site edits may land while the collectors are polling. Rebase this
+            # feed update on the latest main so a successful poll is not lost.
+            git fetch origin main
+            git rebase origin/main
             git push origin HEAD:main
           fi
