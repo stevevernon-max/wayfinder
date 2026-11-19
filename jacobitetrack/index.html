@@ -485,6 +485,28 @@ main>.planned-works-status{margin:0 0 10px}
 #mapOverview .train-direction-blip .train-map-body{fill:#edb35f;stroke:#fff4d2;stroke-width:3}
 #mapOverview .train-direction-blip .train-map-direction{paint-order:stroke;filter:drop-shadow(0 0 3px #102533)}
 #mapOverview .train-direction-blip.train-map-reported .train-map-body{fill:#64caff}
+
+/* Compact photography conditions summary. */
+.weather-first .photo-header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0 11px}
+.weather-first .photo-header .heading{margin:0;font-size:clamp(17px,4.5vw,22px);min-width:0}
+#photoStatus.photo-rating-pill{flex:0 0 auto;border-radius:999px;padding:6px 11px;font-weight:800;font-size:12px;border:1px solid #49718a;color:#d0e7fa;background:#18344d;white-space:nowrap}
+#photoStatus[data-grade="excellent"]{background:#123d2b;color:#83e8b8;border-color:#2b8058}
+#photoStatus[data-grade="good"]{background:#173a43;color:#92dded;border-color:#386e80}
+#photoStatus[data-grade="fair"]{background:#49371c;color:#f4d084;border-color:#84632b}
+#photoStatus[data-grade="poor"]{background:#48282e;color:#ffb4b5;border-color:#90515c}
+.weather-first .photo-light-row{margin-top:11px;display:flex;align-items:center;gap:9px 16px;flex-wrap:wrap;font-size:12px;color:#a6b9c8}
+.weather-first .photo-light-row b{color:#d6e8fa;font-variant-numeric:tabular-nums}
+.weather-first #photoAdvice{color:#8fc7e9}
+.weather-first #weatherTime{font-size:10px;opacity:.85;margin-top:5px}
+#todayTimetableTile .table-wrap{overflow-x:auto;margin:10px 0 4px}
+#todayTimetableTile .timetable{width:100%;border-collapse:collapse;font-size:13px}
+#todayTimetableTile th,#todayTimetableTile td{text-align:left;padding:10px 8px;border-bottom:1px solid #2b394b;vertical-align:top}
+#todayTimetableTile th{font-size:10px;color:#a9b9cb;letter-spacing:.5px;text-transform:uppercase}
+#todayTimetableTile td:first-child{font-weight:800;color:#d8ecff;white-space:nowrap}
+#todayTimetableTile td:nth-child(2){white-space:nowrap}
+#todayTimetableTile details summary{cursor:pointer;color:#93ccff;font-weight:700}
+#todayTimetableTile .stop-list{display:flex;flex-direction:column;min-width:165px;gap:7px;padding-top:8px}
+#todayTimetableTile .stop-list>span{display:flex;justify-content:space-between;gap:14px}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -523,7 +545,12 @@ main>.planned-works-status{margin:0 0 10px}
 <div class="geo-map-bottom"><span><i class="geo-line"></i> Railway</span><span><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#60c1fb;border:2px solid #f1f9ff"></i> Reported</span><span><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#f0b84a;border:2px solid #fff4d4"></i> Estimated</span><span>Drag · Pinch to zoom</span></div>
 <p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
 </section>
-<div class="cols single-viewpoint weather-first"><section class="tile"><div class="eyebrow">GLENFINNAN</div><div class="heading">Photography conditions</div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="notice" id="photoAdvice">Forecast conditions will appear here when available.</div><div class="small" id="weatherTime"></div></section></div>
+<div class="cols single-viewpoint weather-first"><section class="tile"><div class="eyebrow">GLENFINNAN</div><div class="photo-header"><div class="heading">Photography conditions</div><span id="photoStatus" class="photo-rating-pill" role="status">Checking</span></div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="photo-light-row"><span>☀ Sunrise <b id="photoSunrise">—</b></span><span>☾ Sunset <b id="photoSunset">—</b></span><span id="photoAdvice">Checking conditions</span></div><div class="small" id="weatherTime"></div></section></div>
+<section class="tile" id="todayTimetableTile" aria-labelledby="todayTimetableHeading">
+<div class="eyebrow">PUBLISHED SERVICE TIMES</div><div class="heading" id="todayTimetableHeading">Today's West Highland timetable</div>
+<div class="small" id="todayTimetableStatus">Loading today's timetable…</div>
+<div class="table-wrap"><table class="timetable" id="todayTimetableTable" hidden><thead><tr><th>Departs</th><th>Route</th><th>Viaduct estimate</th><th scope="col">Calls</th></tr></thead><tbody id="todayTimetableRows"></tbody></table></div>
+</section>
 <section class="tile" id="timetableTile" aria-labelledby="timetableHeading">
 <div class="eyebrow">PUBLISHED SERVICE TIMES</div><div class="heading" id="timetableHeading">Tomorrow’s West Highland timetable</div>
 <div class="small" id="timetableStatus">Loading the published timetable…</div>
@@ -1048,10 +1075,22 @@ async function fetchWeather(){
  const cloud=now.cloud_cover;
  $("weather").innerHTML='<div><div class="small">Temperature</div><b>'+Math.round(now.temperature_2m)+'°C</b></div><div><div class="small">Cloud</div><b>'+Math.round(cloud)+'%</b></div><div><div class="small">Visibility</div><b>'+(Number.isFinite(vis)?(vis/1000).toFixed(1)+' km':'—')+'</b></div><div><div class="small">Rain chance</div><b>'+(Number.isFinite(precip)?Math.round(precip)+'%':'—')+'</b></div>';
  const rise=d.daily?.sunrise?.[0],set=d.daily?.sunset?.[0];
- const advice=[Number.isFinite(vis)&&vis<3000?"Visibility may be poor for long-distance photographs.":"",cloud>=85?"Heavy cloud may reduce contrast and direct light.":"",Number.isFinite(precip)&&precip>=50?"Rain is likely enough to consider waterproof camera protection.":""].filter(Boolean);
- $("photoAdvice").textContent=[rise&&set?"Sunrise "+rise.slice(-5)+" · Sunset "+set.slice(-5):"",Number.isFinite(vis)&&vis<3000?"Low visibility":cloud>=85?"Overcast":Number.isFinite(precip)&&precip>=50?"Rain likely":"Forecast conditions"].filter(Boolean).join(" · ");
+ $("photoSunrise").textContent=rise?rise.slice(-5):"—";
+ $("photoSunset").textContent=set?set.slice(-5):"—";
+ // Rating based on observable forecast fields, not assumptions about sun direction.
+ let score=100;
+ if(!Number.isFinite(vis))score-=10;
+ else if(vis<2000)score-=45;else if(vis<5000)score-=27;else if(vis<12000)score-=12;
+ if(!Number.isFinite(precip))score-=8;
+ else if(precip>=70)score-=40;else if(precip>=40)score-=25;else if(precip>=20)score-=12;
+ if(cloud>=90)score-=16;else if(cloud>=70)score-=8;
+ const grade=score>=85?"Excellent":score>=68?"Good":score>=45?"Fair":"Poor";
+ const status=$("photoStatus");status.textContent=grade;status.dataset.grade=grade.toLowerCase();
+ const summary=Number.isFinite(vis)&&vis<5000?"Low visibility":Number.isFinite(precip)&&precip>=50?"Rain likely":cloud>=85?"Overcast":"";
+ $("photoAdvice").textContent=summary;
+ $("photoAdvice").hidden=!summary;
  $("weatherTime").textContent="Updated "+now.time.slice(11,16)+" · Open-Meteo";
- }catch(e){$("weather").innerHTML='<div class="muted">Weather forecast unavailable.</div>';$("photoAdvice").textContent="Unable to load weather and visibility information."; $("weatherTime").textContent=e.message;}
+ }catch(e){$("photoStatus").textContent="Unavailable";$("photoStatus").removeAttribute("data-grade");$("photoSunrise").textContent="—";$("photoSunset").textContent="—";$("weather").innerHTML='<div class="muted">Weather forecast unavailable.</div>';$("photoAdvice").textContent="Unable to load weather and visibility information."; $("weatherTime").textContent=e.message;}
 }
 // Bundled, date-limited viaduct times copied from the published ScotRail timetable.
 // Tile 2 must still count down if a separate JSON fetch fails or takes time.
@@ -1097,31 +1136,30 @@ function nextPublishedViaductCrossing(now=Date.now()){
 function renderTimetable(){
  const ukDate=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"});
  const parts=Object.fromEntries(ukDate.formatToParts(new Date()).map(({type,value})=>[type,value]));
- const tomorrow=new Date(Date.UTC(Number(parts.year),Number(parts.month)-1,Number(parts.day)));
- tomorrow.setUTCDate(tomorrow.getUTCDate()+1);
- const serviceDate=tomorrow.toISOString().slice(0,10);
- if(serviceDate===renderedTimetableDate)return;
- renderedTimetableDate=serviceDate;
-
+ const today=new Date(Date.UTC(Number(parts.year),Number(parts.month)-1,Number(parts.day)));
+ const dayISO=today.toISOString().slice(0,10);
+ const tomorrow=new Date(today.getTime()+86400000);
+ const tomorrowISO=tomorrow.toISOString().slice(0,10);
+ const cacheKey=dayISO+"|"+(publishedTimetable?.validFrom||"")+"|"+(publishedTimetable?.validThrough||"");
+ if(cacheKey===renderedTimetableDate)return;
+ renderedTimetableDate=cacheKey;
  const data=publishedTimetable;
- const status=$("timetableStatus"),table=$("timetableTable"),rows=$("timetableRows");
- const formatDate=date=>new Date(date+"T00:00:00Z").toLocaleDateString("en-GB",{timeZone:"UTC",weekday:"long",day:"numeric",month:"long"});
- $("timetableHeading").textContent="Tomorrow’s West Highland timetable · "+formatDate(serviceDate);
- const day=tomorrow.getUTCDay();
- const pattern=day===0?"sunday":day===6?"saturday":day===5?"friday":"weekday";
- const trains=serviceDate>=data.validFrom&&serviceDate<=data.validThrough?data.patterns[pattern]:null;
- table.hidden=!trains;
- rows.replaceChildren();
- if(!trains){
-  status.textContent="No timetable for this date. The published edition runs through "+formatDate(data.validThrough)+".";
-  return;
+ const dateLabel=date=>new Date(date+"T00:00:00Z").toLocaleDateString("en-GB",{timeZone:"UTC",weekday:"long",day:"numeric",month:"long"});
+ const patternFor=day=>{const dow=day.getUTCDay();return dow===0?"sunday":dow===6?"saturday":dow===5?"friday":"weekday"};
+ function fill(date,day,headingId,statusId,tableId,rowsId,isToday){
+  const status=$(statusId),table=$(tableId),rows=$(rowsId);
+  $(headingId).textContent=(isToday?"Today's":"Tomorrow's")+" West Highland timetable · "+dateLabel(date);
+  const trains=date>=data.validFrom&&date<=data.validThrough?data.patterns?.[patternFor(day)]:null;
+  table.hidden=!Array.isArray(trains);rows.replaceChildren();
+  if(!Array.isArray(trains)){status.textContent="No published timetable for this date.";return}
+  status.textContent=trains.length+" scheduled services · Times UK local · Tap Calls for stops";
+  rows.innerHTML=trains.map(train=>{
+   const detail=train.stops.map(([station,time,request])=>'<span><span>'+safe(station)+(request?' (request stop)':'')+'</span><time>'+safe(time)+'</time></span>').join("");
+   return '<tr><td>'+safe(train.stops[0][1])+'</td><td>'+safe(train.from)+' → '+safe(train.to)+'</td><td>'+safe(train.viaduct)+'</td><td><details><summary>Calls</summary><div class="stop-list">'+detail+'</div></details></td></tr>';
+  }).join("");
  }
-
- status.textContent=trains.length+" scheduled ScotRail services. All times are UK local. Select Calls to see station times.";
- rows.innerHTML=trains.map(train=>{
-  const detail=train.stops.map(([station,time,request])=>'<span><span>'+safe(station)+(request?' (request stop)':'')+'</span><time>'+safe(time)+'</time></span>').join("");
-  return '<tr><td>'+safe(train.stops[0][1])+'</td><td>'+safe(train.from)+' → '+safe(train.to)+'</td><td>'+safe(train.viaduct)+'</td><td><details><summary>Calls</summary><div class="stop-list">'+detail+'</div></details></td></tr>';
- }).join("");
+ fill(dayISO,today,"todayTimetableHeading","todayTimetableStatus","todayTimetableTable","todayTimetableRows",true);
+ fill(tomorrowISO,tomorrow,"timetableHeading","timetableStatus","timetableTable","timetableRows",false);
 }
 
 async function loadTimetable(){
@@ -1144,7 +1182,9 @@ async function loadTimetable(){
   render();
   setInterval(renderTimetable,60000);
  }catch(error){
-  $("timetableStatus").textContent="Using bundled published crossing times; detailed timetable unavailable.";
+  $("timetableStatus").textContent="Using bundled timetable; detailed service times unavailable.";
+  $("todayTimetableStatus").textContent="Using bundled timetable; detailed service times unavailable.";
+  $("todayTimetableTable").hidden=true;
   updateViaductCountdown();
   $("timetableTable").hidden=true;
   $("timetableSource").replaceChildren();
