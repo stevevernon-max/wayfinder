@@ -774,8 +774,9 @@ function visibleTrainMarkers(){
  });
  // If the feed is stale, retain a labelled scheduled projection rather
  // than incorrectly asserting that no trains are running.
- if(!distinct.length&&(!feedUpdated||Date.now()-Date.parse(feedUpdated)>10*60000))
-  return scheduledTimetableMarkers(now);
+ // Do not project train locations from the PDF: station boards are the
+ // only source for trains on the track. The PDF is for the next crossing only.
+ if(!distinct.length)return [];
  return distinct;
 }
 function etaAt(t,id){
@@ -890,14 +891,15 @@ function updateViaductCountdown(){
  const pdfMinutes=pdfNext?(pdfNext.at-now)/60000:null;
  // Prefer the next future event; give a matching fresh live ETA precedence
  // over the static timetable so a small delay does not hide the real train.
- const candidates=[
-  Number.isFinite(liveNext?.remaining)?{minutes:liveNext.remaining,type:"live"}:null,
-  Number.isFinite(feedMinutes)?{minutes:feedMinutes,type:"feed"}:null,
-  Number.isFinite(pdfMinutes)?{minutes:pdfMinutes,type:"timetable"}:null
- ].filter(x=>x&&x.minutes>=0).sort((a,b)=>a.minutes-b.minutes);
- const closest=candidates[0];
- const liveMatch=closest&&closest.type!=="live"?candidates.find(x=>x.type==="live"&&Math.abs(x.minutes-closest.minutes)<=5):null;
- const chosen=liveMatch||closest;
+ // Prioritise train times currently reported by station arrival/departure boards.
+ // If no further board-based crossing remains, use the PDF timetable.
+ const boardFresh=Number.isFinite(Date.parse(feedUpdated||""))&&now-Date.parse(feedUpdated)<15*60000;
+ const boardCandidates=boardFresh?[
+  Number.isFinite(liveNext?.remaining)?{minutes:liveNext.remaining,type:"boards"}:null,
+  Number.isFinite(feedMinutes)?{minutes:feedMinutes,type:"boards"}:null
+ ].filter(x=>x&&x.minutes>=0).sort((a,b)=>a.minutes-b.minutes):[];
+ const chosen=boardCandidates[0]||
+  (Number.isFinite(pdfMinutes)&&pdfMinutes>=0?{minutes:pdfMinutes,type:"timetable"}:null);
  const minutes=chosen?.minutes;
  const tile=$("proximityTile");
  const approaching=Number.isFinite(minutes)&&minutes>=0&&minutes<=15;
@@ -921,7 +923,7 @@ function updateViaductCountdown(){
  label.textContent=days?days+"d "+hours+"h "+String(mins).padStart(2,"0")+"m"
    :hours?hours+"h "+String(mins).padStart(2,"0")+"m":mins+"m";
  const trainAt=Date.now()+minutes*60000;
- const inPositionAt=trainAt-3*60000;
+ const inPositionAt=trainAt-10*60000;
  const fmt=at=>new Date(at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"});
  const dateOf=at=>new Date(at).toLocaleDateString("en-GB",{year:"numeric",month:"2-digit",day:"2-digit",timeZone:"Europe/London"});
  const nowLocal=dateOf(Date.now()),crossingLocal=dateOf(trainAt);
@@ -1103,16 +1105,16 @@ async function load(){
  const d=await r.json();if(!Array.isArray(d.trains)||!d.updated||!Number.isFinite(Date.parse(d.updated)))throw Error("Invalid feed");
  const feedAge=Date.now()-Date.parse(d.updated);
  if(feedAge>7200000||Date.parse(d.updated)>Date.now()+60000)throw Error("Stale feed");
- if(feedAge>600000)d.trains=d.trains.filter(t=>t.scheduled===true);
- services=d.trains.filter(t=>typeof t.id==="string"&&Number.isFinite(Date.parse(t.observedAt))&&(t.scheduled===true||Date.now()-Date.parse(t.observedAt)<600000)&&t.viewpoints&&typeof t.viewpoints==="object").map(t=>({...t,progress:Number.isFinite(t.progress)&&t.progress>=0&&t.progress<=100?t.progress:null,direction:["out","back"].includes(t.direction)?t.direction:"unknown",locationVerified:false,lat:null,lon:null})).slice(0,50);
- scheduledCrossings=Array.isArray(d.futureCrossings)?d.futureCrossings.filter(c=>c&&typeof c.at==="string"&&Number.isFinite(Date.parse(c.at))):[];
+ // Board feed age is checked before making movement predictions.
+ services=(feedAge<15*60000?d.trains:[]).filter(t=>typeof t.id==="string"&&Number.isFinite(Date.parse(t.observedAt))&&(t.scheduled===true||Date.now()-Date.parse(t.observedAt)<600000)&&t.viewpoints&&typeof t.viewpoints==="object").map(t=>({...t,progress:Number.isFinite(t.progress)&&t.progress>=0&&t.progress<=100?t.progress:null,direction:["out","back"].includes(t.direction)?t.direction:"unknown",locationVerified:false,lat:null,lon:null})).slice(0,50);
+ scheduledCrossings=feedAge<15*60000&&Array.isArray(d.futureCrossings)?d.futureCrossings.filter(c=>c&&typeof c.at==="string"&&Number.isFinite(Date.parse(c.at))):[];
  plannedWorksFeed=d.plannedWorks&&typeof d.plannedWorks==="object"?d.plannedWorks:{status:"unavailable",items:[]};
  renderPlannedWorks();
  source=String(d.source||"Railway feed");feedUpdated=d.updated;
  const positioned=visibleTrainMarkers().length;
- $("feedBadge").textContent="Live rail feeds";$("trackStatus").textContent=services.length?positioned+" train(s) estimated on the line. "+(feedAge>600000?"Using published station times; live updates delayed. ":"")+"Updated "+new Date(d.updated).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})+" · Estimates, not GPS.":"No current West Highland Line services in the latest railway feeds.";
+ $("feedBadge").textContent="Station boards";$("trackStatus").textContent=services.length?positioned+" train(s) estimated from station times. "+"Updated "+new Date(d.updated).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})+" · Estimates, not GPS.":"No current movement estimate from station boards.";
  render();
- }catch(e){services=[];scheduledCrossings=[];plannedWorksFeed={status:"unavailable",items:[]};renderPlannedWorks();source=null;feedUpdated=null;$("feedBadge").textContent="Unavailable";$("trackStatus").textContent="Railway feed delayed. Only scheduled timetable positions can be displayed, not live train movements.";render();}
+ }catch(e){services=[];scheduledCrossings=[];plannedWorksFeed={status:"unavailable",items:[]};renderPlannedWorks();source=null;feedUpdated=null;$("feedBadge").textContent="Unavailable";$("trackStatus").textContent="Station board data unavailable; train positions cannot be estimated.";render();}
 }
 function decodeVapidBase64(v){const pad="=".repeat((4-v.length%4)%4);const b=atob((v+pad).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(b,c=>c.charCodeAt(0))}
 function standalone(){return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}
