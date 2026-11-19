@@ -291,13 +291,14 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
         if not observed or (now - observed).total_seconds() > FRESH_SECONDS or (observed - now).total_seconds() > 60:
             continue
         viewpoints: dict[str, dict[str, float]] = {}
-        current_indices: list[tuple[datetime, float, str]] = []
+        actual_points: list[tuple[datetime, float, str]] = []
+        forecast_points: list[tuple[datetime, float, str]] = []
         direction_values: list[float] = []
         route = service.get("route", [])
         line_sequence = [STATION_BY_TIPLOC[code][1] for code in route if code in STATION_BY_TIPLOC]
         if len(line_sequence) >= 2:
             direction_values = [b - a for a, b in zip(line_sequence, line_sequence[1:]) if a != b]
-        direction = "out" if not direction_values or direction_values[-1] > 0 else "back"
+        direction = "out" if direction_values and direction_values[-1] > 0 else "back" if direction_values else None
         for tiploc, location in service.get("locations", {}).items():
             station = STATION_BY_TIPLOC.get(tiploc)
             if not station:
@@ -305,7 +306,9 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
             eta_at = _to_utc(location.get("forecastAt"))
             actual_at = _to_utc(location.get("actualAt"))
             if actual_at and actual_at <= now + timedelta(seconds=60):
-                current_indices.append((actual_at, station[1], station[0]))
+                actual_points.append((actual_at, station[1], station[0]))
+            if eta_at:
+                forecast_points.append((eta_at, station[1], station[0]))
             if station[0] in VIEWPOINT_BY_KEY and eta_at:
                 minutes = (eta_at - now).total_seconds() / 60
                 if -1 <= minutes <= 360:
@@ -316,34 +319,90 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
             if station[0] in VIEWPOINT_BY_KEY and actual_at and abs((now - actual_at).total_seconds()) < 180:
                 key = VIEWPOINT_BY_KEY[station[0]]
                 viewpoints.setdefault(key, {"etaMinutes": 0.0})
-        position = max(current_indices, default=None, key=lambda item: item[0])
+
+        # If route ordering is incomplete, infer direction from time-ordered
+        # station reports and then from the next Darwin forecast.
+        if direction is None:
+            timed = sorted(actual_points, key=lambda item: item[0])
+            if len(timed) >= 2 and timed[-1][1] != timed[-2][1]:
+                direction = "out" if timed[-1][1] > timed[-2][1] else "back"
+            else:
+                latest_actual = max(actual_points, default=None, key=lambda item: item[0])
+                future = [p for p in forecast_points if p[0] > now]
+                if latest_actual and future:
+                    next_point = min(future, key=lambda item: item[0])
+                    if next_point[1] != latest_actual[1]:
+                        direction = "out" if next_point[1] > latest_actual[1] else "back"
+
+        lower_actuals = [p for p in actual_points if p[0] <= now]
+        lower_forecasts = [p for p in forecast_points if p[0] <= now]
+        lower = max(lower_actuals, default=None, key=lambda item: item[0])
+        basis = "actual_report"
+        if lower is None:
+            lower = max(lower_forecasts, default=None, key=lambda item: item[0])
+            basis = "darwin_forecasts"
+
+        upper = None
+        if lower is not None and direction:
+            ahead = [
+                p for p in forecast_points
+                if p[0] > now and (p[1] - lower[1]) * (1 if direction == "out" else -1) > 0
+            ]
+            upper = min(ahead, default=None, key=lambda item: item[0])
+
         progress = None
         position_label = None
-        if position:
-            _, station_index, station_key = position
-            progress = float((5 - station_index) * 20)
-            position_label = "Last actual report: " + STATION_NAME_BY_KEY.get(station_key, station_key)
-        if not viewpoints and progress is None:
-            continue
+        position = None
+        if lower is not None:
+            _, from_index, from_key = lower
+            from_progress = float((5 - from_index) * 20)
+            to_progress = from_progress
+            to_at = None
+            to_key = None
+            if upper and upper[0] > lower[0]:
+                to_at, to_index, to_key = upper
+                to_progress = float((5 - to_index) * 20)
+                fraction = max(0.0, min(1.0, (now - lower[0]).total_seconds() / (to_at - lower[0]).total_seconds()))
+                progress = from_progress + (to_progress - from_progress) * fraction
+                quality = "darwin_estimate" if basis == "darwin_forecasts" else "actual_plus_forecast_estimate"
+                position_label = "Estimated " + STATION_NAME_BY_KEY.get(from_key, from_key) + "–" + STATION_NAME_BY_KEY.get(to_key, to_key)
+            else:
+                progress = from_progress
+                quality = "last_actual_report" if basis == "actual_report" else "forecast_station_only"
+                position_label = ("Last actual report: " if basis == "actual_report" else "Forecast point: ") + STATION_NAME_BY_KEY.get(from_key, from_key)
+            position = {
+                "fromProgress": from_progress,
+                "toProgress": to_progress,
+                "fromAt": lower[0].isoformat().replace("+00:00", "Z"),
+                "toAt": to_at.isoformat().replace("+00:00", "Z") if to_at else None,
+                "basis": quality,
+                "fromStation": STATION_NAME_BY_KEY.get(from_key, from_key),
+                "toStation": STATION_NAME_BY_KEY.get(to_key, to_key) if to_key else None,
+            }
+        else:
+            quality = "no_position_anchor"
+
         trains.append({
             "id": str(service.get("id") or service.get("uid") or service.get("rid")),
             "observedAt": service["observedAt"],
-            "direction": direction,
+            "direction": direction or "unknown",
             "progress": progress,
             "positionLabel": position_label,
+            "positionQuality": quality,
+            "position": position,
             "locationVerified": False,
             "lat": None,
             "lon": None,
             "cancelled": bool(service.get("cancelled", False)),
             "viewpoints": viewpoints,
-            "quality": "Darwin predicted station times; schematic station report only, no GPS",
+            "quality": "Darwin reported times; interpolated line position is an estimate, not GPS",
         })
     trains.sort(key=lambda item: min((v["etaMinutes"] for v in item["viewpoints"].values()), default=9999))
     trains = trains[:25]
     return {
         "updated": now.isoformat().replace("+00:00", "Z"),
         "source": "Darwin via Rail Data Marketplace",
-        "quality": "Predicted station times; train markers show last actual station report, not GPS.",
+        "quality": "Darwin actual and forecast times; interpolated train positions are estimates, not GPS.",
         "status": "ok" if trains else "no_recent_reports",
         "trains": trains,
     }
