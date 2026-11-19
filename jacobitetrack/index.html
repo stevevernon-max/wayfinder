@@ -463,6 +463,13 @@ function visibleTrainMarkers(){
   tracks.push({id,records,points});
  }
  const active=[],mallaigHolds=[],departures=[];
+ // Recognise Mallaig departures across different service IDs, including
+ // a return working that has been renamed by the railway feed.
+ const allMallaigDepartures=tracks.flatMap(g=>g.points.flatMap((p,i)=>{
+  const next=g.points[i+1];
+  return p.station==="Mallaig"&&next&&next.progress<p.progress&&next.at>p.at
+   ?[{at:p.at,arrivalAt:g.points.filter(q=>q.at<p.at&&q.station==="Mallaig").at(-1)?.at??null}]:[];
+ }));
  for(const g of tracks){
   const points=g.points;
   const lower=points.filter(p=>p.at<=now).at(-1);
@@ -490,9 +497,16 @@ function visibleTrainMarkers(){
   if(lower&&lower.station==="Mallaig"&&lower.progress>=99&&now>=lower.at){
    const sameGroupDeparture=points.find(p=>p.at>lower.at&&p.progress<lower.progress);
    if(sameGroupDeparture&&now>=sameGroupDeparture.at)continue;
-   const nextScheduled=departures.filter(t=>t>lower.at&&t<=lower.at+120*60000).sort((a,b)=>a-b)[0];
-   const holdUntil=nextScheduled??lower.at+60*60000;
-   if(now<holdUntil&&now<lower.at+120*60000){
+   // Once ANY return service has departed after this arrival, the
+   // old inbound marker must disappear, regardless of its feed ID.
+   const relatedDepartures=allMallaigDepartures.map(d=>d.at)
+    .filter(t=>t>=lower.at&&t<=lower.at+120*60000).sort((a,b)=>a-b);
+   const departureAlreadyPassed=relatedDepartures.some(t=>t<=now);
+   const nextScheduled=relatedDepartures.find(t=>t>now);
+   // With no verified return departure, cap inferred dwelling; do not
+   // indefinitely park a train merely because an arrival was reported.
+   const holdUntil=nextScheduled??lower.at+20*60000;
+   if(!departureAlreadyPassed&&now<holdUntil&&now<lower.at+60*60000){
     const train={...g.records[0],id:g.id,direction:"back",positionQuality:"terminal_wait",
      positionLabel:"At Mallaig · awaiting turnaround (estimated)",
      position:{fromAt:new Date(lower.at).toISOString(),toAt:null,fromProgress:100,toProgress:100,
