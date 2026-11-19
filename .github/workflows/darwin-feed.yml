@@ -1,0 +1,55 @@
+name: Refresh Darwin railway feed
+
+on:
+  schedule:
+    # Avoid the busy top of the hour; GitHub may still delay scheduled runs.
+    - cron: "2-59/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: darwin-feed
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the site
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Kafka client
+        run: python -m pip install --disable-pip-version-check 'confluent-kafka==2.6.1'
+
+      - name: Collect Darwin updates
+        env:
+          RDM_BOOTSTRAP_SERVERS: ${{ secrets.RDM_BOOTSTRAP_SERVERS }}
+          RDM_CONSUMER_USERNAME: ${{ secrets.RDM_CONSUMER_USERNAME }}
+          RDM_CONSUMER_PASSWORD: ${{ secrets.RDM_CONSUMER_PASSWORD }}
+          RDM_GROUP_ID: ${{ secrets.RDM_GROUP_ID }}
+          RDM_TOPIC: ${{ secrets.RDM_TOPIC }}
+          RDM_POLL_SECONDS: "75"
+        run: python jacobitetrack/scripts/darwin_feed.py
+
+      - name: Publish updated feed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/rail-feed-state.json jacobitetrack/feed.json
+          if git diff --cached --quiet; then
+            echo "No feed changes to publish."
+          else
+            git commit -m "Refresh live Darwin feed"
+            git push origin HEAD:main
+          fi
