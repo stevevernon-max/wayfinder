@@ -437,6 +437,14 @@ main>.planned-works-status{margin:0 0 10px}
 #timetableTile .stop-list span{display:flex;justify-content:space-between;gap:12px}
 #timetableTile a{color:#a9d7ff}
 @media(max-width:520px){#timetableTile .timetable{font-size:12px}#timetableTile th,#timetableTile td{padding:9px 5px}#timetableTile th{font-size:9px}#timetableTile th:nth-child(2),#timetableTile td:nth-child(2){min-width:125px}}
+
+/* Tile 2: distinguish the PDF schedule fallback from live train predictions. */
+.app-header #proximityTile .viaduct-source{
+ display:block;font-size:10px;line-height:1.3;font-weight:700;
+ color:#9cc9ec;margin-top:5px;padding-left:53px;
+}
+.app-header #proximityTile .viaduct-source[hidden]{display:none!important}
+@media(max-width:380px){.app-header #proximityTile .viaduct-source{padding-left:0}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -464,7 +472,7 @@ main>.planned-works-status{margin:0 0 10px}
  <rect x="26" y="23" width="12" height="5" rx="1" fill="currentColor"/>
  <path d="M49 26H57V33" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
  <path d="M10 63V50C10 42 21 42 21 50V63M21 63V50C21 42 32 42 32 50V63M32 63V50C32 42 43 42 43 50V63M43 63V50C43 42 54 42 54 50V63M54 63V50C54 42 65 42 65 50V63" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
- </svg></div><div class="viaduct-details"><div class="viaduct-time-row"><strong id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</strong><span class="viaduct-location">Glenfinnan Viaduct</span></div><div class="viaduct-subtitle"><span id="viaductTileCountdown">Awaiting railway prediction</span><span id="viaductTileNote" hidden></span></div></div></div>
+ </svg></div><div class="viaduct-details"><div class="viaduct-time-row"><strong id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</strong><span class="viaduct-location">Glenfinnan Viaduct</span></div><div class="viaduct-subtitle"><span id="viaductTileCountdown">Awaiting railway prediction</span></div><div id="viaductTileNote" class="viaduct-source" hidden></div></div></div>
 <span id="nearestTrain" hidden>—</span>
 </section>
 </div></header><main>
@@ -847,8 +855,8 @@ function updateViaductCountdown(){
  if(!Number.isFinite(minutes)||minutes<0){
   label.textContent="—";
   time.textContent="No crossing available in the current railway data or published timetable";
-  note.textContent="";
-  note.hidden=true;
+  note.textContent=publishedTimetable?"No scheduled crossing found within the timetable’s valid dates.":"Waiting for published timetable.";
+  note.hidden=false;
   return;
  }
  // Countdown may span midnight or several days; do not reset at 00:00.
