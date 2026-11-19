@@ -181,7 +181,7 @@ body.geo-fullscreen-open{overflow:hidden}
 <div class="muted" id="trackStatus">Checking railway data…</div>
 </section>
 <section class="tile" id="proximityTile" aria-label="Nearest railway information">
-<div class="proximity-item"><div class="proximity-label">GLENFINNAN VIADUCT · NEXT TRAIN</div><strong id="viaductTileCountdown">—:—</strong></div>
+<div class="proximity-item"><div class="proximity-label">GLENFINNAN VIADUCT · NEXT TRAIN</div><strong id="viaductTileCountdown">—:—</strong><span id="viaductTileNote" class="small">Estimated from station times</span></div>
 <div class="proximity-item"><div class="proximity-label">NEAREST TRAIN</div><strong id="nearestTrain">—</strong></div>
 </section>
 <section class="tile" id="geoTile">
@@ -199,7 +199,7 @@ body.geo-fullscreen-open{overflow:hidden}
 <section class="tile"><div class="eyebrow">PHOTOGRAPHY SPOTS</div><div class="heading">10 potential viewpoints</div><div id="spots"></div><p class="small">Candidate photo locations, not an online-researched ranking. Access and sightlines are unverified; stay on public paths and never enter railway property.</p></section>
 <section class="tile"><div class="eyebrow">PHOTOGRAPHY CONDITIONS</div><div class="heading">Glenfinnan weather & light</div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="notice" id="photoAdvice">Forecast conditions will appear here when available.</div><div class="small" id="weatherTime"></div></section>
 </div>
-<footer>Independent photography project. Railway ETAs and delays come from an authorised feed. Train markers interpolate Darwin actual and forecast station times, so positions are estimates and not GPS. No marker is shown when there is no usable timing anchor. In-app navigation and alerts do not link to external websites. Location and weather estimates are not safety guarantees.</footer>
+<footer>Independent photography project. Railway ETAs use authorised Darwin and VSTP schedules, with Network Rail TRUST reports used as actual station-time anchors. Train markers estimate position between timed points along the mapped line; they are not GPS positions, and speed restrictions are not individually modelled. In-app navigation and alerts do not link to external websites. Location and weather estimates are not safety guarantees.</footer>
 </main><script>
 "use strict";
 // Configure an authorised backend which returns train reports, ETAs and delays.
@@ -240,10 +240,15 @@ function etaAt(t,id){
  return null;
 }
 function timeText(min){if(!Number.isFinite(min)||min<0)return "—";if(min<1)return "<1 min";const m=Math.ceil(min);return m>=60?Math.floor(m/60)+"h "+(m%60)+"m":m+" min";}
-function countdownClock(minutes){
+function viaductArrivalLabel(minutes){
  if(!Number.isFinite(minutes)||minutes<0)return "—:—";
- const mins=Math.ceil(minutes),hours=Math.floor(mins/60);
- return String(hours).padStart(2,"0")+":"+String(mins%60).padStart(2,"0");
+ const arrival=new Date(Date.now()+minutes*60000),now=new Date();
+ const dayStart=d=>new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
+ const days=Math.round((dayStart(arrival)-dayStart(now))/86400000);
+ const clock=arrival.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+ if(days===0)return clock;
+ if(days===1)return "Tomorrow · "+clock;
+ return arrival.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})+" · "+clock;
 }
 function distanceKm(lat1,lon1,lat2,lon2){
  const r=Math.PI/180,a=(lat2-lat1)*r,b=(lon2-lon1)*r;
@@ -263,12 +268,13 @@ function getApproaching(id){
  return services.map(t=>({...t,remaining:etaAt(t,id)})).filter(t=>t.remaining!==null&&t.remaining>=0).sort((a,b)=>a.remaining-b.remaining);
 }
 function render(){
- $("trains").innerHTML=services.map(t=>({train:t,progress:positionProgress(t)})).filter(x=>Number.isFinite(x.progress)).map(({train:t,progress})=>'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+xAt(progress)+',83)"><circle class="train-halo" r="15"/><circle class="train-body" r="13"/><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Darwin report")+'</title></g>').join("");
+ $("trains").innerHTML=services.map(t=>({train:t,progress:positionProgress(t)})).filter(x=>Number.isFinite(x.progress)).map(({train:t,progress})=>'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+xAt(progress)+',83)"><circle class="train-halo" r="15"/><circle class="train-body" r="13"/><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Rail report")+'</title></g>').join("");
  updateGeoTrainMarkers();
  let glen=getApproaching("glenfinnan")[0];
 
 
- $("viaductTileCountdown").textContent=glen?countdownClock(glen.remaining):"—:—";
+ $("viaductTileCountdown").textContent=glen?viaductArrivalLabel(glen.remaining):"—:—";
+ $("viaductTileNote").textContent=glen?.viewpoints?.glenfinnan?.quality==="estimated_between_station_times"?"Estimated from station times · not GPS":glen?"Next railway-reported passage":"No timetable time available";
  updateHeaderDistances();
 
  const id=$("viewpoint").value;const next=getApproaching(id)[0];
@@ -321,7 +327,7 @@ async function load(){
  services=d.trains.filter(t=>typeof t.id==="string"&&Number.isFinite(Date.parse(t.observedAt))&&(t.scheduled===true||Date.now()-Date.parse(t.observedAt)<600000)&&t.viewpoints&&typeof t.viewpoints==="object").map(t=>({...t,progress:Number.isFinite(t.progress)&&t.progress>=0&&t.progress<=100?t.progress:null,direction:["out","back"].includes(t.direction)?t.direction:"unknown",locationVerified:false,lat:null,lon:null})).slice(0,50);
  source=String(d.source||"Railway feed");feedUpdated=d.updated;
  const positioned=services.filter(t=>Number.isFinite(positionProgress(t))).length;
- $("feedBadge").textContent="Darwin reports";$("trackStatus").textContent=services.length?services.length+" West Highland Line service(s) from Darwin; "+positioned+" have a current estimate. Estimates use reported or scheduled times and are not GPS.":"No current West Highland Line Darwin services.";
+ $("feedBadge").textContent="Live rail feeds";$("trackStatus").textContent=services.length?services.length+" West Highland Line service(s); "+positioned+" estimated line position(s). Estimates use reported or scheduled station times, not GPS.":"No current West Highland Line services in the latest railway feeds.";
  render();
  }catch(e){services=[];source=null;feedUpdated=null;$("feedBadge").textContent="Unavailable";$("trackStatus").textContent="No current railway data. The app will not invent movements or times.";render();}
 }
@@ -392,14 +398,14 @@ load();fetchWeather();setupPush();setInterval(load,60000);setInterval(fetchWeath
    simplified station-based railway alignment is displayed. Nothing is uploaded. */
 const railFixes=[
  {lat:57.0052,lon:-5.8290,x:35,name:"Mallaig"},
- {lat:56.9685,lon:-5.8212,x:139,name:"Morar"},
- {lat:56.9136,lon:-5.8406,x:243,name:"Arisaig"},
- {lat:56.8990,lon:-5.7630,x:294,name:"Beasdale timing point"},
- {lat:56.8812,lon:-5.6633,x:346,name:"Lochailort"},
- {lat:56.8717,lon:-5.4490,x:450,name:"Glenfinnan"},
- {lat:56.8560,lon:-5.2903,x:554,name:"Locheilside"},
- {lat:56.8554,lon:-5.1929,x:657,name:"Loch Eil Outward Bound"},
- {lat:56.8439,lon:-5.0960,x:761,name:"Banavie"},
+ {lat:56.9685,lon:-5.8212,x:93,name:"Morar"},
+ {lat:56.9136,lon:-5.8406,x:180,name:"Arisaig"},
+ {lat:56.8990,lon:-5.7630,x:250,name:"Beasdale timing point"},
+ {lat:56.8812,lon:-5.6633,x:339,name:"Lochailort"},
+ {lat:56.8717,lon:-5.4490,x:522,name:"Glenfinnan"},
+ {lat:56.8560,lon:-5.2903,x:659,name:"Locheilside"},
+ {lat:56.8554,lon:-5.1929,x:742,name:"Loch Eil Outward Bound"},
+ {lat:56.8439,lon:-5.0960,x:827,name:"Banavie"},
  {lat:56.8201,lon:-5.1061,x:865,name:"Fort William"}
 ];
 let gpsWatch=null;
