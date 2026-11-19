@@ -24,13 +24,27 @@ FEED_PATH = ROOT / "jacobitetrack" / "feed.json"
 STATE_PATH = ROOT / ".github" / "rail-feed-state.json"
 LONDON = ZoneInfo("Europe/London")
 STATION_BY_TIPLOC = {
-    "MALLAIG": ("mallaig", 0),
+    # Darwin's TIPLOCs are not always the station name or CRS code.
+    "MLAIG": ("mallaig", 0),
     "MORAR": ("morar", 1),
     "ARISAIG": ("arisaig", 2),
+    "LCHALRT": ("lochailort", 3),
+    "GLNFNNN": ("glenfinnan", 4),
+    "FRTWLM": ("fortWilliam", 5),
+    # Accept descriptive variants in case another Darwin version emits them.
+    "MALLAIG": ("mallaig", 0),
     "LOCHAILORT": ("lochailort", 3),
     "GLENFINNAN": ("glenfinnan", 4),
     "FTWILLIAM": ("fortWilliam", 5),
     "FORTWILLIAM": ("fortWilliam", 5),
+}
+STATION_NAME_BY_KEY = {
+    "mallaig": "Mallaig",
+    "morar": "Morar",
+    "arisaig": "Arisaig",
+    "lochailort": "Lochailort",
+    "glenfinnan": "Glenfinnan",
+    "fortWilliam": "Fort William",
 }
 VIEWPOINT_BY_KEY = {
     "morar": "morar",
@@ -38,7 +52,7 @@ VIEWPOINT_BY_KEY = {
     "lochailort": "lochailort",
     "glenfinnan": "glenfinnan",
 }
-LINE_TIPLOCS = {"MALLAIG", "MORAR", "ARISAIG", "LOCHAILORT", "GLENFINNAN", "FTWILLIAM", "FORTWILLIAM"}
+LINE_TIPLOCS = set(STATION_BY_TIPLOC)
 FRESH_SECONDS = 600
 
 
@@ -279,8 +293,7 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
         if position:
             _, station_index, station_key = position
             progress = float((5 - station_index) * 20)
-            station_name = {v[0]: k.title() for k, v in STATION_BY_TIPLOC.items()}
-            position_label = "Last actual report: " + station_name.get(station_key, station_key)
+            position_label = "Last actual report: " + STATION_NAME_BY_KEY.get(station_key, station_key)
         trains.append({
             "id": str(service.get("id") or service.get("uid") or service.get("rid")),
             "observedAt": service["observedAt"],
