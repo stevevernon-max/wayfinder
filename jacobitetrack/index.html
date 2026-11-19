@@ -314,7 +314,7 @@ function render(){
  const delayed=services.filter(t=>Number.isFinite(t.delayMinutes)&&t.delayMinutes>0);
  const cancelled=services.filter(t=>t.cancelled);
 
- renderSpots();maybeNotify();
+ renderSpots();if(typeof maybeNotify==="function")maybeNotify();
 }
 function renderSpots(){
  $("spots").innerHTML=Object.entries(siteData).map(([key,v])=>'<div class="spot"><h3>'+safe(v.name)+'</h3><div class="sub">'+safe(v.note)+'</div><div class="sub" style="margin-top:6px">Starting area: '+safe(v.parking)+(Number.isFinite(v.walk)?' · about '+v.walk+' min (unverified)':' · walk not verified')+'</div><div class="tag" style="margin-top:7px">Train ETA: '+timeText(getApproaching(key)[0]?.remaining)+'</div><div class="actions"><button class="button" data-spot="'+key+'">Select viewpoint</button><button class="button" data-walk="'+key+'">Walking directions</button></div></div>').join("");
