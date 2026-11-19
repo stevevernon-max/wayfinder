@@ -452,6 +452,19 @@ main>.planned-works-status{margin:0 0 10px}
 /* Keep the next-crossing caption and clock on one iPhone row. */
 .app-header #proximityTile .viaduct-subtitle{width:100%;white-space:nowrap!important;overflow:visible;font-size:clamp(10px,2.5vw,12px)!important;letter-spacing:-.15px;line-height:1.3}
 .app-header #proximityTile .viaduct-subtitle #viaductTileCountdown{display:inline;white-space:nowrap}
+
+/* Crossing-time photography forecast, compact and legible on iPhone. */
+#crossingWeatherTile{background:#1a1a1a;border-color:#333;border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+#crossingWeatherTile .crossing-weather-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-width:0}
+#crossingWeatherTile .crossing-weather-heading{font-size:clamp(17px,4.2vw,25px);font-weight:650;line-height:1.3;color:#eee;min-width:0;letter-spacing:-.35px}
+#crossingWeatherTile .crossing-weather-heading .crossing-weather-light{color:#b9bbb4;font-weight:400}
+#crossingWeatherTile .crossing-weather-rating{border-radius:14px;padding:6px 10px;background:#17361d;color:#62d86e;font-weight:700;font-size:clamp(12px,3vw,16px);white-space:nowrap;flex:0 0 auto}
+#crossingWeatherTile .crossing-weather-rating[data-grade="fair"]{background:#393016;color:#f1ce6c}
+#crossingWeatherTile .crossing-weather-rating[data-grade="poor"]{background:#3e2020;color:#f7a1a1}
+#crossingWeatherTile .crossing-weather-features{display:flex;flex-wrap:wrap;column-gap:16px;row-gap:8px;color:#c2c5bd;font-size:clamp(12px,3.1vw,17px)}
+#crossingWeatherTile .crossing-weather-features span{white-space:nowrap}
+#crossingWeatherTile .crossing-weather-advice{margin:0;color:#969a93;font-size:clamp(12px,3vw,16px);line-height:1.4}
+@media(max-width:370px){#crossingWeatherTile{padding:13px 12px}#crossingWeatherTile .crossing-weather-features{column-gap:10px}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -483,6 +496,11 @@ main>.planned-works-status{margin:0 0 10px}
 <span id="nearestTrain" hidden>—</span>
 </section>
 </div></header><main>
+<section class="tile" id="crossingWeatherTile" aria-label="Photography weather at next Glenfinnan Viaduct crossing">
+ <div class="crossing-weather-head"><div class="crossing-weather-heading" id="crossingWeatherHeading">Weather at next crossing</div><span class="crossing-weather-rating" id="crossingWeatherRating" hidden>—</span></div>
+ <div class="crossing-weather-features" id="crossingWeatherFeatures"><span>Checking crossing-time forecast…</span></div>
+ <p class="crossing-weather-advice" id="crossingWeatherAdvice">Forecast for Glenfinnan Viaduct at the predicted crossing time.</p>
+</section>
 <section class="tile" id="geoTile">
 <div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with roads, lochs, railway and estimated train position markers; drag or pinch to navigate"></div>
 <div class="geo-map-overlay"><span class="geo-load-status" id="geoStatus">Loading map</span>
@@ -528,6 +546,7 @@ const siteData={
  fortWilliam:{name:"Fort William station",lat:56.8201,lon:-5.1061,walk:null,note:"Jacobite starting station. Platform photography rules may apply.",parking:"Fort William station",parkingLat:56.8201,parkingLon:-5.1061}
 };
 let services=[],source=null,feedUpdated=null,feedError=null,weatherData=null,notificationAllowed=false;
+let crossingForecast=null,nextCrossingAt=null;
 let scheduledCrossings=[],plannedWorksFeed={status:"unavailable",items:[]};
 let lastAlerts=new Set();
 function safe(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -920,6 +939,7 @@ function updateViaductCountdown(){
   (pdfNext&&Number.isFinite(pdfNext.at)&&pdfNext.at>now?{at:pdfNext.at,type:"timetable"}:null);
  // Keep both wall-clock labels anchored to the same crossing timestamp.
  const trainAt=chosen?.at;
+ if((Number.isFinite(trainAt)?trainAt:null)!==nextCrossingAt){nextCrossingAt=Number.isFinite(trainAt)?trainAt:null;renderCrossingWeather()}
  const minutes=Number.isFinite(trainAt)?(trainAt-now)/60000:null;
  const tile=$("proximityTile");
  const approaching=Number.isFinite(minutes)&&minutes>=0&&minutes<=15;
@@ -1005,10 +1025,92 @@ function showDirections(key){
  $("photoAdvice").textContent=v.name+": "+text;
  $("photoAdvice").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
+function renderCrossingWeather(){
+ const heading=$("crossingWeatherHeading"),rating=$("crossingWeatherRating"),features=$("crossingWeatherFeatures"),advice=$("crossingWeatherAdvice");
+ if(!heading||!features)return;
+ rating.hidden=true;rating.removeAttribute("data-grade");
+ if(!Number.isFinite(nextCrossingAt)){
+  heading.textContent="Weather at next crossing";
+  features.textContent="Awaiting next crossing time";
+  advice.textContent="The forecast will follow the next predicted viaduct crossing.";
+  return;
+ }
+ const crossing=new Date(nextCrossingAt);
+ const parts=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{
+  timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"
+ }).formatToParts(crossing).map(({type,value})=>[type,value]));
+ const crossingLocal=parts.year+"-"+parts.month+"-"+parts.day+"T"+parts.hour+":"+parts.minute;
+ const day=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short"}).format(crossing);
+ const clock=parts.hour+":"+parts.minute;
+ heading.textContent=clock+" "+day+" crossing forecast";
+ if(!crossingForecast?.hourly?.time?.length){
+  features.textContent="Forecast loading…";
+  advice.textContent="Weather is assessed at the expected crossing time, not the current time.";
+  return;
+ }
+ const times=crossingForecast.hourly.time;
+ // Open-Meteo's hourly times use the requested Europe/London local timezone.
+ // Select the closest available hourly sample to the crossing's local clock.
+ const asMinute=s=>Date.parse(s+":00Z");
+ const target=asMinute(crossingLocal);
+ let index=-1,best=Infinity;
+ for(let i=0;i<times.length;i++){
+  const delta=Math.abs(asMinute(times[i])-target);
+  if(Number.isFinite(delta)&&delta<best){best=delta;index=i}
+ }
+ if(index<0||best>60*60000){
+  features.textContent="Hourly forecast not yet available";
+  advice.textContent="The crossing falls outside the available weather forecast. Check again nearer the time.";
+  return;
+ }
+ const hourly=crossingForecast.hourly;
+ const value=key=>{const v=hourly[key]?.[index];return typeof v==="number"&&Number.isFinite(v)?v:null};
+ const rain=value("precipitation_probability"),wind=value("wind_speed_10m"),visibility=value("visibility"),cloud=value("cloud_cover"),temp=value("temperature_2m");
+ const dayDates=crossingForecast.daily?.time||[];
+ const dateIndex=dayDates.indexOf(parts.year+"-"+parts.month+"-"+parts.day);
+ const sunrise=crossingForecast.daily?.sunrise?.[dateIndex],sunset=crossingForecast.daily?.sunset?.[dateIndex];
+ const minuteOfDay=Number(parts.hour)*60+Number(parts.minute);
+ const hhmmMinutes=s=>s&&/T\\d{2}:\\d{2}$/.test(s)?Number(s.slice(-5,-3))*60+Number(s.slice(-2)):null;
+ const rise=hhmmMinutes(sunrise),set=hhmmMinutes(sunset);
+ const daylight=rise!==null&&set!==null?minuteOfDay>=rise&&minuteOfDay<=set:null;
+ const golden=daylight&&(minuteOfDay<=rise+60||minuteOfDay>=set-60);
+ const light=daylight===null?"Light unknown":!daylight?"After dark":golden?"Golden hour":"Daylight";
+ const clarity=visibility===null?"Visibility unknown":visibility>=15000?"Clear visibility":visibility>=5000?"Moderate visibility":"Low visibility";
+ const precipitation=rain===null?"Rain unknown":rain<20?"Dry likely":rain<50?"Rain possible":"Rain likely";
+ const breeze=wind===null?"Wind unknown":Math.round(wind)+" km/h wind";
+ const items=[light,clarity,precipitation,breeze];
+ features.replaceChildren(...items.map(label=>{const el=document.createElement("span");el.textContent=label;return el}));
+ if(rain===null&&wind===null&&visibility===null&&cloud===null){
+  advice.textContent="Weather details unavailable for this crossing time.";
+  return;
+ }
+ // A photography score based only on available forecast fields. Never infer
+ // front-lighting, exact sight lines or mirror-calm water from these data.
+ let score=100;
+ if(daylight===false)score-=30;
+ if(rain!==null)score-=rain>=70?45:rain>=40?25:rain>=20?12:0;
+ if(visibility!==null)score-=visibility<2000?40:visibility<5000?25:visibility<12000?10:0;
+ if(wind!==null)score-=wind>=30?25:wind>=15?14:wind>=9?6:0;
+ if(cloud!==null)score-=cloud>=90?18:cloud>=70?10:0;
+ const grade=score>=83?"Excellent":score>=65?"Good":score>=43?"Fair":"Poor";
+ rating.textContent=grade;rating.dataset.grade=grade.toLowerCase();rating.hidden=false;
+ const notes=[];
+ if(daylight===false)notes.push("Crossing is after dark.");
+ else if(golden)notes.push("Golden-hour light is possible.");
+ if(visibility!==null&&visibility<5000)notes.push("Hills may be obscured by poor visibility.");
+ else if(visibility!==null&&visibility>=15000)notes.push("Good distant visibility forecast.");
+ if(rain!==null&&rain>=40)notes.push("Rain may affect photography.");
+ if(wind!==null&&wind<=7)notes.push("Light wind may favour reflections; water conditions are not confirmed.");
+ else if(wind!==null&&wind>=20)notes.push("Wind may affect camera stability.");
+ if(temp!==null)notes.push(Math.round(temp)+"°C expected.");
+ advice.textContent=(notes.join(" ")||"Conditions are based on the closest hourly forecast.")+" · Hourly Open-Meteo forecast, not a live observation.";
+}
+
 async function fetchWeather(){
  try{
- const u="https://api.open-meteo.com/v1/forecast?latitude=56.8733&longitude=-5.4317&current=temperature_2m,cloud_cover,visibility,precipitation,weather_code&hourly=precipitation_probability,cloud_cover,visibility&daily=sunrise,sunset&forecast_days=2&timezone=Europe%2FLondon";
+ const u="https://api.open-meteo.com/v1/forecast?latitude=56.8733&longitude=-5.4317&current=temperature_2m,cloud_cover,visibility,precipitation,weather_code&hourly=precipitation_probability,cloud_cover,visibility,wind_speed_10m,temperature_2m&daily=sunrise,sunset&forecast_days=7&timezone=Europe%2FLondon";
  const r=await fetch(u,{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);const d=await r.json();
+ crossingForecast=d;renderCrossingWeather();
  const now=d.current;if(!now||!Number.isFinite(now.temperature_2m))throw Error("Weather feed incomplete");
  const hourly=d.hourly||{},ix=(hourly.time||[]).findIndex(x=>x>=now.time.slice(0,13)+":00");const i=ix<0?0:ix;
  const precip=(hourly.precipitation_probability||[])[i];const vis=Number.isFinite(now.visibility)?now.visibility:(hourly.visibility||[])[i];
@@ -1018,7 +1120,7 @@ async function fetchWeather(){
  const advice=[Number.isFinite(vis)&&vis<3000?"Visibility may be poor for long-distance photographs.":"",cloud>=85?"Heavy cloud may reduce contrast and direct light.":"",Number.isFinite(precip)&&precip>=50?"Rain is likely enough to consider waterproof camera protection.":""].filter(Boolean);
  $("photoAdvice").textContent=(rise&&set?"Sunrise "+rise.slice(-5)+" · Sunset "+set.slice(-5)+". Approximate golden light: first and last hour of daylight. ":"")+(advice.join(" ")||"Check local cloud and visibility close to your planned train passing time.");
  $("weatherTime").textContent="Glenfinnan forecast · Updated "+now.time.replace("T"," ")+" (UK local) · Open-Meteo weather data";
- }catch(e){$("weather").innerHTML='<div class="muted">Weather forecast unavailable.</div>';$("photoAdvice").textContent="Unable to load weather and visibility information."; $("weatherTime").textContent=e.message;}
+ }catch(e){crossingForecast=null;renderCrossingWeather();$("weather").innerHTML='<div class="muted">Weather forecast unavailable.</div>';$("photoAdvice").textContent="Unable to load weather and visibility information."; $("weatherTime").textContent=e.message;}
 }
 // Bundled, date-limited viaduct times copied from the published ScotRail timetable.
 // Tile 2 must still count down if a separate JSON fetch fails or takes time.
