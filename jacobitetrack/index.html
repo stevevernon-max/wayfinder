@@ -895,12 +895,14 @@ function updateViaductCountdown(){
  // If no further board-based crossing remains, use the PDF timetable.
  const boardFresh=Number.isFinite(Date.parse(feedUpdated||""))&&now-Date.parse(feedUpdated)<15*60000;
  const boardCandidates=boardFresh?[
-  Number.isFinite(liveNext?.remaining)?{minutes:liveNext.remaining,type:"boards"}:null,
-  Number.isFinite(feedMinutes)?{minutes:feedMinutes,type:"boards"}:null
- ].filter(x=>x&&x.minutes>=0).sort((a,b)=>a.minutes-b.minutes):[];
+  Number.isFinite(liveNext?.remaining)?{at:now+liveNext.remaining*60000,type:"boards"}:null,
+  Number.isFinite(feedMinutes)?{at:Date.parse(feedNext.at),type:"boards"}:null
+ ].filter(x=>x&&Number.isFinite(x.at)&&x.at>now).sort((a,b)=>a.at-b.at):[];
  const chosen=boardCandidates[0]||
-  (Number.isFinite(pdfMinutes)&&pdfMinutes>=0?{minutes:pdfMinutes,type:"timetable"}:null);
- const minutes=chosen?.minutes;
+  (pdfNext&&Number.isFinite(pdfNext.at)&&pdfNext.at>now?{at:pdfNext.at,type:"timetable"}:null);
+ // Keep both wall-clock labels anchored to the same crossing timestamp.
+ const trainAt=chosen?.at;
+ const minutes=Number.isFinite(trainAt)?(trainAt-now)/60000:null;
  const tile=$("proximityTile");
  const approaching=Number.isFinite(minutes)&&minutes>=0&&minutes<=15;
  const near=Number.isFinite(minutes)&&minutes>=0&&minutes<=3;
@@ -922,14 +924,14 @@ function updateViaductCountdown(){
  const hours=Math.floor(total%1440/60),mins=total%60;
  label.textContent=days?days+"d "+hours+"h "+String(mins).padStart(2,"0")+"m"
    :hours?hours+"h "+String(mins).padStart(2,"0")+"m":mins+"m";
- const trainAt=Date.now()+minutes*60000;
- const inPositionAt=trainAt-10*60000;
+ const inPositionAt=trainAt-10*60*1000; // exactly ten minutes before the crossing
  const fmt=at=>new Date(at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"});
  const dateOf=at=>new Date(at).toLocaleDateString("en-GB",{year:"numeric",month:"2-digit",day:"2-digit",timeZone:"Europe/London"});
  const nowLocal=dateOf(Date.now()),crossingLocal=dateOf(trainAt);
  const when=crossingLocal===nowLocal?"Today":dateOf(Date.now()+86400000)===crossingLocal?"Tomorrow"
   :new Date(trainAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"});
- time.textContent=when+" "+fmt(trainAt)+" crossing · Get in position by "+fmt(inPositionAt);
+ const inPositionDay=dateOf(inPositionAt)===crossingLocal?"":dateOf(inPositionAt)===nowLocal?"Today ":""+new Date(inPositionAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"})+" ";
+ time.textContent=when+" "+fmt(trainAt)+" crossing · Get in position by "+inPositionDay+fmt(inPositionAt)+" (10 min before)";
  // Keep Tile 2 focused on the countdown and crossing time.
  // Timetable predictions remain estimates internally, without a warning/error label.
  note.hidden=true;
