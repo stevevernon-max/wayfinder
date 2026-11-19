@@ -8,7 +8,7 @@ on:
       - jacobitetrack/scripts/darwin_feed.py
   schedule:
     # Avoid the busy top of the hour; GitHub may still delay scheduled runs.
-    - cron: "*/5 * * * *"
+    - cron: "2-59/5 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -97,8 +97,6 @@ jobs:
             echo "No feed changes to publish."
           else
             git commit -m "Refresh live West Highland train feed"
-            # Site edits may land while the collectors are polling. Rebase this
-            # feed update on the latest main so a successful poll is not lost.
             git fetch origin main
             git rebase origin/main
             git push origin HEAD:main

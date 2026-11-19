@@ -39,7 +39,6 @@ STATION_BY_TIPLOC = {
     "GLNFNNN": ("glenfinnan", 34.743),
     "LCHESDE": ("locheilside", 44.546),
     "LCEILOB": ("lochEilOutwardBound", 50.468),
-    "CORPACH": ("corpach", 54.629),
     "FRTWLM": ("fortWilliam", 59.214),
     # Accept descriptive variants in case another Darwin version emits them.
     "MALLAIG": ("mallaig", 0.0),
@@ -51,7 +50,7 @@ STATION_BY_TIPLOC = {
 TIPLOC_BY_CRS = {
     "MLG": "MLAIG", "MRR": "MORAR", "ARG": "ARISAIG", "BSL": "BEASDAL",
     "LCL": "LCHALRT", "GLF": "GLNFNNN", "LCS": "LCHESDE",
-    "LHE": "LCEILOB", "CPA": "CORPACH", "FTW": "FRTWLM",
+    "LHE": "LCEILOB", "FTW": "FRTWLM",
 }
 LDB_STATION_CRSES = tuple(crs for crs in TIPLOC_BY_CRS if crs != "BSL")
 STATION_NAME_BY_KEY = {
@@ -63,7 +62,6 @@ STATION_NAME_BY_KEY = {
     "glenfinnan": "Glenfinnan",
     "locheilside": "Locheilside",
     "lochEilOutwardBound": "Loch Eil Outward Bound",
-    "corpach": "Corpach",
     "fortWilliam": "Fort William",
 }
 VIEWPOINT_BY_KEY = {
@@ -74,7 +72,6 @@ VIEWPOINT_BY_KEY = {
     "glenfinnan": "glenfinnan",
     "locheilside": "locheilside",
     "lochEilOutwardBound": "lochEilOutwardBound",
-    "corpach": "corpach",
     "fortWilliam": "fortWilliam",
 }
 LINE_TIPLOCS = set(STATION_BY_TIPLOC)
@@ -83,7 +80,7 @@ LINE_TIPLOCS = set(STATION_BY_TIPLOC)
 STANOX_TO_TIPLOC = {
     "06001": "MLAIG", "06002": "MORAR", "06004": "ARISAIG",
     "06005": "BEASDAL", "06006": "LCHALRT", "06008": "GLNFNNN",
-    "06009": "LCHESDE", "06010": "CORPACH", "06014": "LCEILOB",
+    "06009": "LCHESDE", "06014": "LCEILOB",
     "06023": "FRTWLM",
 }
 FRESH_SECONDS = 600
@@ -147,17 +144,9 @@ def _merge_ldb_service(state: dict[str, Any], raw: dict[str, Any], board_crs: st
     destination = as_list(get(raw, "destination", default=[]))
     description = " ".join(str(get(item, "locationName", "description", default="")) for item in origin + destination)
     id_part = raw_id or re.sub(r"\W+", "", description)
-    # RDM LDB may return the same service once per departure board with a
-    # station suffix (for example 10875321MLAIG___). Collapse those variants
-    # to one service so its calling points combine into a single map marker.
-    station_suffix = re.fullmatch(
-        r"(\d{8})(?:MLAIG|MORAR|ARISAIG|BEASDAL|LCHALRT|GLNFNNN|LCHESDE|LCEILOB|FRTWLM)_*",
-        id_part.upper(),
-    )
-    canonical_id = station_suffix.group(1) if station_suffix else id_part
     if not id_part:
         return False
-    identifier = "ldb:" + canonical_id
+    identifier = "ldb:" + id_part
     raw_points = _ldb_calling_points(raw, "previousCallingPoints") + [{
         "crs": board_crs,
         "st": get(raw, "std"),
@@ -200,26 +189,17 @@ def _merge_ldb_service(state: dict[str, Any], raw: dict[str, Any], board_crs: st
         else:
             merged_locations[tiploc] = location
     merged_schedule.update(schedule_at)
-    merged_route = list(dict.fromkeys(
-        (service.get("route", []) if isinstance(service.get("route"), list) else []) + route
-    ))
-    if len(merged_route) > 1 and all(code in STATION_BY_TIPLOC for code in merged_route):
-        ascending = STATION_BY_TIPLOC[merged_route[0]][1] < STATION_BY_TIPLOC[merged_route[1]][1]
-        merged_route.sort(key=lambda code: STATION_BY_TIPLOC[code][1], reverse=not ascending)
-    stable_display_id = canonical_id if station_suffix else str(
-        get(raw, "trainID", "rsid", "serviceID", default="") or identifier
-    )
     service.update({
         "rid": identifier,
-        "uid": canonical_id if station_suffix else str(get(raw, "serviceID", "rsid", default="") or ""),
-        "id": stable_display_id,
+        "uid": str(get(raw, "serviceID", "rsid", default="") or ""),
+        "id": str(get(raw, "trainID", "rsid", "serviceID", default="") or identifier),
         "headcode": str(get(raw, "trainID", "trainId", default="") or "").strip().upper(),
         "serviceDate": now.astimezone(LONDON).date().isoformat(),
         "observedAt": now.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
         "locations": merged_locations,
         "scheduleAt": merged_schedule,
-        "route": merged_route,
-        "scheduled": bool(merged_schedule),
+        "route": route,
+        "scheduled": bool(schedule_at),
         "cancelled": str(get(raw, "isCancelled", default="false")).lower() == "true",
         "source": "live_departure_board",
     })
@@ -236,45 +216,12 @@ def collect_ldb(state: dict[str, Any], now: datetime) -> int:
         "RDM_LDB_BASE_URL",
         "https://api1.raildata.org.uk/1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepBoardWithDetails",
     ).rstrip("/")
-    # Earlier refreshes stored one LDB variant per departure station. Fold any
-    # already-published variants into the canonical service key before polling.
-    saved_services = state.setdefault("services", {})
-    station_suffix_pattern = re.compile(
-        r"(\d{8})(?:MLAIG|MORAR|ARISAIG|BEASDAL|LCHALRT|GLNFNNN|LCHESDE|LCEILOB|FRTWLM)_*",
-        re.IGNORECASE,
-    )
-    for old_key, old_service in list(saved_services.items()):
-        if not isinstance(old_service, dict) or not str(old_key).startswith("ldb:"):
-            continue
-        match = station_suffix_pattern.fullmatch(str(old_service.get("id") or str(old_key)[4:]))
-        if not match:
-            continue
-        canonical_key = "ldb:" + match.group(1)
-        if old_key == canonical_key:
-            continue
-        target = saved_services.get(canonical_key)
-        target = target if isinstance(target, dict) else {}
-        merged_service = {**old_service, **target}
-        for field in ("locations", "scheduleAt"):
-            old_values = old_service.get(field) if isinstance(old_service.get(field), dict) else {}
-            new_values = target.get(field) if isinstance(target.get(field), dict) else {}
-            merged_service[field] = {**old_values, **new_values}
-        route = list(dict.fromkeys(
-            (old_service.get("route", []) if isinstance(old_service.get("route"), list) else [])
-            + (target.get("route", []) if isinstance(target.get("route"), list) else [])
-        ))
-        if len(route) > 1 and all(code in STATION_BY_TIPLOC for code in route):
-            ascending = STATION_BY_TIPLOC[route[0]][1] < STATION_BY_TIPLOC[route[1]][1]
-            route.sort(key=lambda code: STATION_BY_TIPLOC[code][1], reverse=not ascending)
-        merged_service.update({"rid": canonical_key, "uid": match.group(1), "id": match.group(1), "route": route})
-        saved_services[canonical_key] = merged_service
-        saved_services.pop(old_key, None)
     merged = 0
     successful_boards = 0
     failures: list[str] = []
     for crs in LDB_STATION_CRSES:
         query = urllib.parse.urlencode({"numRows": "50", "timeWindow": "120", "timeOffset": "0"})
-        request = urllib.request.Request(f"{base_url}/{crs}?{query}", headers={"x-apikey": api_key, "Accept": "application/json", "User-Agent": "JacobiteTrack/1.0"})
+        request = urllib.request.Request(f"{base_url}/{crs}?{query}", headers={"x-apikey": api_key, "Accept": "application/json"})
         try:
             with urllib.request.urlopen(request, timeout=15) as response:
                 payload = json.loads(response.read().decode("utf-8"))
@@ -854,13 +801,7 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
                         candidates[distance] = (at, station_key, "forecast")
             for at, distance, station_key in schedule_points:
                 old = candidates.get(distance)
-                if (
-                    now - timedelta(hours=2) <= at <= now + SCHEDULE_HORIZON
-                    and (old is None or old[2] == "schedule" and at > old[0])
-                ):
-                    # Keep the latest scheduled point behind a train too; it
-                    # brackets a viaduct crossing when the previous refresh
-                    # happens just after the train passes that station.
+                if at >= now and (old is None or old[0] < now):
                     candidates[distance] = (at, station_key, "schedule")
 
             timed_by_distance = sorted(
@@ -885,15 +826,13 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
                     viaduct_basis = "scheduled" if a[3] == b[3] == "schedule" else "live_or_scheduled"
             if viaduct_eta:
                 minutes = (viaduct_eta - now).total_seconds() / 60
-                # This viewpoint is the viaduct crossing itself. For Mallaig-
-                # bound trains the crossing is after Glenfinnan station, so
-                # always replace any station-call ETA with the interpolated
-                # crossing time in either direction.
-                viewpoints["glenfinnan"] = {
-                    "etaMinutes": round(minutes, 2),
-                    "quality": "estimated_between_station_times",
-                    "basis": viaduct_basis or "station_times",
-                }
+                old = viewpoints.get("glenfinnan")
+                if old is None or minutes < old["etaMinutes"]:
+                    viewpoints["glenfinnan"] = {
+                        "etaMinutes": round(minutes, 2),
+                        "quality": "estimated_between_station_times",
+                        "basis": viaduct_basis or "station_times",
+                    }
 
         # If route ordering is incomplete, infer direction from time-ordered
         # station reports and then from the next Darwin forecast.

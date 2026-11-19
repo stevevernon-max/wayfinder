@@ -7,9 +7,9 @@ main{max-width:1080px;margin:auto;padding:11px}.tile{background:#171d27;border:1
 select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:11px;width:100%;font-size:15px;padding:11px;margin-top:6px}
 .button{background:#183e61;color:#c0e4ff;border:1px solid #426990;border-radius:12px;padding:11px 13px;font-size:13px;font-weight:750;cursor:pointer}.button:disabled{opacity:.4;cursor:not-allowed}
 .rail-scroll{overflow:hidden;margin:6px 0;width:100%;min-width:0}.rail-svg{display:block;width:100%;height:auto}.bed{stroke:#0b141b;stroke-width:15;stroke-linecap:round}.track{stroke:#398f72;stroke-width:10;stroke-linecap:round}.node{stroke:#d7e2ec;stroke-width:3;fill:#173149}.station-label{fill:#e8edf4;font-size:16px;font-weight:600}
-.train-halo{fill:#5dbeff;opacity:.3;animation:pulse 1.5s ease-out infinite;transform-origin:center;transform-box:fill-box}.train-body{fill:#60c1fb;stroke:#f1f9ff;stroke-width:2}.train-arrow{fill:#112d45;font-weight:900;font-size:17px;text-anchor:middle;dominant-baseline:middle}.user-ripple{fill:#3d9fff;opacity:.65;animation:pulse 1.65s ease-out infinite;transform-origin:center;transform-box:fill-box}.user-spot{fill:#3d9fff;stroke:#e7f7ff;stroke-width:3.5}.user-center{fill:#fff}
-.train-estimated .train-body{fill:#f0b84a;stroke:#fff1c7}.train-estimated .train-arrow{fill:#3b2a0b}.train-map-halo{fill:#ffbf47;opacity:.22;animation:pulse 1.7s ease-out infinite;transform-origin:center;transform-box:fill-box}.train-map-body{fill:#f0b84a;stroke:#fff4d4;stroke-width:3}.train-map-arrow{fill:#3b2a0b;font-size:16px;font-weight:900;text-anchor:middle;dominant-baseline:middle}.train-map-reported .train-map-halo{fill:#55baff}.train-map-reported .train-map-body{fill:#60c1fb;stroke:#f1f9ff}.train-map-reported .train-map-arrow{fill:#112d45}
-@keyframes pulse{0%{transform:scale(.8);opacity:.6}80%{transform:scale(2);opacity:0}100%{opacity:0}}.gps-row{display:flex;align-items:center;gap:9px;margin-top:11px;color:#a9c7e0;font-size:13px;line-height:1.45}.gps-indicator{width:12px;height:12px;flex-shrink:0;border-radius:50%;background:#697789}.gps-indicator.active{background:#5fd5aa;animation:gpsFlash 1.2s ease-in-out infinite;box-shadow:0 0 0 4px #5fd5aa33}.gps-indicator.error{background:#eb807c}@keyframes gpsFlash{50%{opacity:.2;box-shadow:0 0 0 8px #5fd5aa00}}.value{font-size:45px;font-weight:800;color:#81beff;letter-spacing:-2px;line-height:1.1;margin:10px 0}
+.train-halo{fill:#5dbeff;opacity:.3;animation:pulse 1.5s ease-out infinite;transform-origin:center;transform-box:fill-box}.train-body{fill:#60c1fb;stroke:#f1f9ff;stroke-width:2;animation:blipCore 1.15s ease-in-out infinite;transform-origin:center;transform-box:fill-box}.train-arrow{fill:#112d45;font-weight:900;font-size:17px;text-anchor:middle;dominant-baseline:middle}.user-ripple{fill:#3d9fff;opacity:.65;animation:pulse 1.65s ease-out infinite;transform-origin:center;transform-box:fill-box}.user-spot{fill:#3d9fff;stroke:#e7f7ff;stroke-width:3.5}.user-center{fill:#fff}
+.train-estimated .train-body{fill:#f0b84a;stroke:#fff1c7}.train-estimated .train-arrow{fill:#3b2a0b}.train-map-halo{fill:#ffbf47;opacity:.22;animation:pulse 1.7s ease-out infinite;transform-origin:center;transform-box:fill-box}.train-map-body{fill:#f0b84a;stroke:#fff4d4;stroke-width:3;animation:blipCore 1.15s ease-in-out infinite;transform-origin:center;transform-box:fill-box}.train-map-arrow{fill:#3b2a0b;font-size:16px;font-weight:900;text-anchor:middle;dominant-baseline:middle}.train-map-reported .train-map-halo{fill:#55baff}.train-map-reported .train-map-body{fill:#60c1fb;stroke:#f1f9ff}.train-map-reported .train-map-arrow{fill:#112d45}
+@keyframes pulse{0%{transform:scale(.8);opacity:.6}80%{transform:scale(2);opacity:0}100%{opacity:0}}@keyframes blipCore{0%,100%{transform:scale(.92)}50%{transform:scale(1.13)}}@media(prefers-reduced-motion:reduce){.train-halo,.train-body,.train-map-halo,.train-map-body{animation:none}}.gps-row{display:flex;align-items:center;gap:9px;margin-top:11px;color:#a9c7e0;font-size:13px;line-height:1.45}.gps-indicator{width:12px;height:12px;flex-shrink:0;border-radius:50%;background:#697789}.gps-indicator.active{background:#5fd5aa;animation:gpsFlash 1.2s ease-in-out infinite;box-shadow:0 0 0 4px #5fd5aa33}.gps-indicator.error{background:#eb807c}@keyframes gpsFlash{50%{opacity:.2;box-shadow:0 0 0 8px #5fd5aa00}}.value{font-size:45px;font-weight:800;color:#81beff;letter-spacing:-2px;line-height:1.1;margin:10px 0}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}.spot{background:#111924;border:1px solid #324154;border-radius:14px;padding:13px;margin:10px 0}.spot h3{font-size:15px;margin:0 0 5px}.spot .sub{font-size:12px;color:#a7b8c9;line-height:1.5}.spot .actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.tag{color:#95cfff;font-size:11px;font-weight:750;letter-spacing:.3px}.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.stat{padding:12px;background:#101823;border:1px solid #2b394b;border-radius:13px}.stat b{font-size:21px;display:block;margin-top:5px}.notice{padding:10px 12px;background:#122338;border:1px solid #2a4d6e;border-radius:11px;color:#c4def4;font-size:12px;line-height:1.5;margin-top:10px}.weather-row{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}.weather-row>div{min-width:75px}.weather-row b{font-size:19px}.alerts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.alerts select{max-width:135px;margin:0;padding:9px}.alert-tag{font-size:12px;color:#9cb1c8}.countdown{font-variant-numeric:tabular-nums}footer{padding:2px 4px 25px;color:#8295ad;font-size:11px;line-height:1.55}
 @media(max-width:760px){.cols{grid-template-columns:1fr}.tile{border-radius:20px}main{padding:10px}.station-label{font-size:16px}}
 
@@ -164,16 +164,16 @@ body.geo-fullscreen-open{overflow:hidden}
 <header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div></div></header><main>
 <section class="tile" id="trackerTile">
 <div class="row"><div><div class="eyebrow">TRAIN TRACKER</div></div><span class="badge gps-line-pill" id="gpsLineBadge">Finding location…</span><span id="feedBadge" hidden aria-live="polite">Checking</span></div>
-<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Nine mapped stations from Mallaig to Fort William" role="img">
+<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Nine evenly spaced mapped stations from Mallaig to Fort William" role="img">
 <line class="bed" x1="13" y1="83" x2="887" y2="83"/><line class="track" x1="13" y1="83" x2="887" y2="83"/>
 <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="9" y="45" text-anchor="start">Mallaig</text>
-<circle class="node" cx="93" cy="83" r="12"/><text class="station-label" x="93" y="132" text-anchor="middle">Morar</text>
-<circle class="node" cx="180" cy="83" r="12"/><text class="station-label" x="180" y="45" text-anchor="middle">Arisaig</text>
-<circle class="node" cx="339" cy="83" r="12"/><text class="station-label" x="339" y="132" text-anchor="middle">Lochailort</text>
-<circle class="node" cx="522" cy="83" r="12"/><text class="station-label" x="522" y="45" text-anchor="middle">Glenfinnan</text>
-<circle class="node" cx="659" cy="83" r="12"/><text class="station-label" x="659" y="132" text-anchor="middle">Locheilside</text>
-<circle class="node" cx="742" cy="83" r="12"/><text class="station-label" x="742" y="39" text-anchor="middle"><tspan x="657">Loch Eil</tspan><tspan x="657" dy="18">Outward Bound</tspan></text>
-<circle class="node" cx="801" cy="83" r="12"/><text class="station-label" x="801" y="132" text-anchor="middle">Corpach</text>
+<circle class="node" cx="139" cy="83" r="12"/><text class="station-label" x="139" y="132" text-anchor="middle">Morar</text>
+<circle class="node" cx="243" cy="83" r="12"/><text class="station-label" x="243" y="45" text-anchor="middle">Arisaig</text>
+<circle class="node" cx="346" cy="83" r="12"/><text class="station-label" x="346" y="132" text-anchor="middle">Lochailort</text>
+<circle class="node" cx="450" cy="83" r="12"/><text class="station-label" x="450" y="45" text-anchor="middle">Glenfinnan</text>
+<circle class="node" cx="554" cy="83" r="12"/><text class="station-label" x="554" y="132" text-anchor="middle">Locheilside</text>
+<circle class="node" cx="657" cy="83" r="12"/><text class="station-label" x="657" y="39" text-anchor="middle"><tspan x="657">Loch Eil</tspan><tspan x="657" dy="18">Outward Bound</tspan></text>
+<circle class="node" cx="761" cy="83" r="12"/><text class="station-label" x="761" y="132" text-anchor="middle">Corpach</text>
 <circle class="node" cx="865" cy="83" r="12"/><text class="station-label" x="892" y="45" text-anchor="end">Fort William</text>
 <g id="trains"></g>
 <g id="userPosition" style="display:none" aria-label="Your approximate closest position on railway schematic">
@@ -235,6 +235,34 @@ function positionProgress(t){
  const fraction=Math.max(0,Math.min(1,(Date.now()-from)/(to-from)));
  return p.fromProgress+(p.toProgress-p.fromProgress)*fraction;
 }
+const schematicStations=[
+ ["Mallaig",35],["Morar",139],["Arisaig",243],["Beasdale",294],["Lochailort",346],
+ ["Glenfinnan",450],["Locheilside",554],["Loch Eil Outward Bound",657],["Corpach",761],["Fort William",865]
+];
+function schematicTrainX(t){
+ const p=t.position;if(!p?.fromStation)return Number.isFinite(positionProgress(t))?xAt(positionProgress(t)):null;
+ const find=name=>schematicStations.findIndex(([label])=>label.toLowerCase()===String(name||"").toLowerCase());
+ const a=find(p.fromStation),b=find(p.toStation);
+ if(a<0)return Number.isFinite(positionProgress(t))?xAt(positionProgress(t)):null;
+ if(b<0||!Number.isFinite(Date.parse(p.fromAt))||!Number.isFinite(Date.parse(p.toAt||""))||Date.parse(p.toAt)<=Date.parse(p.fromAt))return schematicStations[a][1];
+ const fraction=Math.max(0,Math.min(1,(Date.now()-Date.parse(p.fromAt))/(Date.parse(p.toAt)-Date.parse(p.fromAt))));
+ return schematicStations[a][1]+(schematicStations[b][1]-schematicStations[a][1])*fraction;
+}
+function isTrainOnLineNow(t){
+ if(t.cancelled===true||!t.position)return false;
+ const from=Date.parse(t.position.fromAt),to=Date.parse(t.position.toAt||"");
+ if(!Number.isFinite(from))return false;
+ const now=Date.now();
+ if(Number.isFinite(to)&&to>from)return now>=from-60000&&now<=to+120000;
+ return now>=from-60000&&now<=from+20*60000;
+}
+function visibleTrainMarkers(){
+ const active=services.filter(isTrainOnLineNow).map(train=>({train,progress:positionProgress(train)})).filter(item=>Number.isFinite(item.progress));
+ // Different board feeds can describe the same working. Collapse only marker
+ // overlaps; preserve the service records for ETAs and the upcoming roster.
+ return active.sort((a,b)=>((b.train.position?.basis==="actual_plus_forecast_estimate")?1:0)-((a.train.position?.basis==="actual_plus_forecast_estimate")?1:0))
+  .filter((item,index,list)=>!list.slice(0,index).some(other=>other.train.direction===item.train.direction&&Math.abs(other.progress-item.progress)<1.25));
+}
 function etaAt(t,id){
  if(t.cancelled===true)return null;
  if(t.viewpoints&&Number.isFinite(t.viewpoints[id]?.etaMinutes)){const age=feedUpdated?Math.max(0,(Date.now()-Date.parse(feedUpdated))/60000):0;return Math.max(0,t.viewpoints[id].etaMinutes-age);}
@@ -270,7 +298,7 @@ function getApproaching(id){
  return services.map(t=>({...t,remaining:etaAt(t,id)})).filter(t=>t.remaining!==null&&t.remaining>=0).sort((a,b)=>a.remaining-b.remaining);
 }
 function render(){
- $("trains").innerHTML=services.map(t=>({train:t,progress:positionProgress(t)})).filter(x=>Number.isFinite(x.progress)).map(({train:t,progress})=>'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+xAt(progress)+',83)"><circle class="train-halo" r="15"/><circle class="train-body" r="13"/><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Rail report")+'</title></g>').join("");
+ $("trains").innerHTML=visibleTrainMarkers().map(({train:t})=>'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+schematicTrainX(t)+',83)"><circle class="train-halo" r="15"/><circle class="train-body" r="13"/><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Rail report")+'</title></g>').join("");
  updateGeoTrainMarkers();
  let glen=getApproaching("glenfinnan")[0];
 
@@ -470,7 +498,7 @@ function snapToMappedRail(rough){
   const f=Math.max(0,Math.min(1,(px*bx+py*by)/len));
   const candidate={lat:a.lat+f*(b.lat-a.lat),lon:a.lon+f*(b.lon-a.lon)};
   const distance=Math.hypot((candidate.lat-rough.lat)*latScale,(candidate.lon-rough.lon)*lonScale);
-  if(!best||distance<best.distance)best={...candidate,distance};
+  if(!best||distance<best.distance)best={...candidate,distance,angle:Math.atan2(-by,bx)*180/Math.PI};
  }
  return best&&best.distance<2500?best:null;
 }
@@ -479,7 +507,7 @@ function updateGeoTrainMarkers(){
  let group=svg.querySelector(".train-map-markers");
  if(!group){group=geoSVG("g",{class:"train-map-markers"});svg.appendChild(group)}
  group.textContent="";
- for(const train of services){
+ for(const {train} of visibleTrainMarkers()){
   const progress=positionProgress(train);if(!Number.isFinite(progress))continue;
   const point=snapToMappedRail(approximateRailPoint(progress));if(!point)continue;
   if(point.lat>geoViews[0].bounds.north||point.lat<geoViews[0].bounds.south||point.lon<geoViews[0].bounds.west||point.lon>geoViews[0].bounds.east)continue;
@@ -487,7 +515,8 @@ function updateGeoTrainMarkers(){
   const marker=geoSVG("g",{transform:"translate("+x.toFixed(1)+","+y.toFixed(1)+")",class:train.positionQuality==="last_actual_report"?"train-map-reported":"train-estimated"});
   marker.appendChild(geoSVG("circle",{r:17,class:"train-map-halo"}));
   marker.appendChild(geoSVG("circle",{r:12,class:"train-map-body"}));
-  const arrow=geoSVG("text",{y:1,class:"train-map-arrow"});arrow.textContent=train.direction==="back"?"←":"→";marker.appendChild(arrow);
+  const angle=point.angle+(train.direction==="back"?180:0);
+  const arrow=geoSVG("text",{y:1,class:"train-map-arrow",transform:"rotate("+angle.toFixed(1)+")"});arrow.textContent="→";marker.appendChild(arrow);
   const title=geoSVG("title");title.textContent=train.id+" · "+(train.positionLabel||"Estimated position")+" · estimated on mapped railway; not GPS";marker.appendChild(title);
   group.appendChild(marker);
  }
@@ -536,7 +565,7 @@ const geoStations=[
  {name:"Mallaig",lat:57.0052,lon:-5.8290},{name:"Morar",lat:56.9685,lon:-5.8212},
  {name:"Arisaig",lat:56.9136,lon:-5.8406},{name:"Lochailort",lat:56.8812,lon:-5.6633},
  {name:"Glenfinnan",lat:56.8717,lon:-5.4490},{name:"Locheilside",lat:56.8560,lon:-5.2903},
- {name:"Loch Eil Outward Bound",lat:56.8554,lon:-5.1929},{name:"Corpach",lat:56.8430,lon:-5.1220},
+ {name:"Loch Eil Outward Bound",lat:56.8554,lon:-5.1929},
  {name:"Fort William",lat:56.8201,lon:-5.1061}
 ];
 const mapLabels=[
