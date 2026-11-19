@@ -28,13 +28,8 @@ STATION_BY_TIPLOC = {
     "MLAIG": ("mallaig", 0),
     "MORAR": ("morar", 1),
     "ARISAIG": ("arisaig", 2),
-    "BEASDAL": ("beasdale", 2.5),
     "LCHALRT": ("lochailort", 3),
     "GLNFNNN": ("glenfinnan", 4),
-    "LCHESDE": ("locheilside", 4.5),
-    "LCEILOB": ("lochEilOutwardBound", 4.65),
-    "CORPACH": ("corpach", 4.8),
-    "BANAVIE": ("banavie", 4.9),
     "FRTWLM": ("fortWilliam", 5),
     # Accept descriptive variants in case another Darwin version emits them.
     "MALLAIG": ("mallaig", 0),
@@ -47,13 +42,8 @@ STATION_NAME_BY_KEY = {
     "mallaig": "Mallaig",
     "morar": "Morar",
     "arisaig": "Arisaig",
-    "beasdale": "Beasdale",
     "lochailort": "Lochailort",
     "glenfinnan": "Glenfinnan",
-    "locheilside": "Locheilside",
-    "lochEilOutwardBound": "Loch Eil Outward Bound",
-    "corpach": "Corpach",
-    "banavie": "Banavie",
     "fortWilliam": "Fort William",
 }
 VIEWPOINT_BY_KEY = {
@@ -107,6 +97,19 @@ def walk_named(value: Any, names: set[str]) -> Iterable[Any]:
     elif isinstance(value, list):
         for child in value:
             yield from walk_named(child, names)
+
+
+def walk_local_names(value: Any, names: set[str]) -> Iterable[Any]:
+    """Walk XML-to-JSON names while ignoring namespace prefixes such as sc:IP."""
+    if isinstance(value, dict):
+        for name, child in value.items():
+            local = str(name).rsplit(":", 1)[-1]
+            if _key(local) in names:
+                yield child
+            yield from walk_local_names(child, names)
+    elif isinstance(value, list):
+        for child in value:
+            yield from walk_local_names(child, names)
 
 
 def decode_payload(raw: bytes | str | dict[str, Any]) -> dict[str, Any] | None:
@@ -231,7 +234,7 @@ def _merge_ts(state: dict[str, Any], ts: dict[str, Any], payload_time: datetime)
         if not isinstance(raw_location, dict):
             continue
         tiploc = _location_tiploc(raw_location)
-        if not tiploc:
+        if tiploc not in STATION_BY_TIPLOC:
             continue
         forecasts, actuals = _point_times(raw_location, service.get("serviceDate"), payload_time)
         saved = locations.setdefault(tiploc, {})
@@ -258,6 +261,57 @@ def _merge_ts(state: dict[str, Any], ts: dict[str, Any], payload_time: datetime)
         service["route"] = merged
 
 
+SCHEDULE_LOCATION_TYPES = {_key(name) for name in ("OR", "OPOR", "PP", "IP", "OPIP", "DT", "OPDT")}
+
+
+def _merge_schedule(state: dict[str, Any], schedule: dict[str, Any], payload_time: datetime) -> None:
+    """Store the map-station timetable points for a Darwin schedule update."""
+    rid = get(schedule, "rid", "RID")
+    if not rid:
+        return
+    identifier = str(rid)
+    services = state.setdefault("services", {})
+    if get(schedule, "deleted", "isDeleted") in (True, "true", "True", 1, "1"):
+        services.pop(identifier, None)
+        return
+    service_date = get(schedule, "ssd", "serviceDate", "SSD")
+    schedule_times: dict[str, str] = {}
+    route: list[str] = []
+    for raw_location in walk_local_names(schedule, SCHEDULE_LOCATION_TYPES):
+        for location in as_list(raw_location):
+            if not isinstance(location, dict):
+                continue
+            tiploc = _location_tiploc(location)
+            if tiploc not in STATION_BY_TIPLOC:
+                continue
+            # Prefer working times, then fall back to public timetable times.
+            # A malformed working time must not hide a valid public time.
+            at = None
+            for time_name in ("wta", "wtp", "wtd", "pta", "ptd"):
+                at = parse_datetime(
+                    get(location, time_name),
+                    str(service_date) if service_date else None,
+                    payload_time,
+                )
+                if at:
+                    break
+            if not at:
+                continue
+            schedule_times[tiploc] = at.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+            if tiploc not in route:
+                route.append(tiploc)
+    if len(route) < 2:
+        return
+    service = services.setdefault(identifier, {"rid": identifier, "locations": {}, "route": []})
+    service["uid"] = str(get(schedule, "uid", "UID") or service.get("uid") or "")
+    service["serviceDate"] = str(service_date or service.get("serviceDate") or "")
+    service["id"] = str(get(schedule, "trainId", "trainID") or service.get("id") or service["uid"] or identifier)
+    service["observedAt"] = payload_time.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+    service["scheduleAt"] = schedule_times
+    service["route"] = route
+    service["scheduled"] = True
+
+
 def process_message(raw: bytes | str | dict[str, Any], state: dict[str, Any], fallback_time: datetime | None = None) -> int:
     payload = decode_payload(raw)
     if not payload:
@@ -266,6 +320,15 @@ def process_message(raw: bytes | str | dict[str, Any], state: dict[str, Any], fa
     if not event_time:
         return 0
     count = 0
+    for schedule in walk_named(payload, {"schedule"}):
+        if isinstance(schedule, dict) and get(schedule, "rid", "RID"):
+            _merge_schedule(state, schedule, event_time)
+            count += 1
+    for deactivated in walk_named(payload, {"deactivatedSchedule"}):
+        if isinstance(deactivated, dict):
+            rid = get(deactivated, "rid", "RID")
+            if rid:
+                state.setdefault("services", {}).pop(str(rid), None)
     for ts in walk_named(payload, {"ts"}):
         if isinstance(ts, dict) and get(ts, "rid", "RID", "uid", "UID"):
             _merge_ts(state, ts, event_time)
@@ -288,7 +351,17 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
     trains: list[dict[str, Any]] = []
     for service in state.get("services", {}).values():
         observed = _to_utc(service.get("observedAt"))
-        if not observed or (now - observed).total_seconds() > FRESH_SECONDS or (observed - now).total_seconds() > 60:
+        schedule_points = [
+            (at, STATION_BY_TIPLOC[code][1], STATION_BY_TIPLOC[code][0])
+            for code, raw_at in service.get("scheduleAt", {}).items()
+            if code in STATION_BY_TIPLOC and (at := _to_utc(raw_at)) is not None
+        ]
+        if schedule_points:
+            service_start = min(point[0] for point in schedule_points)
+            service_end = max(point[0] for point in schedule_points)
+            if now < service_start - timedelta(minutes=30) or now > service_end + timedelta(minutes=20):
+                continue
+        elif not observed or (now - observed).total_seconds() > FRESH_SECONDS or (observed - now).total_seconds() > 60:
             continue
         viewpoints: dict[str, dict[str, float]] = {}
         actual_points: list[tuple[datetime, float, str]] = []
@@ -320,6 +393,16 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
                 key = VIEWPOINT_BY_KEY[station[0]]
                 viewpoints.setdefault(key, {"etaMinutes": 0.0})
 
+        # Schedule data fills the roster and offers a lower-confidence
+        # position estimate when a live actual/forecast anchor is unavailable.
+        for at, progress_index, station_key in schedule_points:
+            if station_key in VIEWPOINT_BY_KEY and at >= now:
+                key = VIEWPOINT_BY_KEY[station_key]
+                old = viewpoints.get(key)
+                minutes = (at - now).total_seconds() / 60
+                if 0 <= minutes <= 360 and (old is None or minutes < old["etaMinutes"]):
+                    viewpoints[key] = {"etaMinutes": round(minutes, 2)}
+
         # If route ordering is incomplete, infer direction from time-ordered
         # station reports and then from the next Darwin forecast.
         if direction is None:
@@ -341,11 +424,14 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
         if lower is None:
             lower = max(lower_forecasts, default=None, key=lambda item: item[0])
             basis = "darwin_forecasts"
+        if lower is None:
+            lower = max((p for p in schedule_points if p[0] <= now), default=None, key=lambda item: item[0])
+            basis = "scheduled_timetable"
 
         upper = None
         if lower is not None and direction:
             ahead = [
-                p for p in forecast_points
+                p for p in forecast_points + schedule_points
                 if p[0] > now and (p[1] - lower[1]) * (1 if direction == "out" else -1) > 0
             ]
             upper = min(ahead, default=None, key=lambda item: item[0])
@@ -364,11 +450,11 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
                 to_progress = float((5 - to_index) * 20)
                 fraction = max(0.0, min(1.0, (now - lower[0]).total_seconds() / (to_at - lower[0]).total_seconds()))
                 progress = from_progress + (to_progress - from_progress) * fraction
-                quality = "darwin_estimate" if basis == "darwin_forecasts" else "actual_plus_forecast_estimate"
+                quality = "scheduled_estimate" if basis == "scheduled_timetable" else "darwin_estimate" if basis == "darwin_forecasts" else "actual_plus_forecast_estimate"
                 position_label = "Estimated " + STATION_NAME_BY_KEY.get(from_key, from_key) + "–" + STATION_NAME_BY_KEY.get(to_key, to_key)
             else:
                 progress = from_progress
-                quality = "last_actual_report" if basis == "actual_report" else "forecast_station_only"
+                quality = "last_actual_report" if basis == "actual_report" else "forecast_station_only" if basis == "darwin_forecasts" else "scheduled_station_only"
                 position_label = ("Last actual report: " if basis == "actual_report" else "Forecast point: ") + STATION_NAME_BY_KEY.get(from_key, from_key)
             position = {
                 "fromProgress": from_progress,
@@ -390,19 +476,20 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
             "positionLabel": position_label,
             "positionQuality": quality,
             "position": position,
+            "scheduled": bool(schedule_points),
             "locationVerified": False,
             "lat": None,
             "lon": None,
             "cancelled": bool(service.get("cancelled", False)),
             "viewpoints": viewpoints,
-            "quality": "Darwin reported times; interpolated line position is an estimate, not GPS",
+            "quality": "Darwin actual/forecast report or scheduled timetable; interpolated line position is an estimate, not GPS",
         })
     trains.sort(key=lambda item: min((v["etaMinutes"] for v in item["viewpoints"].values()), default=9999))
-    trains = trains[:25]
+    trains = trains[:100]
     return {
         "updated": now.isoformat().replace("+00:00", "Z"),
         "source": "Darwin via Rail Data Marketplace",
-        "quality": "Darwin actual and forecast times; interpolated train positions are estimates, not GPS.",
+        "quality": "Darwin actual/forecast reports and schedules; interpolated train positions are estimates, not GPS.",
         "status": "ok" if trains else "no_recent_reports",
         "trains": trains,
     }
@@ -447,6 +534,22 @@ def main() -> int:
         for identifier, service in all_services.items()
         if isinstance(service, dict) and is_line_service(service)
     }
+    for service in state["services"].values():
+        if not isinstance(service.get("locations"), dict):
+            service["locations"] = {}
+        if not isinstance(service.get("route"), list):
+            service["route"] = []
+        if not isinstance(service.get("scheduleAt"), dict):
+            service["scheduleAt"] = {}
+        service["locations"] = {
+            code: value for code, value in service.get("locations", {}).items()
+            if code in STATION_BY_TIPLOC
+        }
+        service["route"] = [code for code in service.get("route", []) if code in STATION_BY_TIPLOC]
+        service["scheduleAt"] = {
+            code: value for code, value in service.get("scheduleAt", {}).items()
+            if code in STATION_BY_TIPLOC
+        }
     removed_unrelated = before_filter - len(state["services"])
     config = {
         "bootstrap.servers": os.environ["RDM_BOOTSTRAP_SERVERS"],
@@ -491,7 +594,12 @@ def main() -> int:
     now = datetime.now(timezone.utc)
     for rid, item in list(state.get("services", {}).items()):
         observed = _to_utc(item.get("observedAt"))
-        if not observed or (now - observed).total_seconds() > 6 * 3600:
+        schedule_points = [_to_utc(value) for value in item.get("scheduleAt", {}).values()]
+        schedule_points = [value for value in schedule_points if value]
+        if schedule_points:
+            if max(schedule_points) < now - timedelta(minutes=20):
+                del state["services"][rid]
+        elif not observed or (now - observed).total_seconds() > 6 * 3600:
             del state["services"][rid]
     state["savedAt"] = now.isoformat().replace("+00:00", "Z")
     write_json(STATE_PATH, state)
