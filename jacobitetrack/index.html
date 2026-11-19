@@ -435,7 +435,7 @@ main>.planned-works-status{margin:0 0 10px}
 #timetableTile details summary{cursor:pointer;color:#a9c9e5;font-size:11px;white-space:nowrap}
 #timetableTile .stop-list{padding:8px 0 2px;min-width:185px;color:#b8c6d5;font-size:11px;line-height:1.7}
 #timetableTile .stop-list span{display:flex;justify-content:space-between;gap:12px}
-#timetableTile .table-note{margin-top:9px}
+#timetableTile a{color:#a9d7ff}
 @media(max-width:520px){#timetableTile .timetable{font-size:12px}#timetableTile th,#timetableTile td{padding:9px 5px}#timetableTile th{font-size:9px}#timetableTile th:nth-child(2),#timetableTile td:nth-child(2){min-width:125px}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
@@ -478,8 +478,8 @@ main>.planned-works-status{margin:0 0 10px}
 <div id="plannedWorksAlert" class="planned-works-status" role="status" aria-live="polite" hidden></div>
 <section class="tile" id="timetableTile" aria-labelledby="timetableHeading">
 <div class="eyebrow">PUBLISHED SERVICE TIMES</div><div class="heading" id="timetableHeading">Tomorrow’s West Highland timetable</div>
-<div class="small" id="timetableStatus">Loading the latest downloaded timetable…</div>
-<div class="table-wrap"><table class="timetable"><thead><tr><th>Train</th><th>Route</th><th>Viaduct estimate</th><th></th></tr></thead><tbody id="timetableRows"></tbody></table></div>
+<div class="small" id="timetableStatus">Loading the published timetable…</div>
+<div class="table-wrap"><table class="timetable" id="timetableTable" hidden><thead><tr><th>Departs</th><th>Route</th><th>Viaduct estimate</th><th scope="col">Calls</th></tr></thead><tbody id="timetableRows"></tbody></table></div>
 <div class="small" id="timetableSource"></div>
 </section>
 <div class="cols single-viewpoint weather-first"><section class="tile"><div class="eyebrow">PHOTOGRAPHY CONDITIONS</div><div class="heading">Glenfinnan weather & light</div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="notice" id="photoAdvice">Forecast conditions will appear here when available.</div><div class="small" id="weatherTime"></div></section></div>
@@ -916,22 +916,61 @@ async function fetchWeather(){
  $("weatherTime").textContent="Glenfinnan forecast · Updated "+now.time.replace("T"," ")+" (UK local) · Open-Meteo weather data";
  }catch(e){$("weather").innerHTML='<div class="muted">Weather forecast unavailable.</div>';$("photoAdvice").textContent="Unable to load weather and visibility information."; $("weatherTime").textContent=e.message;}
 }
+let publishedTimetable=null;
+let renderedTimetableDate=null;
+
+function renderTimetable(){
+ const ukDate=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"});
+ const parts=Object.fromEntries(ukDate.formatToParts(new Date()).map(({type,value})=>[type,value]));
+ const tomorrow=new Date(Date.UTC(Number(parts.year),Number(parts.month)-1,Number(parts.day)));
+ tomorrow.setUTCDate(tomorrow.getUTCDate()+1);
+ const serviceDate=tomorrow.toISOString().slice(0,10);
+ if(serviceDate===renderedTimetableDate)return;
+ renderedTimetableDate=serviceDate;
+
+ const data=publishedTimetable;
+ const status=$("timetableStatus"),table=$("timetableTable"),rows=$("timetableRows");
+ const formatDate=date=>new Date(date+"T00:00:00Z").toLocaleDateString("en-GB",{timeZone:"UTC",weekday:"long",day:"numeric",month:"long"});
+ $("timetableHeading").textContent="Tomorrow’s West Highland timetable · "+formatDate(serviceDate);
+ const day=tomorrow.getUTCDay();
+ const pattern=day===0?"sunday":day===6?"saturday":day===5?"friday":"weekday";
+ const trains=serviceDate>=data.validFrom&&serviceDate<=data.validThrough?data.patterns[pattern]:null;
+ table.hidden=!trains;
+ rows.replaceChildren();
+ if(!trains){
+  status.textContent="No timetable for this date. The published edition runs through "+formatDate(data.validThrough)+".";
+  return;
+ }
+
+ status.textContent=trains.length+" scheduled ScotRail services. All times are UK local. Select Calls to see station times.";
+ rows.innerHTML=trains.map(train=>{
+  const detail=train.stops.map(([station,time,request])=>'<span><span>'+safe(station)+(request?' (request stop)':'')+'</span><time>'+safe(time)+'</time></span>').join("");
+  return '<tr><td>'+safe(train.stops[0][1])+'</td><td>'+safe(train.from)+' → '+safe(train.to)+'</td><td>'+safe(train.viaduct)+'</td><td><details><summary>Calls</summary><div class="stop-list">'+detail+'</div></details></td></tr>';
+ }).join("");
+}
+
 async function loadTimetable(){
- const status=$("timetableStatus"),rows=$("timetableRows"),sourceEl=$("timetableSource");
  try{
-  const response=await fetch("./timetable.json",{cache:"no-store"});if(!response.ok)throw Error("HTTP "+response.status);
-  const data=await response.json();if(!/^\d{4}-\d{2}-\d{2}$/.test(data.serviceDate)||!Array.isArray(data.trains))throw Error("Invalid timetable");
-  const [y,m,d]=data.serviceDate.split("-").map(Number),date=new Date(y,m-1,d),tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
-  const dayLabel=date.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"});
-  $("timetableHeading").textContent=(date.toDateString()===tomorrow.toDateString()?"Tomorrow’s":"Published")+" West Highland timetable · "+dayLabel;
-  status.textContent=data.trains.length+" scheduled ScotRail services · "+dayLabel+". Select a train to see its listed calls.";
-  rows.innerHTML=data.trains.map(train=>{
-   const stops=Array.isArray(train.stops)?train.stops:[];
-   const detail=stops.map(stop=>'<span><span>'+safe(stop[0])+'</span><time>'+safe(stop[1])+'</time></span>').join("");
-   return '<tr><td>'+safe(train.id)+'</td><td>'+safe(train.from)+' → '+safe(train.to)+'</td><td>'+safe(train.viaduct)+'</td><td><details><summary>Stops</summary><div class="stop-list">'+detail+'</div></details></td></tr>';
-  }).join("");
-  sourceEl.textContent=data.notice+" Source: "+data.source+" · File "+data.sourceFile+" (issued "+new Date(data.publishedFrom).toLocaleString("en-GB",{timeZone:"Europe/London",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+" UK time).";
- }catch(error){status.textContent="The downloaded timetable is unavailable.";rows.innerHTML="";sourceEl.textContent="";}
+  const response=await fetch("./timetable.json",{cache:"no-store"});
+  if(!response.ok)throw Error("HTTP "+response.status);
+  const data=await response.json();
+  const dateFormat=/^\d{4}-\d{2}-\d{2}$/;
+  if(!dateFormat.test(data.validFrom)||!dateFormat.test(data.validThrough)||
+     !["weekday","friday","saturday","sunday"].every(day=>Array.isArray(data.patterns?.[day])))throw Error("Invalid timetable");
+  const url=new URL(data.sourceUrl);
+  if(url.protocol!=="https:")throw Error("Invalid timetable source");
+  const source=document.createElement("a");
+  source.href=url.href;
+  source.textContent=data.source;
+  $("timetableSource").replaceChildren("Viaduct times are estimates from scheduled calls. Check ScotRail for changes. Source: ",source);
+  publishedTimetable=data;
+  renderTimetable();
+  setInterval(renderTimetable,60000);
+ }catch(error){
+  $("timetableStatus").textContent="The published timetable is unavailable.";
+  $("timetableTable").hidden=true;
+  $("timetableSource").replaceChildren();
+ }
 }
 async function load(){
  $("feedBadge").textContent="Checking";

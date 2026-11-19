@@ -1,17 +1,556 @@
 {
-  "serviceDate": "2026-11-20",
-  "publishedFrom": "2026-11-19T03:01:00Z",
-  "source": "Rail Data Marketplace · Darwin Timetable Files (PPTimetable v8)",
-  "sourceFile": "PPTimetable_20261119020537_v8.xml.gz",
-  "notice": "Scheduled ScotRail services only. Viaduct times are estimates interpolated between published station times; they are not live train positions or Jacobite steam-train times.",
-  "trains": [
-    {"id":"1Y41","from":"Fort William","to":"Mallaig","viaduct":"12:50","stops":[["Fort William","12:18"],["Banavie","12:24"],["Corpach","12:29"],["Loch Eil Outward Bound","12:35"],["Locheilside","12:40"],["Glenfinnan","12:51"],["Lochailort","13:07"],["Beasdale","13:17"],["Arisaig","13:25"],["Morar","13:33"],["Mallaig","13:40"]]},
-    {"id":"1Y42","from":"Mallaig","to":"Fort William","viaduct":"06:57","stops":[["Mallaig","06:03"],["Morar","06:14"],["Arisaig","06:23"],["Beasdale","06:30"],["Lochailort","06:40"],["Glenfinnan","06:56"],["Locheilside","07:06"],["Loch Eil Outward Bound","07:12"],["Corpach","07:18"],["Banavie","07:22"],["Fort William","07:44"]]},
-    {"id":"1Y43","from":"Fort William","to":"Mallaig","viaduct":"16:54","stops":[["Fort William","16:19"],["Banavie","16:25"],["Corpach","16:30"],["Loch Eil Outward Bound","16:36"],["Locheilside","16:41"],["Glenfinnan","16:55"],["Lochailort","17:11"],["Beasdale","17:21"],["Arisaig","17:28"],["Morar","17:37"],["Mallaig","17:44"]]},
-    {"id":"1Y44","from":"Mallaig","to":"Fort William","viaduct":"11:02","stops":[["Mallaig","10:09"],["Morar","10:16"],["Arisaig","10:27"],["Beasdale","10:34"],["Lochailort","10:43"],["Glenfinnan","11:01"],["Locheilside","11:11"],["Loch Eil Outward Bound","11:17"],["Corpach","11:23"],["Banavie","11:27"],["Fort William","11:40"]]},
-    {"id":"1Y47","from":"Fort William","to":"Mallaig","viaduct":"22:46","stops":[["Fort William","22:14"],["Banavie","22:20"],["Corpach","22:25"],["Loch Eil Outward Bound","22:31"],["Locheilside","22:36"],["Glenfinnan","22:47"],["Lochailort","23:03"],["Beasdale","23:12"],["Arisaig","23:20"],["Morar","23:28"],["Mallaig","23:39"]]},
-    {"id":"1Y53","from":"Fort William","to":"Mallaig","viaduct":"08:48","stops":[["Fort William","08:15"],["Banavie","08:21"],["Corpach","08:27"],["Loch Eil Outward Bound","08:33"],["Locheilside","08:39"],["Glenfinnan","08:49"],["Lochailort","09:05"],["Beasdale","09:14"],["Arisaig","09:22"],["Morar","09:31"],["Mallaig","09:38"]]},
-    {"id":"1Y58","from":"Mallaig","to":"Fort William","viaduct":"19:07","stops":[["Mallaig","18:15"],["Morar","18:22"],["Arisaig","18:31"],["Beasdale","18:38"],["Lochailort","18:47"],["Glenfinnan","19:06"],["Locheilside","19:15"],["Loch Eil Outward Bound","19:21"],["Corpach","19:27"],["Banavie","19:31"],["Fort William","19:39"]]},
-    {"id":"1Y48","from":"Mallaig","to":"Fort William","viaduct":"16:55","stops":[["Mallaig","16:05"],["Morar","16:12"],["Arisaig","16:21"],["Beasdale","16:28"],["Lochailort","16:38"],["Glenfinnan","16:54"],["Locheilside","17:04"],["Loch Eil Outward Bound","17:10"],["Corpach","17:16"],["Banavie","17:20"],["Fort William","17:37"]]}
-  ]
+  "validFrom": "2026-11-19",
+  "validThrough": "2026-12-12",
+  "source": "ScotRail West Highlands timetable",
+  "sourceUrl": "https://www.scotrail.co.uk/media/108625/download?inline&c=1793102089",
+  "patterns": {
+    "weekday": [
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "06:57",
+        "stops": [
+          ["Mallaig","06:03"],
+          ["Morar","06:14"],
+          ["Arisaig","06:23"],
+          ["Beasdale","06:29",true],
+          ["Lochailort","06:39",true],
+          ["Glenfinnan","06:56"],
+          ["Locheilside","07:05",true],
+          ["Loch Eil Outward Bound","07:12"],
+          ["Corpach","07:18"],
+          ["Banavie","07:22"],
+          ["Fort William","07:30"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "08:48",
+        "stops": [
+          ["Fort William","08:15"],
+          ["Banavie","08:21"],
+          ["Corpach","08:27"],
+          ["Loch Eil Outward Bound","08:33"],
+          ["Locheilside","08:37",true],
+          ["Glenfinnan","08:49"],
+          ["Lochailort","09:04",true],
+          ["Beasdale","09:13",true],
+          ["Arisaig","09:22"],
+          ["Morar","09:31"],
+          ["Mallaig","09:38"]
+        ]
+      },
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "11:02",
+        "stops": [
+          ["Mallaig","10:09"],
+          ["Morar","10:16"],
+          ["Arisaig","10:27"],
+          ["Beasdale","10:33",true],
+          ["Lochailort","10:42",true],
+          ["Glenfinnan","11:01"],
+          ["Locheilside","11:10",true],
+          ["Loch Eil Outward Bound","11:17"],
+          ["Corpach","11:23"],
+          ["Banavie","11:27"],
+          ["Fort William","11:35"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "12:50",
+        "stops": [
+          ["Fort William","12:18"],
+          ["Banavie","12:24"],
+          ["Corpach","12:29"],
+          ["Loch Eil Outward Bound","12:35"],
+          ["Locheilside","12:39",true],
+          ["Glenfinnan","12:51"],
+          ["Lochailort","13:06",true],
+          ["Beasdale","13:16",true],
+          ["Arisaig","13:25"],
+          ["Morar","13:33"],
+          ["Mallaig","13:40"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "16:53",
+        "stops": [
+          ["Fort William","16:19"],
+          ["Banavie","16:25"],
+          ["Corpach","16:30"],
+          ["Loch Eil Outward Bound","16:36"],
+          ["Locheilside","16:40",true],
+          ["Glenfinnan","16:55"],
+          ["Lochailort","17:10",true],
+          ["Beasdale","17:20",true],
+          ["Arisaig","17:28"],
+          ["Morar","17:37"],
+          ["Mallaig","17:44"]
+        ]
+      },
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "16:55",
+        "stops": [
+          ["Mallaig","16:05"],
+          ["Morar","16:12"],
+          ["Arisaig","16:21"],
+          ["Beasdale","16:27",true],
+          ["Lochailort","16:37",true],
+          ["Glenfinnan","16:54"],
+          ["Locheilside","17:03",true],
+          ["Loch Eil Outward Bound","17:10"],
+          ["Corpach","17:16"],
+          ["Banavie","17:20"],
+          ["Fort William","17:28"]
+        ]
+      },
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "19:07",
+        "stops": [
+          ["Mallaig","18:15"],
+          ["Morar","18:22"],
+          ["Arisaig","18:31"],
+          ["Beasdale","18:37",true],
+          ["Lochailort","18:46",true],
+          ["Glenfinnan","19:06"],
+          ["Locheilside","19:14",true],
+          ["Loch Eil Outward Bound","19:21"],
+          ["Corpach","19:27"],
+          ["Banavie","19:31"],
+          ["Fort William","19:39"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "22:44",
+        "stops": [
+          ["Fort William","22:12"],
+          ["Banavie","22:18"],
+          ["Corpach","22:23"],
+          ["Loch Eil Outward Bound","22:29"],
+          ["Locheilside","22:33",true],
+          ["Glenfinnan","22:45"],
+          ["Lochailort","23:00",true],
+          ["Beasdale","23:09",true],
+          ["Arisaig","23:18"],
+          ["Morar","23:26"],
+          ["Mallaig","23:37"]
+        ]
+      }
+    ],
+    "friday": [
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "06:57",
+        "stops": [
+          ["Mallaig","06:03"],
+          ["Morar","06:14"],
+          ["Arisaig","06:23"],
+          ["Beasdale","06:29",true],
+          ["Lochailort","06:39",true],
+          ["Glenfinnan","06:56"],
+          ["Locheilside","07:05",true],
+          ["Loch Eil Outward Bound","07:12"],
+          ["Corpach","07:18"],
+          ["Banavie","07:22"],
+          ["Fort William","07:30"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "08:48",
+        "stops": [
+          ["Fort William","08:15"],
+          ["Banavie","08:21"],
+          ["Corpach","08:27"],
+          ["Loch Eil Outward Bound","08:33"],
+          ["Locheilside","08:37",true],
+          ["Glenfinnan","08:49"],
+          ["Lochailort","09:04",true],
+          ["Beasdale","09:13",true],
+          ["Arisaig","09:22"],
+          ["Morar","09:31"],
+          ["Mallaig","09:38"]
+        ]
+      },
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "11:02",
+        "stops": [
+          ["Mallaig","10:09"],
+          ["Morar","10:16"],
+          ["Arisaig","10:27"],
+          ["Beasdale","10:33",true],
+          ["Lochailort","10:42",true],
+          ["Glenfinnan","11:01"],
+          ["Locheilside","11:10",true],
+          ["Loch Eil Outward Bound","11:17"],
+          ["Corpach","11:23"],
+          ["Banavie","11:27"],
+          ["Fort William","11:35"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "12:50",
+        "stops": [
+          ["Fort William","12:18"],
+          ["Banavie","12:24"],
+          ["Corpach","12:29"],
+          ["Loch Eil Outward Bound","12:35"],
+          ["Locheilside","12:39",true],
+          ["Glenfinnan","12:51"],
+          ["Lochailort","13:06",true],
+          ["Beasdale","13:16",true],
+          ["Arisaig","13:25"],
+          ["Morar","13:33"],
+          ["Mallaig","13:40"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "16:53",
+        "stops": [
+          ["Fort William","16:19"],
+          ["Banavie","16:25"],
+          ["Corpach","16:30"],
+          ["Loch Eil Outward Bound","16:36"],
+          ["Locheilside","16:40",true],
+          ["Glenfinnan","16:55"],
+          ["Lochailort","17:10",true],
+          ["Beasdale","17:20",true],
+          ["Arisaig","17:28"],
+          ["Morar","17:37"],
+          ["Mallaig","17:44"]
+        ]
+      },
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "16:55",
+        "stops": [
+          ["Mallaig","16:05"],
+          ["Morar","16:12"],
+          ["Arisaig","16:21"],
+          ["Beasdale","16:27",true],
+          ["Lochailort","16:37",true],
+          ["Glenfinnan","16:54"],
+          ["Locheilside","17:03",true],
+          ["Loch Eil Outward Bound","17:10"],
+          ["Corpach","17:16"],
+          ["Banavie","17:20"],
+          ["Fort William","17:28"]
+        ]
+      },
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "19:07",
+        "stops": [
+          ["Mallaig","18:15"],
+          ["Morar","18:22"],
+          ["Arisaig","18:31"],
+          ["Beasdale","18:37",true],
+          ["Lochailort","18:46",true],
+          ["Glenfinnan","19:06"],
+          ["Locheilside","19:14",true],
+          ["Loch Eil Outward Bound","19:21"],
+          ["Corpach","19:27"],
+          ["Banavie","19:31"],
+          ["Fort William","19:39"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "22:46",
+        "stops": [
+          ["Fort William","22:14"],
+          ["Banavie","22:20"],
+          ["Corpach","22:25"],
+          ["Loch Eil Outward Bound","22:31"],
+          ["Locheilside","22:35",true],
+          ["Glenfinnan","22:47"],
+          ["Lochailort","23:02",true],
+          ["Beasdale","23:11",true],
+          ["Arisaig","23:20"],
+          ["Morar","23:28"],
+          ["Mallaig","23:39"]
+        ]
+      }
+    ],
+    "saturday": [
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "06:57",
+        "stops": [
+          ["Mallaig","06:03"],
+          ["Morar","06:14"],
+          ["Arisaig","06:23"],
+          ["Beasdale","06:29",true],
+          ["Lochailort","06:39",true],
+          ["Glenfinnan","06:56"],
+          ["Locheilside","07:05",true],
+          ["Loch Eil Outward Bound","07:12"],
+          ["Corpach","07:18"],
+          ["Banavie","07:22"],
+          ["Fort William","07:30"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "08:48",
+        "stops": [
+          ["Fort William","08:15"],
+          ["Banavie","08:21"],
+          ["Corpach","08:27"],
+          ["Loch Eil Outward Bound","08:33"],
+          ["Locheilside","08:37",true],
+          ["Glenfinnan","08:49"],
+          ["Lochailort","09:04",true],
+          ["Beasdale","09:13",true],
+          ["Arisaig","09:22"],
+          ["Morar","09:31"],
+          ["Mallaig","09:38"]
+        ]
+      },
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "11:02",
+        "stops": [
+          ["Mallaig","10:09"],
+          ["Morar","10:16"],
+          ["Arisaig","10:27"],
+          ["Beasdale","10:33",true],
+          ["Lochailort","10:42",true],
+          ["Glenfinnan","11:01"],
+          ["Locheilside","11:10",true],
+          ["Loch Eil Outward Bound","11:17"],
+          ["Corpach","11:23"],
+          ["Banavie","11:27"],
+          ["Fort William","11:35"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "12:46",
+        "stops": [
+          ["Fort William","12:13"],
+          ["Banavie","12:19"],
+          ["Corpach","12:24"],
+          ["Loch Eil Outward Bound","12:30"],
+          ["Locheilside","12:34",true],
+          ["Glenfinnan","12:47"],
+          ["Lochailort","13:02",true],
+          ["Beasdale","13:12",true],
+          ["Arisaig","13:21"],
+          ["Morar","13:29"],
+          ["Mallaig","13:36"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "16:53",
+        "stops": [
+          ["Fort William","16:19"],
+          ["Banavie","16:25"],
+          ["Corpach","16:30"],
+          ["Loch Eil Outward Bound","16:36"],
+          ["Locheilside","16:40",true],
+          ["Glenfinnan","16:55"],
+          ["Lochailort","17:10",true],
+          ["Beasdale","17:20",true],
+          ["Arisaig","17:28"],
+          ["Morar","17:37"],
+          ["Mallaig","17:44"]
+        ]
+      },
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "16:55",
+        "stops": [
+          ["Mallaig","16:05"],
+          ["Morar","16:12"],
+          ["Arisaig","16:21"],
+          ["Beasdale","16:27",true],
+          ["Lochailort","16:37",true],
+          ["Glenfinnan","16:54"],
+          ["Locheilside","17:03",true],
+          ["Loch Eil Outward Bound","17:10"],
+          ["Corpach","17:16"],
+          ["Banavie","17:20"],
+          ["Fort William","17:28"]
+        ]
+      },
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "19:07",
+        "stops": [
+          ["Mallaig","18:15"],
+          ["Morar","18:22"],
+          ["Arisaig","18:31"],
+          ["Beasdale","18:37",true],
+          ["Lochailort","18:46",true],
+          ["Glenfinnan","19:06"],
+          ["Locheilside","19:14",true],
+          ["Loch Eil Outward Bound","19:21"],
+          ["Corpach","19:27"],
+          ["Banavie","19:31"],
+          ["Fort William","19:39"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "22:45",
+        "stops": [
+          ["Fort William","22:13"],
+          ["Banavie","22:20"],
+          ["Corpach","22:24"],
+          ["Loch Eil Outward Bound","22:30"],
+          ["Locheilside","22:34",true],
+          ["Glenfinnan","22:46"],
+          ["Lochailort","23:01",true],
+          ["Beasdale","23:11",true],
+          ["Arisaig","23:19"],
+          ["Morar","23:28"],
+          ["Mallaig","23:39"]
+        ]
+      }
+    ],
+    "sunday": [
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "11:01",
+        "stops": [
+          ["Mallaig","10:05"],
+          ["Morar","10:16"],
+          ["Arisaig","10:25"],
+          ["Beasdale","10:31",true],
+          ["Lochailort","10:41",true],
+          ["Glenfinnan","11:00"],
+          ["Locheilside","11:09",true],
+          ["Loch Eil Outward Bound","11:16"],
+          ["Corpach","11:22"],
+          ["Banavie","11:26"],
+          ["Fort William","11:34"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "12:45",
+        "stops": [
+          ["Fort William","12:13"],
+          ["Banavie","12:19"],
+          ["Corpach","12:24"],
+          ["Loch Eil Outward Bound","12:30"],
+          ["Locheilside","12:34",true],
+          ["Glenfinnan","12:46"],
+          ["Lochailort","13:01",true],
+          ["Beasdale","13:11",true],
+          ["Arisaig","13:20"],
+          ["Morar","13:28"],
+          ["Mallaig","13:35"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "16:53",
+        "stops": [
+          ["Fort William","16:19"],
+          ["Banavie","16:25"],
+          ["Corpach","16:30"],
+          ["Loch Eil Outward Bound","16:36"],
+          ["Locheilside","16:40",true],
+          ["Glenfinnan","16:55"],
+          ["Lochailort","17:10",true],
+          ["Beasdale","17:20",true],
+          ["Arisaig","17:28"],
+          ["Morar","17:37"],
+          ["Mallaig","17:44"]
+        ]
+      },
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "16:55",
+        "stops": [
+          ["Mallaig","16:05"],
+          ["Morar","16:12"],
+          ["Arisaig","16:21"],
+          ["Beasdale","16:27",true],
+          ["Lochailort","16:37",true],
+          ["Glenfinnan","16:54"],
+          ["Locheilside","17:03",true],
+          ["Loch Eil Outward Bound","17:10"],
+          ["Corpach","17:16"],
+          ["Banavie","17:20"],
+          ["Fort William","17:28"]
+        ]
+      },
+      {
+        "from": "Mallaig",
+        "to": "Fort William",
+        "viaduct": "19:07",
+        "stops": [
+          ["Mallaig","18:15"],
+          ["Morar","18:22"],
+          ["Arisaig","18:31"],
+          ["Beasdale","18:37",true],
+          ["Lochailort","18:46",true],
+          ["Glenfinnan","19:06"],
+          ["Locheilside","19:14",true],
+          ["Loch Eil Outward Bound","19:21"],
+          ["Corpach","19:27"],
+          ["Banavie","19:31"],
+          ["Fort William","19:39"]
+        ]
+      },
+      {
+        "from": "Fort William",
+        "to": "Mallaig",
+        "viaduct": "22:46",
+        "stops": [
+          ["Fort William","22:14"],
+          ["Banavie","22:20"],
+          ["Corpach","22:25"],
+          ["Loch Eil Outward Bound","22:31"],
+          ["Locheilside","22:35",true],
+          ["Glenfinnan","22:47"],
+          ["Lochailort","23:02",true],
+          ["Beasdale","23:11",true],
+          ["Arisaig","23:20"],
+          ["Morar","23:28"],
+          ["Mallaig","23:39"]
+        ]
+      }
+    ]
+  }
 }
