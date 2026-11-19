@@ -435,9 +435,9 @@ function visibleTrainMarkers(){
  // station-report estimates, not GPS. Only an interval between TWO in-route
  // points counts as a moving train: stale endpoint reports are not movement.
  const now=Date.now(),groups=new Map();
- // Do not plot positions from an outdated snapshot: scheduled projections
- // can otherwise leave a marker apparently stranded on a departed leg.
- if(!feedUpdated||!Number.isFinite(Date.parse(feedUpdated))||now-Date.parse(feedUpdated)>15*60000)return [];
+ // Feed age must not hide a still-running timetable leg. Position markers
+ // are derived from the current interval between station times, so they
+ // naturally disappear once that leg's scheduled end has passed.
  const stationNames=new Set(schematicStations.map(([name])=>name.toLowerCase()));
  const baseId=id=>(String(id).match(/^(\d{8})(?:[A-Z_]+)?$/)||[])[1]||String(id);
  const stationOk=name=>stationNames.has(String(name||"").toLowerCase());
