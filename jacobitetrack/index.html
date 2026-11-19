@@ -958,14 +958,14 @@ function nextPublishedViaductCrossing(now=Date.now()){
   if(date<data.validFrom||date>data.validThrough)continue;
   const dow=day.getUTCDay(),pattern=dow===0?"sunday":dow===6?"saturday":dow===5?"friday":"weekday";
   for(const service of data.patterns[pattern]||[]){
-   if(!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(service.viaduct||""))continue;
+   if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(service.viaduct||""))continue;
    const [hours,minutes]=service.viaduct.split(":").map(Number);
    const utcWall=Date.UTC(day.getUTCFullYear(),day.getUTCMonth(),day.getUTCDate(),hours,minutes);
    // Determine the UK offset at this date and time, including BST.
    const offsetParts=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{
     timeZone:"Europe/London",timeZoneName:"shortOffset",hour:"2-digit"
    }).formatToParts(new Date(utcWall)).map(({type,value})=>[type,value]));
-   const match=String(offsetParts.timeZoneName||"GMT").match(/GMT([+-])(\\d{1,2})(?::(\\d{2}))?/);
+   const match=String(offsetParts.timeZoneName||"GMT").match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
    const minutesOffset=match?(match[1]==="-"?-1:1)*(Number(match[2])*60+Number(match[3]||0)):0;
    const at=utcWall-minutesOffset*60000;
    if(at<=now||earliest&&at>=earliest.at)continue;
