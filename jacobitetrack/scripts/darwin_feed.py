@@ -39,6 +39,7 @@ STATION_BY_TIPLOC = {
     "GLNFNNN": ("glenfinnan", 34.743),
     "LCHESDE": ("locheilside", 44.546),
     "LCEILOB": ("lochEilOutwardBound", 50.468),
+    "CORPACH": ("corpach", 54.629),
     "FRTWLM": ("fortWilliam", 59.214),
     # Accept descriptive variants in case another Darwin version emits them.
     "MALLAIG": ("mallaig", 0.0),
@@ -50,7 +51,7 @@ STATION_BY_TIPLOC = {
 TIPLOC_BY_CRS = {
     "MLG": "MLAIG", "MRR": "MORAR", "ARG": "ARISAIG", "BSL": "BEASDAL",
     "LCL": "LCHALRT", "GLF": "GLNFNNN", "LCS": "LCHESDE",
-    "LHE": "LCEILOB", "FTW": "FRTWLM",
+    "LHE": "LCEILOB", "CPA": "CORPACH", "FTW": "FRTWLM",
 }
 LDB_STATION_CRSES = tuple(crs for crs in TIPLOC_BY_CRS if crs != "BSL")
 STATION_NAME_BY_KEY = {
@@ -62,6 +63,7 @@ STATION_NAME_BY_KEY = {
     "glenfinnan": "Glenfinnan",
     "locheilside": "Locheilside",
     "lochEilOutwardBound": "Loch Eil Outward Bound",
+    "corpach": "Corpach",
     "fortWilliam": "Fort William",
 }
 VIEWPOINT_BY_KEY = {
@@ -72,6 +74,7 @@ VIEWPOINT_BY_KEY = {
     "glenfinnan": "glenfinnan",
     "locheilside": "locheilside",
     "lochEilOutwardBound": "lochEilOutwardBound",
+    "corpach": "corpach",
     "fortWilliam": "fortWilliam",
 }
 LINE_TIPLOCS = set(STATION_BY_TIPLOC)
@@ -80,7 +83,7 @@ LINE_TIPLOCS = set(STATION_BY_TIPLOC)
 STANOX_TO_TIPLOC = {
     "06001": "MLAIG", "06002": "MORAR", "06004": "ARISAIG",
     "06005": "BEASDAL", "06006": "LCHALRT", "06008": "GLNFNNN",
-    "06009": "LCHESDE", "06014": "LCEILOB",
+    "06009": "LCHESDE", "06010": "CORPACH", "06014": "LCEILOB",
     "06023": "FRTWLM",
 }
 FRESH_SECONDS = 600
