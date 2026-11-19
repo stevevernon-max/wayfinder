@@ -285,6 +285,28 @@ body.geo-fullscreen-open{overflow:hidden}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 @media(max-width:420px){.app-header{padding:8px}.app-header .header-shell{padding:12px;border-radius:20px}.app-header .header-main{margin-bottom:10px}.app-header .header-brand>strong{font-size:24px}#activeTrainsPill{padding:8px 10px;font-size:12px}.app-header #proximityTile{padding:13px;gap:11px}.app-header #proximityTile .viaduct-top{gap:11px}.app-header #proximityTile .viaduct-icon{width:51px;height:51px}.app-header #proximityTile .viaduct-main-time{font-size:36px}.viaduct-select-label select{padding:10px;font-size:14px}}
 @media(prefers-reduced-motion:reduce){.app-header #proximityTile.viaduct-soon{animation:none;border-color:#e5a532;background:#332817}}
+
+/* Unified compact styling: align header with railway tracker tile. */
+.app-header{padding:3px 10px 0;background:#0b1017}
+.app-header .header-shell{background:#171d27;border:1px solid #30394a;border-radius:20px;padding:10px 12px 11px}
+.app-header .header-main{margin:0 0 8px;min-height:31px;gap:7px}
+.app-header .header-brand>strong{font-size:clamp(21px,5.3vw,26px);font-weight:750;letter-spacing:-.65px}
+#activeTrainsPill{font-size:clamp(10px,2.8vw,12px);padding:7px 9px}
+#activeTrainsPill::before{width:8px;height:8px}
+.app-header #proximityTile{background:#111924;border:1px solid #324154;border-radius:14px;padding:9px 11px;gap:4px}
+.app-header #proximityTile .viaduct-top{gap:10px}
+.app-header #proximityTile .viaduct-icon{width:43px;height:43px;border-radius:10px}
+.app-header #proximityTile .viaduct-main-time{font-size:clamp(29px,7vw,36px);line-height:1}
+.app-header #proximityTile .viaduct-subtitle{font-size:clamp(10px,2.6vw,12px);margin-top:3px;line-height:1.3}
+.app-header #proximityTile .viaduct-location{font-size:11px;color:#9db5ca;font-weight:700;margin-left:53px;letter-spacing:.1px}
+#trackerTile{border-color:#30394a;background:#171d27}
+main{padding-top:8px}
+@keyframes headerAmberFlash{0%,100%{border-color:#b57b27;box-shadow:0 0 0 0 #efaa2a00;background:#242018}50%{border-color:#ffce65;box-shadow:0 0 0 3px #efaa2a39;background:#302719}}
+.app-header.viaduct-imminent .header-shell{animation:headerAmberFlash 1.35s ease-in-out infinite}
+.app-header.viaduct-imminent #proximityTile{border-color:#b57b27}
+.app-header.viaduct-imminent #proximityTile .viaduct-main-time{color:#ffc15e}
+@media(max-width:420px){.app-header{padding:2px 8px 0}.app-header .header-shell{padding:8px 10px 9px}.app-header .header-main{margin-bottom:7px}.app-header .header-brand>strong{font-size:21px}.app-header #proximityTile{padding:8px 9px}.app-header #proximityTile .viaduct-icon{width:39px;height:39px}.app-header #proximityTile .viaduct-main-time{font-size:30px}.app-header #proximityTile .viaduct-location{margin-left:49px;font-size:10px}}
+@media(prefers-reduced-motion:reduce){.app-header.viaduct-imminent .header-shell{animation:none;background:#302719;border-color:#ffce65}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span></div>
@@ -296,7 +318,7 @@ body.geo-fullscreen-open{overflow:hidden}
  <path d="M49 26H57V33" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
  <path d="M10 63V50C10 42 21 42 21 50V63M21 63V50C21 42 32 42 32 50V63M32 63V50C32 42 43 42 43 50V63M43 63V50C43 42 54 42 54 50V63M54 63V50C54 42 65 42 65 50V63" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
  </svg></div><div class="viaduct-details"><strong id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</strong><div class="viaduct-subtitle"><span id="viaductTileCountdown">Awaiting railway prediction</span><span id="viaductTileNote" hidden></span></div></div></div>
-<label class="viaduct-select-label"><span class="sr-only">Viewing location</span><select id="viaductViewpoint" aria-label="Viewing location"><option value="glenfinnan">Glenfinnan Viaduct</option></select></label>
+<div class="viaduct-location">Glenfinnan Viaduct</div>
 <span id="nearestTrain" hidden>—</span>
 </section></div></header><main>
 <section class="tile" id="trackerTile">
@@ -465,24 +487,43 @@ function visibleTrainMarkers(){
   const {train,progress}=mallaigHolds[0];
   active.push({train,progress});
  }
- // Two rail feeds can describe the same physical movement under distinct IDs
- // (for example a Darwin service ID and a headcode). Avoid doubling its icon.
+ // The railway feed may assign different IDs to the same physical movement.
+ // Deduplicate by overlapping journey time and direction on nearby track.
  const unique=[];
  for(const item of active.filter(({train,progress})=>Number.isFinite(progress)&&Number.isFinite(schematicTrainX(train)))){
   const p=item.train.position;
+  const pStart=Date.parse(p?.fromAt||"");
+  const pEnd=Date.parse(p?.toAt||"")||pStart;
   const previous=unique.find(v=>{
    const q=v.train.position;
-   return p&&q&&p.toStation===q.toStation&&p.fromStation===q.fromStation&&
-    item.train.direction===v.train.direction&&
-    Math.abs(Date.parse(p.fromAt)-Date.parse(q.fromAt))<=120000&&
-    Math.abs(item.progress-v.progress)<4;
+   if(!p||!q||item.train.direction!==v.train.direction)return false;
+   const qStart=Date.parse(q.fromAt||"");
+   const qEnd=Date.parse(q.toAt||"")||qStart;
+   return Number.isFinite(pStart)&&Number.isFinite(qStart)&&
+    pStart<=qEnd+4*60000&&qStart<=pEnd+4*60000&&
+    Math.abs(item.progress-v.progress)<=5;
   });
   if(!previous)unique.push(item);
-  else if(/^[0-9][A-Z][0-9]{2}$/.test(item.train.id)&&!/^[0-9][A-Z][0-9]{2}$/.test(previous.train.id)){
+  else if(item.train.positionQuality!=="terminal_wait"&&
+   (previous.train.positionQuality==="terminal_wait"||
+    /^[0-9][A-Z][0-9]{2}$/.test(item.train.id)&&!/^[0-9][A-Z][0-9]{2}$/.test(previous.train.id))){
    unique[unique.indexOf(previous)]=item;
   }
  }
- return unique;
+ // Never show a waiting Mallaig icon as an additional train once a
+ // return service is departing Mallaig, even if its provider ID differs.
+ const outbound=unique.filter(({train})=>train.direction==="out"&&train.positionQuality!=="terminal_wait");
+ const distinct=unique.filter(item=>{
+  if(item.train.positionQuality!=="terminal_wait")return true;
+  const arrival=Date.parse(item.train.position?.fromAt||"");
+  return !outbound.some(({train})=>{
+   const departure=Date.parse(train.position?.fromAt||"");
+   return Number.isFinite(arrival)&&Number.isFinite(departure)&&
+    departure>=arrival&&departure-arrival<=120*60000&&
+    train.position?.fromStation==="Mallaig";
+  });
+ });
+ return distinct;
 }
 function etaAt(t,id){
  if(t.cancelled===true)return null;
@@ -540,6 +581,7 @@ function updateViaductCountdown(){
  const minutes=next?.remaining;
  const tile=$("proximityTile");
  const approaching=Number.isFinite(minutes)&&minutes>=0&&minutes<=15;
+ document.querySelector(".app-header")?.classList.toggle("viaduct-imminent",Number.isFinite(minutes)&&minutes>=0&&minutes<=10);
  tile.classList.toggle("viaduct-soon",approaching);
  const label=$("viaductRemaining"),time=$("viaductTileCountdown"),note=$("viaductTileNote");
  if(!Number.isFinite(minutes)||minutes<0){
