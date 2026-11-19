@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Consume recent Darwin Push Port JSON messages and publish a small feed.
+"""Consume rail feeds and publish estimated train positions for the map line.
 
 The Kafka credentials are read only from the GitHub Actions environment. This
 module deliberately emits no train coordinates: Darwin reports station times,
@@ -14,6 +14,9 @@ import re
 import sys
 import tempfile
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import date, datetime, time as dt_time, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
@@ -36,7 +39,6 @@ STATION_BY_TIPLOC = {
     "GLNFNNN": ("glenfinnan", 34.743),
     "LCHESDE": ("locheilside", 44.546),
     "LCEILOB": ("lochEilOutwardBound", 50.468),
-    "BANAVIE": ("banavie", 56.497),
     "FRTWLM": ("fortWilliam", 59.214),
     # Accept descriptive variants in case another Darwin version emits them.
     "MALLAIG": ("mallaig", 0.0),
@@ -45,6 +47,12 @@ STATION_BY_TIPLOC = {
     "FTWILLIAM": ("fortWilliam", 59.214),
     "FORTWILLIAM": ("fortWilliam", 59.214),
 }
+TIPLOC_BY_CRS = {
+    "MLG": "MLAIG", "MRR": "MORAR", "ARG": "ARISAIG", "BSL": "BEASDAL",
+    "LCL": "LCHALRT", "GLF": "GLNFNNN", "LCS": "LCHESDE",
+    "LHE": "LCEILOB", "FTW": "FRTWLM",
+}
+LDB_STATION_CRSES = tuple(crs for crs in TIPLOC_BY_CRS if crs != "BSL")
 STATION_NAME_BY_KEY = {
     "mallaig": "Mallaig",
     "morar": "Morar",
@@ -54,7 +62,6 @@ STATION_NAME_BY_KEY = {
     "glenfinnan": "Glenfinnan",
     "locheilside": "Locheilside",
     "lochEilOutwardBound": "Loch Eil Outward Bound",
-    "banavie": "Banavie",
     "fortWilliam": "Fort William",
 }
 VIEWPOINT_BY_KEY = {
@@ -65,7 +72,6 @@ VIEWPOINT_BY_KEY = {
     "glenfinnan": "glenfinnan",
     "locheilside": "locheilside",
     "lochEilOutwardBound": "lochEilOutwardBound",
-    "banavie": "banavie",
     "fortWilliam": "fortWilliam",
 }
 LINE_TIPLOCS = set(STATION_BY_TIPLOC)
@@ -74,7 +80,7 @@ LINE_TIPLOCS = set(STATION_BY_TIPLOC)
 STANOX_TO_TIPLOC = {
     "06001": "MLAIG", "06002": "MORAR", "06004": "ARISAIG",
     "06005": "BEASDAL", "06006": "LCHALRT", "06008": "GLNFNNN",
-    "06009": "LCHESDE", "06014": "LCEILOB", "06013": "BANAVIE",
+    "06009": "LCHESDE", "06014": "LCEILOB",
     "06023": "FRTWLM",
 }
 FRESH_SECONDS = 600
@@ -83,6 +89,158 @@ LINE_DISTANCE_KM = 59.214
 # direction, based on public map coordinates; this is a route-distance proxy.
 VIADUCT_DISTANCE_KM = 33.65
 SCHEDULE_HORIZON = timedelta(hours=48)
+
+
+def _ldb_time(value: Any, now: datetime) -> datetime | None:
+    """Parse an LDB local HH:mm time, choosing the nearest plausible service day."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    raw = value.strip()
+    try:
+        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        if parsed.tzinfo:
+            return parsed.astimezone(timezone.utc)
+    except ValueError:
+        pass
+    match = re.search(r"(\d{1,2}):(\d{2})", raw)
+    if not match:
+        digits = re.sub(r"\D", "", raw)
+        if len(digits) not in (3, 4):
+            return None
+        hour, minute = int(digits[:-2]), int(digits[-2:])
+    else:
+        hour, minute = int(match.group(1)), int(match.group(2))
+    if hour > 23 or minute > 59:
+        return None
+    local_now = now.astimezone(LONDON)
+    candidates = [datetime.combine(local_now.date() + timedelta(days=offset), dt_time(hour, minute), LONDON)
+                  for offset in (-1, 0, 1)]
+    plausible = [candidate for candidate in candidates
+                 if -timedelta(hours=12) <= candidate - local_now <= timedelta(hours=48)]
+    if not plausible:
+        plausible = candidates
+    chosen = min(plausible, key=lambda candidate: abs((candidate - local_now).total_seconds()))
+    return chosen.astimezone(timezone.utc)
+
+
+def _ldb_calling_points(service: dict[str, Any], side: str) -> list[dict[str, Any]]:
+    groups = get(service, side, default=[])
+    points: list[dict[str, Any]] = []
+    for group in as_list(groups):
+        if isinstance(group, dict):
+            points.extend(point for point in as_list(get(group, "callingPoint", default=[])) if isinstance(point, dict))
+        elif isinstance(group, list):
+            points.extend(point for point in group if isinstance(point, dict))
+    return points
+
+
+def _merge_ldb_service(state: dict[str, Any], raw: dict[str, Any], board_crs: str, now: datetime) -> bool:
+    """Keep a departure-board service only when its calling points match this line."""
+    board_tiploc = TIPLOC_BY_CRS.get(board_crs)
+    if not board_tiploc:
+        return False
+    raw_id = str(get(raw, "serviceID", "trainID", "rid", "rsid", default="") or "").strip()
+    origin = as_list(get(raw, "origin", default=[]))
+    destination = as_list(get(raw, "destination", default=[]))
+    description = " ".join(str(get(item, "locationName", "description", default="")) for item in origin + destination)
+    id_part = raw_id or re.sub(r"\W+", "", description)
+    if not id_part:
+        return False
+    identifier = "ldb:" + id_part
+    raw_points = _ldb_calling_points(raw, "previousCallingPoints") + [{
+        "crs": board_crs,
+        "st": get(raw, "std"),
+        "et": get(raw, "etd"),
+        "at": get(raw, "at"),
+    }] + _ldb_calling_points(raw, "subsequentCallingPoints")
+    locations: dict[str, dict[str, str]] = {}
+    schedule_at: dict[str, str] = {}
+    route: list[str] = []
+    for point in raw_points:
+        crs = str(get(point, "crs", default="") or "").upper()
+        tiploc = TIPLOC_BY_CRS.get(crs)
+        if not tiploc:
+            continue
+        at_time = _ldb_time(get(point, "at"), now)
+        eta_time = _ldb_time(get(point, "et"), now)
+        scheduled_time = _ldb_time(get(point, "st"), now)
+        if scheduled_time:
+            schedule_at[tiploc] = scheduled_time.isoformat().replace("+00:00", "Z")
+        location: dict[str, str] = {"tiploc": tiploc, "stationKey": STATION_BY_TIPLOC[tiploc][0]}
+        if at_time:
+            location["actualAt"] = at_time.isoformat().replace("+00:00", "Z")
+        if eta_time:
+            location["forecastAt"] = eta_time.isoformat().replace("+00:00", "Z")
+        if location.keys() - {"tiploc", "stationKey"}:
+            locations[tiploc] = location
+        if tiploc not in route:
+            route.append(tiploc)
+    if len(route) < 2:
+        return False
+    services = state.setdefault("services", {})
+    prior = services.get(identifier, {})
+    service = prior if isinstance(prior, dict) else {}
+    merged_locations = dict(service.get("locations", {})) if isinstance(service.get("locations"), dict) else {}
+    merged_schedule = dict(service.get("scheduleAt", {})) if isinstance(service.get("scheduleAt"), dict) else {}
+    for tiploc, location in locations.items():
+        previous = merged_locations.get(tiploc, {})
+        if isinstance(previous, dict):
+            merged_locations[tiploc] = {**previous, **location}
+        else:
+            merged_locations[tiploc] = location
+    merged_schedule.update(schedule_at)
+    service.update({
+        "rid": identifier,
+        "uid": str(get(raw, "serviceID", "rsid", default="") or ""),
+        "id": str(get(raw, "trainID", "rsid", "serviceID", default="") or identifier),
+        "headcode": str(get(raw, "trainID", "trainId", default="") or "").strip().upper(),
+        "serviceDate": now.astimezone(LONDON).date().isoformat(),
+        "observedAt": now.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "locations": merged_locations,
+        "scheduleAt": merged_schedule,
+        "route": route,
+        "scheduled": bool(schedule_at),
+        "cancelled": str(get(raw, "isCancelled", default="false")).lower() == "true",
+        "source": "live_departure_board",
+    })
+    services[identifier] = service
+    return True
+
+
+def collect_ldb(state: dict[str, Any], now: datetime) -> int:
+    """Poll only mapped West Highland stations using the RDM LDBWS API."""
+    api_key = os.environ.get("RDM_LDB_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("Missing GitHub Actions secret RDM_LDB_API_KEY")
+    base_url = os.environ.get(
+        "RDM_LDB_BASE_URL",
+        "https://api1.raildata.org.uk/1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepBoardWithDetails",
+    ).rstrip("/")
+    merged = 0
+    successful_boards = 0
+    failures: list[str] = []
+    for crs in LDB_STATION_CRSES:
+        query = urllib.parse.urlencode({"numRows": "50", "timeWindow": "120", "timeOffset": "0"})
+        request = urllib.request.Request(f"{base_url}/{crs}?{query}", headers={"x-apikey": api_key, "Accept": "application/json"})
+        try:
+            with urllib.request.urlopen(request, timeout=15) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            failures.append(f"{crs}: HTTP {exc.code}")
+            continue
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+            failures.append(f"{crs}: {type(exc).__name__}")
+            continue
+        successful_boards += 1
+        services = get(payload, "trainServices", "services", default=[])
+        if isinstance(services, dict):
+            services = get(services, "service", default=[])
+        for item in as_list(services):
+            if isinstance(item, dict) and _merge_ldb_service(state, item, crs, now):
+                merged += 1
+    if not successful_boards:
+        raise RuntimeError("Live Departure Board could not return any mapped station boards (" + ", ".join(failures) + ")")
+    return merged
 
 
 def line_progress(distance_km: float) -> float:
@@ -794,6 +952,22 @@ def write_json(path: Path, value: dict[str, Any]) -> None:
 
 def main() -> int:
     mode = os.environ.get("RDM_MODE", "darwin").strip().lower()
+    if mode == "ldb":
+        now = datetime.now(timezone.utc)
+        state = load_json(STATE_PATH, {"services": {}})
+        state.setdefault("services", {})
+        try:
+            matched = collect_ldb(state, now)
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+        state.setdefault("sources", {})["ldb"] = {"updated": now.isoformat().replace("+00:00", "Z"), "servicesMatched": matched}
+        state["savedAt"] = now.isoformat().replace("+00:00", "Z")
+        write_json(STATE_PATH, state)
+        feed = build_feed(state, now)
+        write_json(FEED_PATH, feed)
+        print(f"Published {len(feed['trains'])} West Highland service estimate(s); LDB matched {matched} station-board records.")
+        return 0
     stream_secrets = {
         "darwin": ("RDM_BOOTSTRAP_SERVERS", "RDM_CONSUMER_USERNAME", "RDM_CONSUMER_PASSWORD", "RDM_GROUP_ID", "RDM_TOPIC"),
         "movements": ("RDM_NWR_BOOTSTRAP_SERVERS", "RDM_NWR_CONSUMER_USERNAME", "RDM_NWR_CONSUMER_PASSWORD", "RDM_MOVEMENTS_GROUP_ID", "RDM_MOVEMENTS_TOPIC"),
@@ -801,7 +975,7 @@ def main() -> int:
         "td": ("RDM_NWR_BOOTSTRAP_SERVERS", "RDM_NWR_CONSUMER_USERNAME", "RDM_NWR_CONSUMER_PASSWORD", "RDM_TD_GROUP_ID", "RDM_TD_TOPIC"),
     }
     if mode not in stream_secrets:
-        print("RDM_MODE must be darwin, movements, vstp, or td.", file=sys.stderr)
+        print("RDM_MODE must be ldb, darwin, movements, vstp, or td.", file=sys.stderr)
         return 2
     required = stream_secrets[mode]
     missing = [name for name in required if not os.environ.get(name)]
