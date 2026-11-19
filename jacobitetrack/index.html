@@ -338,8 +338,24 @@ function visibleTrainMarkers(){
   const {train,progress}=mallaigHolds[0];
   active.push({train,progress});
  }
- return active.filter(({train,progress})=>Number.isFinite(progress)&&
-  Number.isFinite(schematicTrainX(train)));
+ // Two rail feeds can describe the same physical movement under distinct IDs
+ // (for example a Darwin service ID and a headcode). Avoid doubling its icon.
+ const unique=[];
+ for(const item of active.filter(({train,progress})=>Number.isFinite(progress)&&Number.isFinite(schematicTrainX(train)))){
+  const p=item.train.position;
+  const previous=unique.find(v=>{
+   const q=v.train.position;
+   return p&&q&&p.toStation===q.toStation&&p.fromStation===q.fromStation&&
+    item.train.direction===v.train.direction&&
+    Math.abs(Date.parse(p.fromAt)-Date.parse(q.fromAt))<=120000&&
+    Math.abs(item.progress-v.progress)<4;
+  });
+  if(!previous)unique.push(item);
+  else if(/^[0-9][A-Z][0-9]{2}$/.test(item.train.id)&&!/^[0-9][A-Z][0-9]{2}$/.test(previous.train.id)){
+   unique[unique.indexOf(previous)]=item;
+  }
+ }
+ return unique;
 }
 function etaAt(t,id){
  if(t.cancelled===true)return null;
