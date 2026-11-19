@@ -314,14 +314,14 @@ def _merge_schedule(state: dict[str, Any], schedule: dict[str, Any], payload_tim
     if not rid:
         return
     services = state.setdefault("services", {})
-    if get(schedule, "deleted", "isDeleted") in (True, "true", "True", 1, "1"):
-        services.pop(identifier, None)
-        return
     service_date = get(schedule, "ssd", "serviceDate", "SSD")
     uid = get(schedule, "uid", "UID")
     identifier = next((key for key, item in services.items()
                        if isinstance(item, dict) and uid and str(item.get("uid", "")).strip() == str(uid).strip()
                        and (not service_date or item.get("serviceDate") == str(service_date))), str(rid))
+    if get(schedule, "deleted", "isDeleted") in (True, "true", "True", 1, "1"):
+        services.pop(identifier, None)
+        return
     schedule_times: dict[str, str] = {}
     route: list[str] = []
     for raw_location in walk_local_names(schedule, SCHEDULE_LOCATION_TYPES):
