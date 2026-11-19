@@ -233,6 +233,39 @@ def collect_ldb(state: dict[str, Any], now: datetime) -> int:
         "RDM_LDB_BASE_URL",
         "https://api1.raildata.org.uk/1010-live-departure-board-dep1_2/LDBWS/api/20220120/GetDepBoardWithDetails",
     ).rstrip("/")
+    # Earlier refreshes stored one LDB variant per departure station. Fold any
+    # already-published variants into the canonical service key before polling.
+    saved_services = state.setdefault("services", {})
+    station_suffix_pattern = re.compile(
+        r"(\d{8})(?:MLAIG|MORAR|ARISAIG|BEASDAL|LCHALRT|GLNFNNN|LCHESDE|LCEILOB|FRTWLM)_*",
+        re.IGNORECASE,
+    )
+    for old_key, old_service in list(saved_services.items()):
+        if not isinstance(old_service, dict) or not str(old_key).startswith("ldb:"):
+            continue
+        match = station_suffix_pattern.fullmatch(str(old_service.get("id") or str(old_key)[4:]))
+        if not match:
+            continue
+        canonical_key = "ldb:" + match.group(1)
+        if old_key == canonical_key:
+            continue
+        target = saved_services.get(canonical_key)
+        target = target if isinstance(target, dict) else {}
+        merged_service = {**old_service, **target}
+        for field in ("locations", "scheduleAt"):
+            old_values = old_service.get(field) if isinstance(old_service.get(field), dict) else {}
+            new_values = target.get(field) if isinstance(target.get(field), dict) else {}
+            merged_service[field] = {**old_values, **new_values}
+        route = list(dict.fromkeys(
+            (old_service.get("route", []) if isinstance(old_service.get("route"), list) else [])
+            + (target.get("route", []) if isinstance(target.get("route"), list) else [])
+        ))
+        if len(route) > 1 and all(code in STATION_BY_TIPLOC for code in route):
+            ascending = STATION_BY_TIPLOC[route[0]][1] < STATION_BY_TIPLOC[route[1]][1]
+            route.sort(key=lambda code: STATION_BY_TIPLOC[code][1], reverse=not ascending)
+        merged_service.update({"rid": canonical_key, "uid": match.group(1), "id": match.group(1), "route": route})
+        saved_services[canonical_key] = merged_service
+        saved_services.pop(old_key, None)
     merged = 0
     successful_boards = 0
     failures: list[str] = []
