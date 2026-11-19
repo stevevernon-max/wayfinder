@@ -264,30 +264,82 @@ function isTrainOnLineNow(t){
  return now>=from-60000&&now<=from+20*60000;
 }
 function visibleTrainMarkers(){
- // Board IDs have a station suffix. Join their timed anchors into one working.
- const groups=new Map();
- for(const train of services){
-  const key=(train.id.match(/^(\d{8})(?:[A-Z_]+)?$/)||[])[1]||train.id;
-  if(!groups.has(key))groups.set(key,[]);groups.get(key).push(train);
+ // Join station-board variants of one working. Source positions are timetable /
+ // station-report estimates, not GPS. Only an interval between TWO in-route
+ // points counts as a moving train: stale endpoint reports are not movement.
+ const now=Date.now(),groups=new Map();
+ const stationNames=new Set(schematicStations.map(([name])=>name.toLowerCase()));
+ const baseId=id=>(String(id).match(/^(\d{8})(?:[A-Z_]+)?$/)||[])[1]||String(id);
+ const stationOk=name=>stationNames.has(String(name||"").toLowerCase());
+ for(const t of services){
+  if(t.cancelled)continue;
+  const key=baseId(t.id);
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push(t);
  }
- const active=[];
+ const tracks=[];
  for(const [id,records] of groups){
-  const points=[];
-  for(const t of records){const p=t.position;if(!p||t.cancelled)continue;
-   for(const side of ['from','to']){const at=Date.parse(p[side+'At']||'');const progress=p[side+'Progress'];const station=p[side+'Station'];
-    if(Number.isFinite(at)&&Number.isFinite(progress)&&station&&!points.some(x=>x.at===at&&x.station===station))points.push({at,progress,station});
+  const points=[],seen=new Set();
+  for(const t of records){
+   const p=t.position;if(!p)continue;
+   for(const side of ["from","to"]){
+    const at=Date.parse(p[side+"At"]||""),progress=p[side+"Progress"],station=p[side+"Station"];
+    if(!Number.isFinite(at)||!Number.isFinite(progress)||!stationOk(station))continue;
+    const sig=at+"|"+station.toLowerCase();
+    if(!seen.has(sig)){seen.add(sig);points.push({at,progress,station})}
    }
   }
-  points.sort((a,b)=>a.at-b.at);
-  const now=Date.now(),lower=points.filter(p=>p.at<=now).at(-1),upper=points.find(p=>p.at>now);
-  let train=records.find(isTrainOnLineNow);
-  if(lower&&upper&&upper.at>lower.at&&Math.abs(upper.progress-lower.progress)>0){
-   train={...records[0],id,direction:upper.progress>lower.progress?'back':'out',positionQuality:'scheduled_estimate',positionLabel:'Estimated '+lower.station+'–'+upper.station,
-    position:{fromAt:new Date(lower.at).toISOString(),toAt:new Date(upper.at).toISOString(),fromProgress:lower.progress,toProgress:upper.progress,fromStation:lower.station,toStation:upper.station,basis:'scheduled_estimate'}};
-  }
-  if(train&&isTrainOnLineNow(train))active.push({train,progress:positionProgress(train)});
+  points.sort((a,b)=>a.at-b.at||a.progress-b.progress);
+  tracks.push({id,records,points});
  }
- return active.filter(item=>Number.isFinite(item.progress));
+ const active=[],mallaigHolds=[],departures=[];
+ for(const g of tracks){
+  const points=g.points;
+  const lower=points.filter(p=>p.at<=now).at(-1);
+  const upper=points.find(p=>p.at>now);
+  for(let i=0;i<points.length-1;i++){
+   const a=points[i],b=points[i+1];
+   if(a.station==="Mallaig"&&b.progress<a.progress&&b.at>a.at)departures.push(a.at);
+  }
+  // A location is valid on the line only while travelling between two
+  // documented railway stations, not after an unpaired endpoint report.
+  if(lower&&upper&&upper.at>lower.at&&Math.abs(upper.progress-lower.progress)>0.001){
+   const direction=upper.progress>lower.progress?"back":"out";
+   const train={...g.records[0],id:g.id,direction,positionQuality:"scheduled_estimate",
+    positionLabel:"Estimated "+lower.station+"–"+upper.station,
+    position:{fromAt:new Date(lower.at).toISOString(),toAt:new Date(upper.at).toISOString(),
+     fromProgress:lower.progress,toProgress:upper.progress,
+     fromStation:lower.station,toStation:upper.station,basis:"scheduled_estimate"}};
+   active.push({train,progress:positionProgress(train)});
+   continue;
+  }
+  // Mallaig is a turnaround terminal. Retain the arriving train while
+  // awaiting its return, but never invent a matching physical working.
+  // Cap unconfirmed dwell to 60 minutes if no outgoing schedule is known.
+  if(lower&&lower.station==="Mallaig"&&lower.progress>=99&&now>=lower.at){
+   const sameGroupDeparture=points.find(p=>p.at>lower.at&&p.progress<lower.progress);
+   if(sameGroupDeparture&&now>=sameGroupDeparture.at)continue;
+   const nextScheduled=departures.filter(t=>t>lower.at&&t<=lower.at+120*60000).sort((a,b)=>a-b)[0];
+   const holdUntil=nextScheduled??lower.at+60*60000;
+   if(now<holdUntil&&now<lower.at+120*60000){
+    const train={...g.records[0],id:g.id,direction:"back",positionQuality:"terminal_wait",
+     positionLabel:"At Mallaig · awaiting turnaround (estimated)",
+     position:{fromAt:new Date(lower.at).toISOString(),toAt:null,fromProgress:100,toProgress:100,
+      fromStation:"Mallaig",toStation:null,basis:"terminal_wait"}};
+    mallaigHolds.push({train,progress:100,arrival:lower.at});
+   }
+  }
+ }
+ // At most one Mallaig hold is shown for an incoming working. Outgoing
+ // services automatically replace the hold when their scheduled leg begins.
+ const departuresNow=active.some(({train})=>train.position?.fromStation==="Mallaig"&&train.direction==="out");
+ if(!departuresNow&&mallaigHolds.length){
+  mallaigHolds.sort((a,b)=>b.arrival-a.arrival);
+  const {train,progress}=mallaigHolds[0];
+  active.push({train,progress});
+ }
+ return active.filter(({train,progress})=>Number.isFinite(progress)&&
+  Number.isFinite(schematicTrainX(train)));
 }
 function etaAt(t,id){
  if(t.cancelled===true)return null;
