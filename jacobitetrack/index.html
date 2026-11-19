@@ -315,10 +315,10 @@ async function load(){
  const r=await fetch(FEED_URL,{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);
  const d=await r.json();if(!Array.isArray(d.trains)||!d.updated||!Number.isFinite(Date.parse(d.updated)))throw Error("Invalid feed");
  if(Date.now()-Date.parse(d.updated)>600000||Date.parse(d.updated)>Date.now()+60000)throw Error("Stale feed");
- services=d.trains.filter(t=>typeof t.id==="string"&&Number.isFinite(Date.parse(t.observedAt))&&Date.now()-Date.parse(t.observedAt)<600000&&t.viewpoints&&typeof t.viewpoints==="object").map(t=>({...t,progress:Number.isFinite(t.progress)&&t.progress>=0&&t.progress<=100?t.progress:null,direction:["out","back"].includes(t.direction)?t.direction:"unknown",locationVerified:false,lat:null,lon:null})).slice(0,50);
+ services=d.trains.filter(t=>typeof t.id==="string"&&Number.isFinite(Date.parse(t.observedAt))&&(t.scheduled===true||Date.now()-Date.parse(t.observedAt)<600000)&&t.viewpoints&&typeof t.viewpoints==="object").map(t=>({...t,progress:Number.isFinite(t.progress)&&t.progress>=0&&t.progress<=100?t.progress:null,direction:["out","back"].includes(t.direction)?t.direction:"unknown",locationVerified:false,lat:null,lon:null})).slice(0,50);
  source=String(d.source||"Railway feed");feedUpdated=d.updated;
  const positioned=services.filter(t=>Number.isFinite(positionProgress(t))).length;
- $("feedBadge").textContent="Darwin reports";$("trackStatus").textContent=services.length?services.length+" recent West Highland Line train report(s); "+positioned+" have a current position estimate. Estimates use Darwin actual/forecast times and are not GPS.":"No recent West Highland Line train reports.";
+ $("feedBadge").textContent="Darwin reports";$("trackStatus").textContent=services.length?services.length+" West Highland Line service(s) from Darwin; "+positioned+" have a current estimate. Estimates use reported or scheduled times and are not GPS.":"No current West Highland Line Darwin services.";
  render();
  }catch(e){services=[];source=null;feedUpdated=null;$("feedBadge").textContent="Unavailable";$("trackStatus").textContent="No current railway data. The app will not invent movements or times.";render();}
 }
