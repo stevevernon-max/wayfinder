@@ -85,9 +85,9 @@ STANOX_TO_TIPLOC = {
 }
 FRESH_SECONDS = 600
 LINE_DISTANCE_KM = 59.214
-# The viaduct is roughly 1.1 km before Glenfinnan station in the Mallaig
-# direction, based on public map coordinates; this is a route-distance proxy.
-VIADUCT_DISTANCE_KM = 33.65
+# The viaduct is roughly 1.1 km beyond Glenfinnan toward Fort William.
+# Distances increase from Mallaig to Fort William; this is a map-distance proxy.
+VIADUCT_DISTANCE_KM = 35.843
 SCHEDULE_HORIZON = timedelta(hours=48)
 
 
@@ -804,7 +804,7 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
                         candidates[distance] = (at, station_key, "forecast")
             for at, distance, station_key in schedule_points:
                 old = candidates.get(distance)
-                if at >= now and (old is None or old[0] < now):
+                if at >= now - timedelta(hours=2) and old is None:
                     candidates[distance] = (at, station_key, "schedule")
 
             timed_by_distance = sorted(
@@ -829,13 +829,11 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
                     viaduct_basis = "scheduled" if a[3] == b[3] == "schedule" else "live_or_scheduled"
             if viaduct_eta:
                 minutes = (viaduct_eta - now).total_seconds() / 60
-                old = viewpoints.get("glenfinnan")
-                if old is None or minutes < old["etaMinutes"]:
-                    viewpoints["glenfinnan"] = {
-                        "etaMinutes": round(minutes, 2),
-                        "quality": "estimated_between_station_times",
-                        "basis": viaduct_basis or "station_times",
-                    }
+                viewpoints["glenfinnan"] = {
+                    "etaMinutes": round(minutes, 2),
+                    "quality": "estimated_between_station_times",
+                    "basis": viaduct_basis or "station_times",
+                }
 
         # If route ordering is incomplete, infer direction from time-ordered
         # station reports and then from the next Darwin forecast.

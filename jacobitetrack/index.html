@@ -180,10 +180,10 @@ body.geo-fullscreen-open{overflow:hidden}
  <circle class="user-ripple" r="22"/><circle class="user-spot" r="12"/><circle class="user-center" r="4"/>
 </g>
 </svg></div>
-<div class="muted" id="trackStatus">Checking railway data…</div>
+<div class="muted" id="trackStatus" hidden></div>
 </section>
 <section class="tile" id="proximityTile" aria-label="Nearest railway information">
-<div class="proximity-item"><div class="proximity-label">GLENFINNAN VIADUCT · NEXT TRAIN</div><strong id="viaductTileCountdown">—:—</strong><span id="viaductTileNote" class="small">Estimated from station times</span></div>
+<div class="proximity-item"><div class="proximity-label">GLENFINNAN VIADUCT · NEXT TRAIN</div><div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><strong id="viaductTileCountdown">—:—</strong><span id="viaductRemaining" class="countdown" style="font-size:16px;color:#c4def4"></span></div><span id="viaductTileNote" class="small">Estimated from station times</span></div>
 <div class="proximity-item"><div class="proximity-label">NEAREST TRAIN</div><strong id="nearestTrain">—</strong></div>
 </section>
 <section class="tile" id="geoTile">
@@ -316,13 +316,36 @@ function updateHeaderDistances(){
 function getApproaching(id){
  return services.map(t=>({...t,remaining:etaAt(t,id)})).filter(t=>t.remaining!==null&&t.remaining>=0).sort((a,b)=>a.remaining-b.remaining);
 }
+function getViaductApproaching(){
+ const crossingProgress=100-(35.843/59.214)*100,groups=new Map();
+ for(const t of services){const key=(t.id.match(/^(\d{8})(?:[A-Z_]+)?$/)||[])[1]||t.id;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(t)}
+ const arrivals=[];
+ for(const records of groups.values()){
+  const points=[];
+  for(const t of records){if(t.cancelled)continue;const p=t.position;if(!p)continue;
+   for(const side of ['from','to']){const progress=p[side+'Progress'],at=Date.parse(p[side+'At']||'');if(Number.isFinite(progress)&&Number.isFinite(at))points.push({progress,at})}
+  }
+  points.sort((a,b)=>a.at-b.at);
+  for(let i=0;i<points.length-1;i++){const a=points[i],b=points[i+1];if(a.progress===b.progress||b.at<=a.at||crossingProgress<Math.min(a.progress,b.progress)||crossingProgress>Math.max(a.progress,b.progress))continue;
+   const at=a.at+(b.at-a.at)*(crossingProgress-a.progress)/(b.progress-a.progress);
+   if(at>Date.now())arrivals.push({...records[0],remaining:(at-Date.now())/60000,viewpoints:{glenfinnan:{quality:'estimated_between_station_times'}}});
+  }
+ }
+ return arrivals.sort((a,b)=>a.remaining-b.remaining);
+}
+function updateViaductCountdown(){
+ const next=getViaductApproaching()[0],seconds=next?Math.max(0,Math.ceil(next.remaining*60)):null;
+ $("viaductRemaining").textContent=seconds===null?'':Math.floor(seconds/3600)+':'+String(Math.floor(seconds/60)%60).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
+}
+setInterval(updateViaductCountdown,1000);
 function render(){
- $("trains").innerHTML=visibleTrainMarkers().map(({train:t})=>'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+schematicTrainX(t)+',83)"><circle class="train-halo" r="15" style="animation:none"><animate attributeName="r" values="14;29" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".7;0" dur="1.4s" repeatCount="indefinite"/></circle><circle class="train-body" r="13" style="animation:none"><animate attributeName="r" values="11;15;11" dur="1.4s" repeatCount="indefinite"/></circle><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Rail report")+'</title></g>').join("");
+ $("trains").innerHTML=visibleTrainMarkers().map(({train:t})=>'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+schematicTrainX(t)+',83)"><circle class="train-halo" r="15" style="animation:none"><animate attributeName="r" values="17;35" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".7;0" dur="1.4s" repeatCount="indefinite"/></circle><circle class="train-body" r="13" style="animation:none"><animate attributeName="r" values="14;19;14" dur="1.4s" repeatCount="indefinite"/></circle><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Rail report")+'</title></g>').join("");
  updateGeoTrainMarkers();
- let glen=getApproaching("glenfinnan")[0];
+ let glen=getViaductApproaching()[0];
 
 
  $("viaductTileCountdown").textContent=glen?viaductArrivalLabel(glen.remaining):"—:—";
+ updateViaductCountdown();
  $("viaductTileNote").textContent=glen?.viewpoints?.glenfinnan?.quality==="estimated_between_station_times"?"Estimated from station times · not GPS":glen?"Next railway-reported passage":"No timetable time available";
  updateHeaderDistances();
 
@@ -535,10 +558,10 @@ function updateGeoTrainMarkers(){
   const [x,y]=geoPoint(point.lat,point.lon,geoViews[0].bounds);
   const marker=geoSVG("g",{transform:"translate("+x.toFixed(1)+","+y.toFixed(1)+")",class:train.positionQuality==="last_actual_report"?"train-map-reported":"train-estimated"});
   const halo=geoSVG("circle",{r:17,class:"train-map-halo",style:"animation:none"});
-  halo.appendChild(geoSVG("animate",{attributeName:"r",values:"13;31",dur:"1.4s",repeatCount:"indefinite"}));
+  halo.appendChild(geoSVG("animate",{attributeName:"r",values:"16;37",dur:"1.4s",repeatCount:"indefinite"}));
   halo.appendChild(geoSVG("animate",{attributeName:"opacity",values:".75;0",dur:"1.4s",repeatCount:"indefinite"}));marker.appendChild(halo);
   const core=geoSVG("circle",{r:12,class:"train-map-body",style:"animation:none"});
-  core.appendChild(geoSVG("animate",{attributeName:"r",values:"10;15;10",dur:"1.4s",repeatCount:"indefinite"}));marker.appendChild(core);
+  core.appendChild(geoSVG("animate",{attributeName:"r",values:"13;19;13",dur:"1.4s",repeatCount:"indefinite"}));marker.appendChild(core);
   const angle=point.angle+(train.direction==="back"?180:0);
   const arrow=geoSVG("text",{y:1,class:"train-map-arrow",transform:"rotate("+angle.toFixed(1)+")"});arrow.textContent="→";marker.appendChild(arrow);
   const title=geoSVG("title");title.textContent=train.id+" · "+(train.positionLabel||"Estimated position")+" · estimated on mapped railway; not GPS";marker.appendChild(title);
