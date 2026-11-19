@@ -875,8 +875,10 @@ function updateViaductCountdown(){
  const when=crossingLocal===nowLocal?"Today":dateOf(Date.now()+86400000)===crossingLocal?"Tomorrow"
   :new Date(trainAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"});
  time.textContent=when+" "+fmt(trainAt)+" crossing · position by "+fmt(inPositionAt);
- note.hidden=false;
- note.textContent=chosen.type==="timetable"?"Scheduled estimate from published timetable · not a live train prediction":chosen.type==="feed"?"Scheduled crossing from railway feed · not confirmed live":"Live railway estimate · subject to change";
+ // Keep Tile 2 focused on the countdown and crossing time.
+ // Timetable predictions remain estimates internally, without a warning/error label.
+ note.hidden=true;
+ note.textContent="";
 }
 setInterval(updateViaductCountdown,1000);
 function updateActiveTrainsPill(){
