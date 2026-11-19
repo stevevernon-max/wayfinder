@@ -212,6 +212,52 @@ body.geo-fullscreen-open{overflow:hidden}
  #proximityTile .viaduct-subtitle{font-size:clamp(10px,2.8vw,13px)}
 }
 @media(max-width:350px){#proximityTile .viaduct-subtitle{white-space:normal}}
+
+/* Smaller Tile 2: reduced vertical padding and compact reference logo. */
+#proximityTile{
+ min-height:0;
+ padding:8px 11px;
+ gap:10px;
+ border-radius:16px;
+ margin-bottom:8px;
+}
+#proximityTile .viaduct-icon{
+ width:48px;height:48px;
+ border-radius:12px;
+}
+#proximityTile .viaduct-icon svg{width:82%;height:82%}
+#proximityTile .viaduct-main-time{
+ font-size:clamp(27px,7.3vw,38px);
+ line-height:1;
+ letter-spacing:-.9px;
+ font-weight:750;
+}
+#proximityTile .viaduct-subtitle{
+ margin-top:4px;
+ font-size:clamp(10px,2.7vw,13px);
+ line-height:1.22;
+ white-space:nowrap;
+ letter-spacing:-.25px;
+}
+#proximityTile #viaductTileCountdown,
+#proximityTile #viaductTileNote{
+ display:inline;
+ font-size:inherit;
+ line-height:inherit;
+ font-weight:400;
+ letter-spacing:inherit;
+ color:inherit;
+ white-space:inherit;
+}
+@media(max-width:380px){
+ #proximityTile{gap:8px;padding:8px 9px}
+ #proximityTile .viaduct-icon{width:43px;height:43px;border-radius:10px}
+ #proximityTile .viaduct-main-time{font-size:29px}
+ #proximityTile .viaduct-subtitle{font-size:10px}
+}
+@media(max-width:345px){
+ #proximityTile .viaduct-subtitle{white-space:normal}
+}
 </style></head><body>
 <header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">NO ACTIVE TRAINS</span></div></header><main>
 <section class="tile" id="trackerTile">
