@@ -1124,7 +1124,7 @@ def main() -> int:
         except RuntimeError as exc:
             print(str(exc), file=sys.stderr)
             return 1
-        state.setdefault("sources", {})["ldb"] = {"updated": now.isoformat().replace("+00:00", "Z"), "servicesMatched": matched}
+        state["sources"] = {"ldb": {"updated": now.isoformat().replace("+00:00", "Z"), "servicesMatched": matched}}
         state["savedAt"] = now.isoformat().replace("+00:00", "Z")
         try:
             collect_future_timetable(state, now)
