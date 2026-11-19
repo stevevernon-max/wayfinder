@@ -1,11 +1,11 @@
 import json
 import sys
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from darwin_feed import build_feed, process_message  # noqa: E402
+from darwin_feed import build_feed, process_message, future_viaduct_crossings, planned_works  # noqa: E402
 
 
 NOW = datetime(2026, 11, 19, 11, 0, tzinfo=timezone.utc)
@@ -52,6 +52,42 @@ class DarwinFeedTests(unittest.TestCase):
         state = {"services": {}}
         process_message(kafka_record(event_ts="2026-11-19T10:49:00Z"), state)
         self.assertEqual(build_feed(state, NOW)["trains"], [])
+
+    def test_tomorrows_crossing_is_retained_after_midnight(self):
+        state = {"services": {
+            "future": {
+                "rid": "future",
+                "serviceDate": "2026-11-20",
+                "scheduleAt": {
+                    "LCHALRT": "2026-11-20T09:50:00Z",
+                    "GLNFNNN": "2026-11-20T10:00:00Z",
+                    "LCHESDE": "2026-11-20T10:09:00Z",
+                },
+                "route": ["LCHALRT", "GLNFNNN", "LCHESDE"],
+                "observedAt": NOW.isoformat().replace("+00:00", "Z"),
+                "scheduled": True,
+            }
+        }}
+        feed = build_feed(state, NOW)
+        self.assertTrue(feed["futureCrossings"])
+        self.assertEqual(feed["futureCrossings"][0]["at"], "2026-11-20T10:01:00Z")
+        self.assertEqual(feed["futureCrossings"][0]["direction"], "fort_william")
+
+    def test_works_unknown_without_a_checked_source(self):
+        feed = build_feed({"services": {}}, NOW)
+        self.assertEqual(feed["plannedWorks"]["status"], "unavailable")
+        self.assertEqual(feed["plannedWorks"]["items"], [])
+
+    def test_future_feed_uses_explicit_crossings_not_repeating_today(self):
+        state = {"services": {}, "futureTimetable": {
+            "updated": NOW.isoformat().replace("+00:00", "Z"),
+            "crossings": [
+                {"at": "2026-11-21T10:30:00Z", "direction": "mallaig", "id": "scheduled-1"}
+            ]
+        }}
+        feed = build_feed(state, NOW)
+        self.assertEqual(feed["futureCrossings"][0]["at"], "2026-11-21T10:30:00Z")
+        self.assertEqual(len(feed["futureCrossings"]), 1)
 
     def test_preserves_cancellation_flag(self):
         state = {"services": {}}
