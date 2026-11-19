@@ -1,4 +1,4 @@
-name: Refresh Darwin railway feed
+name: Refresh West Highland station boards
 
 on:
   push:
@@ -38,58 +38,10 @@ jobs:
       - name: Validate feed generator syntax
         run: python -m py_compile jacobitetrack/scripts/darwin_feed.py
 
-      - name: Test seven-day timetable and works handling
+      - name: Test station-board movement predictions and timetable handling
         run: python -m unittest discover -s jacobitetrack/tests -p 'test_*.py'
 
-      - name: Install Kafka client
-        run: python -m pip install --disable-pip-version-check 'confluent-kafka==2.6.1'
-
-      - name: Collect Darwin updates
-        env:
-          RDM_MODE: darwin
-          RDM_BOOTSTRAP_SERVERS: ${{ secrets.RDM_BOOTSTRAP_SERVERS }}
-          RDM_CONSUMER_USERNAME: ${{ secrets.RDM_CONSUMER_USERNAME }}
-          RDM_CONSUMER_PASSWORD: ${{ secrets.RDM_CONSUMER_PASSWORD }}
-          RDM_GROUP_ID: ${{ secrets.RDM_GROUP_ID }}
-          RDM_TOPIC: ${{ secrets.RDM_TOPIC }}
-          # Leave time in the five-minute run for each supplementary stream.
-          RDM_POLL_SECONDS: "75"
-        run: python jacobitetrack/scripts/darwin_feed.py
-
-      - name: Collect Network Rail movement reports
-        env:
-          RDM_MODE: movements
-          RDM_NWR_BOOTSTRAP_SERVERS: ${{ secrets.RDM_NWR_BOOTSTRAP_SERVERS }}
-          RDM_NWR_CONSUMER_USERNAME: ${{ secrets.RDM_NWR_CONSUMER_USERNAME }}
-          RDM_NWR_CONSUMER_PASSWORD: ${{ secrets.RDM_NWR_CONSUMER_PASSWORD }}
-          RDM_MOVEMENTS_GROUP_ID: ${{ secrets.RDM_MOVEMENTS_GROUP_ID }}
-          RDM_MOVEMENTS_TOPIC: ${{ secrets.RDM_MOVEMENTS_TOPIC }}
-          RDM_POLL_SECONDS: "12"
-        run: python jacobitetrack/scripts/darwin_feed.py
-
-      - name: Collect VSTP timetable changes
-        env:
-          RDM_MODE: vstp
-          RDM_NWR_BOOTSTRAP_SERVERS: ${{ secrets.RDM_NWR_BOOTSTRAP_SERVERS }}
-          RDM_NWR_CONSUMER_USERNAME: ${{ secrets.RDM_NWR_CONSUMER_USERNAME }}
-          RDM_NWR_CONSUMER_PASSWORD: ${{ secrets.RDM_NWR_CONSUMER_PASSWORD }}
-          RDM_VSTP_GROUP_ID: ${{ secrets.RDM_VSTP_GROUP_ID }}
-          RDM_VSTP_TOPIC: ${{ secrets.RDM_VSTP_TOPIC }}
-          RDM_POLL_SECONDS: "12"
-        run: python jacobitetrack/scripts/darwin_feed.py
-
-      - name: Collect Train Describer updates
-        env:
-          RDM_MODE: td
-          RDM_NWR_BOOTSTRAP_SERVERS: ${{ secrets.RDM_NWR_BOOTSTRAP_SERVERS }}
-          RDM_NWR_CONSUMER_USERNAME: ${{ secrets.RDM_NWR_CONSUMER_USERNAME }}
-          RDM_NWR_CONSUMER_PASSWORD: ${{ secrets.RDM_NWR_CONSUMER_PASSWORD }}
-          RDM_TD_GROUP_ID: ${{ secrets.RDM_TD_GROUP_ID }}
-          RDM_TD_TOPIC: ${{ secrets.RDM_TD_TOPIC }}
-          RDM_POLL_SECONDS: "12"
-        run: python jacobitetrack/scripts/darwin_feed.py
-
-      - name: Collect mapped station departure boards and seven-day works notices
+      - name: Collect arrival and departure boards and seven-day works notices
         env:
           RDM_MODE: ldb
           RDM_LDB_API_KEY: ${{ secrets.RDM_LDB_API_KEY }}
