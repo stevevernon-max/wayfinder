@@ -326,6 +326,22 @@ main{padding-top:8px}
 .app-header #trackerTile .rail-svg{width:100%;max-width:100%;height:auto}
 .app-header #proximityTile .viaduct-location{margin-left:53px}
 @media(max-width:420px){.app-header{padding:2px 8px 0}.app-header .header-shell{padding:8px 9px 3px}.app-header #proximityTile{padding:5px 2px 8px}.app-header #trackerTile{padding:8px 0 0}}
+
+/* Viaduct label shares a line with the countdown; no extra location row. */
+.app-header #proximityTile .viaduct-time-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.app-header #proximityTile .viaduct-location{margin:0!important;display:inline;font-size:clamp(10px,2.5vw,12px);line-height:1.15;color:#9db5ca;white-space:nowrap}
+.app-header #proximityTile{padding-top:5px;padding-bottom:6px}
+.app-header #trackerTile{padding-top:6px}
+.app-header #trackerTile>.row{min-height:0}
+@keyframes viaductGreenFlash{
+ 0%,100%{background:#18291e;border-color:#317b52;box-shadow:0 0 0 0 #40d98c00}
+ 50%{background:#173e2a;border-color:#54e69c;box-shadow:0 0 0 4px #3de89140}
+}
+.app-header.viaduct-arriving .header-shell{animation:viaductGreenFlash 1.15s ease-in-out infinite}
+.app-header #proximityTile.viaduct-arriving{border-color:#43ba79;animation:none}
+.app-header #proximityTile.viaduct-arriving .viaduct-main-time{color:#75ecab}
+.app-header #proximityTile.viaduct-arriving .viaduct-icon{background:#174832;color:#a5f7c7}
+@media(prefers-reduced-motion:reduce){.app-header.viaduct-arriving .header-shell{animation:none;background:#173e2a;border-color:#54e69c}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span></div>
@@ -336,12 +352,11 @@ main{padding-top:8px}
  <rect x="26" y="23" width="12" height="5" rx="1" fill="currentColor"/>
  <path d="M49 26H57V33" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
  <path d="M10 63V50C10 42 21 42 21 50V63M21 63V50C21 42 32 42 32 50V63M32 63V50C32 42 43 42 43 50V63M43 63V50C43 42 54 42 54 50V63M54 63V50C54 42 65 42 65 50V63" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
- </svg></div><div class="viaduct-details"><strong id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</strong><div class="viaduct-subtitle"><span id="viaductTileCountdown">Awaiting railway prediction</span><span id="viaductTileNote" hidden></span></div></div></div>
-<div class="viaduct-location">Glenfinnan Viaduct</div>
+ </svg></div><div class="viaduct-details"><div class="viaduct-time-row"><strong id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</strong><span class="viaduct-location">Glenfinnan Viaduct</span></div><div class="viaduct-subtitle"><span id="viaductTileCountdown">Awaiting railway prediction</span><span id="viaductTileNote" hidden></span></div></div></div>
 <span id="nearestTrain" hidden>—</span>
 </section>
 <section id="trackerTile" aria-label="Railway train tracker">
-<div class="row"><div><div class="eyebrow">TRAIN TRACKER</div></div><span class="badge gps-line-pill" id="gpsLineBadge">Finding location…</span><span id="feedBadge" hidden aria-live="polite">Checking</span></div>
+<div class="row"><div><div class="eyebrow">TRAIN TRACKER</div></div><span id="feedBadge" hidden aria-live="polite">Checking</span></div>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Nine evenly spaced mapped stations from Mallaig to Fort William" role="img">
 <line class="bed" x1="13" y1="83" x2="887" y2="83"/><line class="track" x1="13" y1="83" x2="887" y2="83"/>
 <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="9" y="45" text-anchor="start">Mallaig</text>
@@ -354,9 +369,6 @@ main{padding-top:8px}
 <circle class="node" cx="761" cy="83" r="12"/><text class="station-label" x="761" y="132" text-anchor="middle">Corpach</text>
 <circle class="node" cx="865" cy="83" r="12"/><text class="station-label" x="892" y="45" text-anchor="end">Fort William</text>
 <g id="trains"></g>
-<g id="userPosition" style="display:none" aria-label="Your approximate closest position on railway schematic">
- <circle class="user-ripple" r="22"/><circle class="user-spot" r="12"/><circle class="user-center" r="4"/>
-</g>
 </svg></div>
 <div class="muted" id="trackStatus" hidden></div>
 </section></div></header><main>
@@ -632,8 +644,12 @@ function updateViaductCountdown(){
  const minutes=next?.remaining;
  const tile=$("proximityTile");
  const approaching=Number.isFinite(minutes)&&minutes>=0&&minutes<=15;
- document.querySelector(".app-header")?.classList.toggle("viaduct-imminent",Number.isFinite(minutes)&&minutes>=0&&minutes<=10);
- tile.classList.toggle("viaduct-soon",approaching);
+ const near=Number.isFinite(minutes)&&minutes>=0&&minutes<=3;
+ const header=document.querySelector(".app-header");
+ header?.classList.toggle("viaduct-imminent",approaching&&!near);
+ header?.classList.toggle("viaduct-arriving",near);
+ tile.classList.toggle("viaduct-soon",approaching&&!near);
+ tile.classList.toggle("viaduct-arriving",near);
  const label=$("viaductRemaining"),time=$("viaductTileCountdown"),note=$("viaductTileNote");
  if(!Number.isFinite(minutes)||minutes<0){
   label.textContent="—";
@@ -901,18 +917,6 @@ function updateGeoTrainMarkers(){
   group.appendChild(marker);
  }
 }
-function updateTrackerGps(){
- const dot=$("userPosition"),pill=$("gpsLineBadge");
- if(!userCoords){dot.style.display="none";pill.textContent="Location unavailable";pill.removeAttribute("title");return}
- const result=projectToMappedRail(userCoords.lat,userCoords.lon);
- if(!Number.isFinite(result.x)||!Number.isFinite(result.distance)){dot.style.display="none";pill.textContent="Distance unavailable";return}
- const x=Math.max(35,Math.min(865,result.x));
- dot.setAttribute("transform","translate("+x.toFixed(1)+",83)");
- dot.style.display="";
- const km=result.distance/1000;
- pill.textContent="You are "+km.toFixed(1)+"km from line";
- pill.title=result.verified?"Distance to nearest mapped railway track":"Estimated distance based on approximate station-to-station alignment";
-}
 function startGps(){
  if(!navigator.geolocation){gpsAccuracyMetres=null;$("gpsIndicator").classList.add("error");$("gpsStatus").textContent="GPS unavailable";updateActiveTrainsPill();return;}
  if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
@@ -922,7 +926,7 @@ function startGps(){
    gpsAccuracyMetres=Number.isFinite(position.coords.accuracy)?position.coords.accuracy:null;
    updateActiveTrainsPill();
    updateHeaderDistances();
-   updateTrackerGps();
+   
    updateGeoLocation(userCoords.lat,userCoords.lon);
    const result=projectToRail(position.coords.latitude,position.coords.longitude);
    if(!Number.isFinite(result.x))return;
@@ -930,7 +934,7 @@ function startGps(){
    
    $("gpsIndicator").classList.remove("error");$("gpsIndicator").classList.add("active");$("gpsStatus").textContent="GPS tracking · ±"+Math.round(position.coords.accuracy)+" m";
  },err=>{
-   userCoords=null;gpsAccuracyMetres=null;updateActiveTrainsPill();updateHeaderDistances();updateTrackerGps();
+   userCoords=null;gpsAccuracyMetres=null;updateActiveTrainsPill();updateHeaderDistances();
    $("gpsIndicator").classList.remove("active");$("gpsIndicator").classList.add("error");
    $("gpsStatus").textContent=err.code===1?"Location permission denied. Allow location in Safari settings.":err.code===2?"Could not determine your location.":"GPS unavailable. Check location permissions.";
    if(gpsWatch!==null){navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;}
@@ -1113,7 +1117,7 @@ function restoreGeo(){
   const raw=JSON.parse(localStorage.getItem("jacobitetrack-osm-geometry-v5")||"null");
   if(raw&&Date.now()-raw.saved<14*86400000&&Array.isArray(raw.rail)&&Array.isArray(raw.water)){
    geoMapFeatures.rail=raw.rail;geoMapFeatures.water=raw.water;geoMapFeatures.coast=raw.coast||[];
-   renderGeoMaps();updateTrackerGps();$("geoStatus").textContent="Cached OSM geography";
+   renderGeoMaps();$("geoStatus").textContent="Cached OSM geography";
   }
  }catch{}
 }
@@ -1135,7 +1139,7 @@ async function loadGeoRailway(){
   try{const fresh=extractShapes(await overpassGeometry(railQuery),"rail");if(fresh.length){geoMapFeatures.rail=fresh;r={status:"fulfilled"}}}catch{}
  }
  w=(await Promise.allSettled([overpassGeometry(waterQuery)]))[0];
- updateTrackerGps();
+ 
  if(w.status==="fulfilled"){const lakes=extractShapes(w.value,"water");if(lakes.length)geoMapFeatures.water=lakes;geoMapFeatures.coast=extractShapes(w.value,"coast")}
  renderGeoMaps();cacheGeo();
  const hasRail=geoMapFeatures.rail.length>0,hasWater=geoMapFeatures.water.length>0;
