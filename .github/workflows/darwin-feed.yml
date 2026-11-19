@@ -34,6 +34,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Validate feed generator syntax
+        run: python -m py_compile jacobitetrack/scripts/darwin_feed.py
+
       - name: Install Kafka client
         run: python -m pip install --disable-pip-version-check 'confluent-kafka==2.6.1'
 
