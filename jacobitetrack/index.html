@@ -627,14 +627,31 @@ function snapToMappedRail(rough){
  }
  return best&&best.distance<2500?best:null;
 }
+/* Place the same active trains used by Tile 1 onto Tile 3. Station
+ * coordinates are known reference points; en-route locations are approximate
+ * until snapped to genuine mapped railway geometry. Never call these GPS. */
+function approximateTrainGeoPoint(train){
+ const p=train.position;if(!p)return null;
+ const find=name=>railFixes.find(s=>s.name.toLowerCase()===String(name||"").toLowerCase());
+ const from=find(p.fromStation),to=find(p.toStation);
+ if(!from)return null;
+ if(!to||!Number.isFinite(Date.parse(p.toAt||""))||Date.parse(p.toAt)<=Date.parse(p.fromAt)){
+  return {lat:from.lat,lon:from.lon,atStation:true};
+ }
+ const ratio=Math.max(0,Math.min(1,(Date.now()-Date.parse(p.fromAt))/(Date.parse(p.toAt)-Date.parse(p.fromAt))));
+ return {lat:from.lat+(to.lat-from.lat)*ratio,lon:from.lon+(to.lon-from.lon)*ratio,atStation:false};
+}
 function updateGeoTrainMarkers(){
  const svg=$("mapOverview")?.querySelector("svg");if(!svg)return;
  let group=svg.querySelector(".train-map-markers");
  if(!group){group=geoSVG("g",{class:"train-map-markers"});svg.appendChild(group)}
  group.textContent="";
  for(const {train} of visibleTrainMarkers()){
-  const progress=positionProgress(train);if(!Number.isFinite(progress))continue;
-  const point=snapToMappedRail(approximateRailPoint(progress));if(!point)continue;
+  const rough=approximateTrainGeoPoint(train);if(!rough)continue;
+  const mapped=snapToMappedRail(rough);
+  // At a terminal use the mapped station location if no detailed rail shape is
+  // available; don't suppress trains that Tile 1 is legitimately displaying.
+  const point=mapped||({...rough,angle:0,approximate:true});
   if(point.lat>geoViews[0].bounds.north||point.lat<geoViews[0].bounds.south||point.lon<geoViews[0].bounds.west||point.lon>geoViews[0].bounds.east)continue;
   const [x,y]=geoPoint(point.lat,point.lon,geoViews[0].bounds);
   const marker=geoSVG("g",{transform:"translate("+x.toFixed(1)+","+y.toFixed(1)+")",class:train.positionQuality==="last_actual_report"?"train-map-reported":"train-estimated"});
@@ -643,9 +660,9 @@ function updateGeoTrainMarkers(){
   halo.appendChild(geoSVG("animate",{attributeName:"opacity",values:".75;0",dur:"1.4s",repeatCount:"indefinite"}));marker.appendChild(halo);
   const core=geoSVG("circle",{r:12,class:"train-map-body",style:"animation:none"});
   core.appendChild(geoSVG("animate",{attributeName:"r",values:"13;19;13",dur:"1.4s",repeatCount:"indefinite"}));marker.appendChild(core);
-  const angle=point.angle+(train.direction==="back"?180:0);
+  const angle=(Number.isFinite(point.angle)?point.angle:0)+(train.direction==="back"?180:0);
   const arrow=geoSVG("text",{y:1,class:"train-map-arrow",transform:"rotate("+angle.toFixed(1)+")"});arrow.textContent="→";marker.appendChild(arrow);
-  const title=geoSVG("title");title.textContent=train.id+" · "+(train.positionLabel||"Estimated position")+" · estimated on mapped railway; not GPS";marker.appendChild(title);
+  const title=geoSVG("title");title.textContent=train.id+" · "+(train.positionLabel||"Estimated position")+(mapped?" · projected onto mapped railway":" · approximate station-based position")+"; not GPS";marker.appendChild(title);
   group.appendChild(marker);
  }
 }
@@ -811,7 +828,7 @@ function makeMap(view){
  container.appendChild(svg);
  updateGeoTrainMarkers();
 }
-function renderGeoMaps(){geoViews.forEach(makeMap)}
+function renderGeoMaps(){geoViews.forEach(makeMap);updateGeoTrainMarkers()}
 let lastGeoGpsRender=0;
 function updateGeoLocation(lat,lon){
  const previous=geoLocation,now=Date.now();
