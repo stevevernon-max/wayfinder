@@ -687,21 +687,49 @@ function getApproaching(id){
  return services.map(t=>({...t,remaining:etaAt(t,id)})).filter(t=>t.remaining!==null&&t.remaining>=0).sort((a,b)=>a.remaining-b.remaining);
 }
 function getViaductApproaching(){
- const crossingProgress=100-(35.843/59.214)*100,groups=new Map();
- for(const t of services){const key=(t.id.match(/^(\d{8})(?:[A-Z_]+)?$/)||[])[1]||t.id;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(t)}
+ // Glenfinnan Viaduct is about one minute east of Glenfinnan station.
+ // Fort William-bound trains cross approximately 1 min after leaving the
+ // station; Mallaig-bound trains cross approximately 1 min before arriving.
+ // Use timed station anchors rather than treating station time as crossing.
+ const groups=new Map(),now=Date.now(),minute=60000;
+ const stationNames=new Set(schematicStations.map(([name])=>name.toLowerCase()));
+ for(const t of services){
+  if(t.cancelled)continue;
+  const key=(String(t.id).match(/^(\\d{8})(?:[A-Z_]+)?$/)||[])[1]||String(t.id);
+  if(!groups.has(key))groups.set(key,[]);
+  groups.get(key).push(t);
+ }
  const arrivals=[];
  for(const records of groups.values()){
-  const points=[];
-  for(const t of records){if(t.cancelled)continue;const p=t.position;if(!p)continue;
-   for(const side of ['from','to']){const progress=p[side+'Progress'],at=Date.parse(p[side+'At']||'');if(Number.isFinite(progress)&&Number.isFinite(at))points.push({progress,at})}
+  const points=[],seen=new Set();
+  for(const t of records){
+   const p=t.position;if(!p)continue;
+   for(const side of ["from","to"]){
+    const station=String(p[side+"Station"]||"");
+    const progress=p[side+"Progress"],at=Date.parse(p[side+"At"]||"");
+    if(!stationNames.has(station.toLowerCase())||!Number.isFinite(progress)||!Number.isFinite(at))continue;
+    const key=at+"|"+station.toLowerCase();
+    if(!seen.has(key)){seen.add(key);points.push({station,progress,at})}
+   }
   }
   points.sort((a,b)=>a.at-b.at);
-  for(let i=0;i<points.length-1;i++){const a=points[i],b=points[i+1];if(a.progress===b.progress||b.at<=a.at||crossingProgress<Math.min(a.progress,b.progress)||crossingProgress>Math.max(a.progress,b.progress))continue;
-   const at=a.at+(b.at-a.at)*(crossingProgress-a.progress)/(b.progress-a.progress);
-   if(at>Date.now())arrivals.push({...records[0],remaining:(at-Date.now())/60000,viewpoints:{glenfinnan:{quality:'estimated_between_station_times'}}});
+  for(let i=0;i<points.length-1;i++){
+   const a=points[i],b=points[i+1];
+   if(b.at<=a.at)continue;
+   let at=null;
+   if(a.station.toLowerCase()==="glenfinnan"&&b.progress<a.progress-0.001){
+    at=a.at+minute; // Towards Fort William, after station departure
+   }else if(b.station.toLowerCase()==="glenfinnan"&&b.progress>a.progress+0.001){
+    at=b.at-minute; // Towards Mallaig, before station arrival
+   }
+   if(at!==null&&at>now&&at<=b.at+2*minute){
+    arrivals.push({...records[0],remaining:(at-now)/minute,
+     viewpoints:{glenfinnan:{quality:"estimated_from_station_time",basis:"one_minute_station_offset"}}});
+   }
   }
  }
- return arrivals.sort((a,b)=>a.remaining-b.remaining);
+ return arrivals.sort((a,b)=>a.remaining-b.remaining).filter((item,i,all)=>
+  !all.slice(0,i).some(other=>Math.abs(other.remaining-item.remaining)<2));
 }
 function updateViaductCountdown(){
  const next=getViaductApproaching()[0];
