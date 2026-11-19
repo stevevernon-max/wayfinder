@@ -144,9 +144,17 @@ def _merge_ldb_service(state: dict[str, Any], raw: dict[str, Any], board_crs: st
     destination = as_list(get(raw, "destination", default=[]))
     description = " ".join(str(get(item, "locationName", "description", default="")) for item in origin + destination)
     id_part = raw_id or re.sub(r"\W+", "", description)
+    # RDM LDB may return the same service once per departure board with a
+    # station suffix (for example 10875321MLAIG___). Collapse those variants
+    # to one service so its calling points combine into a single map marker.
+    station_suffix = re.fullmatch(
+        r"(\d{8})(?:MLAIG|MORAR|ARISAIG|BEASDAL|LCHALRT|GLNFNNN|LCHESDE|LCEILOB|FRTWLM)_*",
+        id_part.upper(),
+    )
+    canonical_id = station_suffix.group(1) if station_suffix else id_part
     if not id_part:
         return False
-    identifier = "ldb:" + id_part
+    identifier = "ldb:" + canonical_id
     raw_points = _ldb_calling_points(raw, "previousCallingPoints") + [{
         "crs": board_crs,
         "st": get(raw, "std"),
@@ -189,17 +197,26 @@ def _merge_ldb_service(state: dict[str, Any], raw: dict[str, Any], board_crs: st
         else:
             merged_locations[tiploc] = location
     merged_schedule.update(schedule_at)
+    merged_route = list(dict.fromkeys(
+        (service.get("route", []) if isinstance(service.get("route"), list) else []) + route
+    ))
+    if len(merged_route) > 1 and all(code in STATION_BY_TIPLOC for code in merged_route):
+        ascending = STATION_BY_TIPLOC[merged_route[0]][1] < STATION_BY_TIPLOC[merged_route[1]][1]
+        merged_route.sort(key=lambda code: STATION_BY_TIPLOC[code][1], reverse=not ascending)
+    stable_display_id = canonical_id if station_suffix else str(
+        get(raw, "trainID", "rsid", "serviceID", default="") or identifier
+    )
     service.update({
         "rid": identifier,
-        "uid": str(get(raw, "serviceID", "rsid", default="") or ""),
-        "id": str(get(raw, "trainID", "rsid", "serviceID", default="") or identifier),
+        "uid": canonical_id if station_suffix else str(get(raw, "serviceID", "rsid", default="") or ""),
+        "id": stable_display_id,
         "headcode": str(get(raw, "trainID", "trainId", default="") or "").strip().upper(),
         "serviceDate": now.astimezone(LONDON).date().isoformat(),
         "observedAt": now.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
         "locations": merged_locations,
         "scheduleAt": merged_schedule,
-        "route": route,
-        "scheduled": bool(schedule_at),
+        "route": merged_route,
+        "scheduled": bool(merged_schedule),
         "cancelled": str(get(raw, "isCancelled", default="false")).lower() == "true",
         "source": "live_departure_board",
     })
