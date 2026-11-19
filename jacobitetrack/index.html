@@ -695,7 +695,7 @@ function getViaductApproaching(){
  const stationNames=new Set(schematicStations.map(([name])=>name.toLowerCase()));
  for(const t of services){
   if(t.cancelled)continue;
-  const key=(String(t.id).match(/^(\\d{8})(?:[A-Z_]+)?$/)||[])[1]||String(t.id);
+  const key=(String(t.id).match(/^(\d{8})(?:[A-Z_]+)?$/)||[])[1]||String(t.id);
   if(!groups.has(key))groups.set(key,[]);
   groups.get(key).push(t);
  }
@@ -745,15 +745,23 @@ function updateViaductCountdown(){
  const label=$("viaductRemaining"),time=$("viaductTileCountdown"),note=$("viaductTileNote");
  if(!Number.isFinite(minutes)||minutes<0){
   label.textContent="—";
-  time.textContent="Awaiting railway prediction";
+  time.textContent="Next viaduct crossing not yet available in timetable";
   note.textContent="";
   return;
  }
- const total=Math.ceil(minutes),hours=Math.floor(total/60),mins=total%60;
- label.textContent=hours?hours+"h "+String(mins).padStart(2,"0")+"m":Math.max(0,mins)+"m";
+ // Countdown may span midnight or several days; do not reset at 00:00.
+ const total=Math.max(0,Math.ceil(minutes)),days=Math.floor(total/1440);
+ const hours=Math.floor(total%1440/60),mins=total%60;
+ label.textContent=days?days+"d "+hours+"h "+String(mins).padStart(2,"0")+"m"
+   :hours?hours+"h "+String(mins).padStart(2,"0")+"m":mins+"m";
  const trainAt=Date.now()+minutes*60000;
- const formatTime=at=>new Date(at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
- time.textContent="Be in position by "+formatTime(trainAt-3*60000)+" · train "+formatTime(trainAt);
+ const inPositionAt=trainAt-3*60000;
+ const fmt=at=>new Date(at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"});
+ const dateOf=at=>new Date(at).toLocaleDateString("en-GB",{year:"numeric",month:"2-digit",day:"2-digit",timeZone:"Europe/London"});
+ const nowLocal=dateOf(Date.now()),crossingLocal=dateOf(trainAt);
+ const when=crossingLocal===nowLocal?"Today":dateOf(Date.now()+86400000)===crossingLocal?"Tomorrow"
+  :new Date(trainAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"});
+ time.textContent=when+" "+fmt(trainAt)+" crossing · position by "+fmt(inPositionAt);
  note.textContent="";
 }
 setInterval(updateViaductCountdown,1000);
