@@ -755,6 +755,15 @@ def future_viaduct_crossings(state: dict[str, Any], now: datetime) -> list[dict[
                 "direction": direction,
                 "basis": "published_schedule_station_offset",
             })
+    published = state.get("futureTimetable", {})
+    fetched = _to_utc(published.get("updated")) if isinstance(published, dict) else None
+    if fetched and now - fetched <= timedelta(days=1):
+        for raw in published.get("crossings", []):
+            if not isinstance(raw, dict):
+                continue
+            at = _to_utc(raw.get("at"))
+            if at and now < at <= end and raw.get("direction") in ("fort_william", "mallaig"):
+                items.append({**raw, "at": at.isoformat().replace("+00:00", "Z")})
     items.sort(key=lambda x: x["at"])
     unique: list[dict[str, Any]] = []
     for item in items:
@@ -763,6 +772,51 @@ def future_viaduct_crossings(state: dict[str, Any], now: datetime) -> list[dict[
                    and item["direction"] == old["direction"] for old in unique):
             unique.append(item)
     return unique
+
+
+
+def collect_future_timetable(state: dict[str, Any], now: datetime) -> None:
+    """Optional licensed timetable source, already converted to crossing timestamps.
+
+    Expected JSON: {"crossings": [{"at": ISO8601, "direction":
+    "fort_william"|"mallaig", "id": "..."}]}.
+    Does not infer tomorrow's timetable by repeating today's services.
+    """
+    url = os.getenv("RAIL_FUTURE_TIMETABLE_URL", "").strip()
+    if not url:
+        return
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme != "https" or not parsed.hostname:
+        raise RuntimeError("RAIL_FUTURE_TIMETABLE_URL must be a valid HTTPS URL")
+    headers = {"Accept": "application/json", "User-Agent": "JacobiteTrack/1.0"}
+    token = os.getenv("RAIL_FUTURE_TIMETABLE_TOKEN", "").strip()
+    if token:
+        headers["Authorization"] = "Bearer " + token
+    request = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(request, timeout=20) as response:
+        payload = json.loads(response.read(1_000_000).decode("utf-8"))
+    if not isinstance(payload, dict) or not isinstance(payload.get("crossings"), list):
+        raise ValueError("Timetable source must return a JSON 'crossings' array")
+    crossings = []
+    for raw in payload["crossings"]:
+        if not isinstance(raw, dict):
+            continue
+        at = _to_utc(raw.get("at"))
+        if not at or not now < at <= now + SCHEDULE_HORIZON:
+            continue
+        direction = str(raw.get("direction", ""))
+        if direction not in ("fort_william", "mallaig"):
+            continue
+        crossings.append({
+            "at": at.isoformat().replace("+00:00", "Z"),
+            "direction": direction,
+            "id": str(raw.get("id") or "")[:80],
+            "basis": "published_timetable",
+        })
+    state["futureTimetable"] = {
+        "updated": now.isoformat().replace("+00:00", "Z"),
+        "crossings": crossings[:150],
+    }
 
 
 def planned_works(state: dict[str, Any], now: datetime) -> dict[str, Any]:
@@ -1067,6 +1121,10 @@ def main() -> int:
             return 1
         state.setdefault("sources", {})["ldb"] = {"updated": now.isoformat().replace("+00:00", "Z"), "servicesMatched": matched}
         state["savedAt"] = now.isoformat().replace("+00:00", "Z")
+        try:
+            collect_future_timetable(state, now)
+        except (ValueError, OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
+            print(f"Future timetable feed unavailable: {type(exc).__name__}", file=sys.stderr)
         try:
             collect_planned_works(state, now)
         except (ValueError, OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
