@@ -164,15 +164,16 @@ body.geo-fullscreen-open{overflow:hidden}
 <header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div></div></header><main>
 <section class="tile" id="trackerTile">
 <div class="row"><div><div class="eyebrow">TRAIN TRACKER</div></div><span class="badge gps-line-pill" id="gpsLineBadge">Finding location…</span><span id="feedBadge" hidden aria-live="polite">Checking</span></div>
-<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Eight mapped stations from Mallaig to Fort William" role="img">
+<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Nine mapped stations from Mallaig to Fort William" role="img">
 <line class="bed" x1="13" y1="83" x2="887" y2="83"/><line class="track" x1="13" y1="83" x2="887" y2="83"/>
 <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="9" y="45" text-anchor="start">Mallaig</text>
-<circle class="node" cx="139" cy="83" r="12"/><text class="station-label" x="139" y="132" text-anchor="middle">Morar</text>
-<circle class="node" cx="243" cy="83" r="12"/><text class="station-label" x="243" y="45" text-anchor="middle">Arisaig</text>
-<circle class="node" cx="346" cy="83" r="12"/><text class="station-label" x="346" y="132" text-anchor="middle">Lochailort</text>
-<circle class="node" cx="450" cy="83" r="12"/><text class="station-label" x="450" y="45" text-anchor="middle">Glenfinnan</text>
-<circle class="node" cx="554" cy="83" r="12"/><text class="station-label" x="554" y="132" text-anchor="middle">Locheilside</text>
-<circle class="node" cx="657" cy="83" r="12"/><text class="station-label" x="657" y="39" text-anchor="middle"><tspan x="657">Loch Eil</tspan><tspan x="657" dy="18">Outward Bound</tspan></text>
+<circle class="node" cx="93" cy="83" r="12"/><text class="station-label" x="93" y="132" text-anchor="middle">Morar</text>
+<circle class="node" cx="180" cy="83" r="12"/><text class="station-label" x="180" y="45" text-anchor="middle">Arisaig</text>
+<circle class="node" cx="339" cy="83" r="12"/><text class="station-label" x="339" y="132" text-anchor="middle">Lochailort</text>
+<circle class="node" cx="522" cy="83" r="12"/><text class="station-label" x="522" y="45" text-anchor="middle">Glenfinnan</text>
+<circle class="node" cx="659" cy="83" r="12"/><text class="station-label" x="659" y="132" text-anchor="middle">Locheilside</text>
+<circle class="node" cx="742" cy="83" r="12"/><text class="station-label" x="742" y="39" text-anchor="middle"><tspan x="657">Loch Eil</tspan><tspan x="657" dy="18">Outward Bound</tspan></text>
+<circle class="node" cx="801" cy="83" r="12"/><text class="station-label" x="801" y="132" text-anchor="middle">Corpach</text>
 <circle class="node" cx="865" cy="83" r="12"/><text class="station-label" x="892" y="45" text-anchor="end">Fort William</text>
 <g id="trains"></g>
 <g id="userPosition" style="display:none" aria-label="Your approximate closest position on railway schematic">
@@ -406,6 +407,7 @@ const railFixes=[
  {lat:56.8717,lon:-5.4490,x:522,name:"Glenfinnan"},
  {lat:56.8560,lon:-5.2903,x:659,name:"Locheilside"},
  {lat:56.8554,lon:-5.1929,x:742,name:"Loch Eil Outward Bound"},
+ {lat:56.8430,lon:-5.1220,x:801,name:"Corpach"},
  {lat:56.8201,lon:-5.1061,x:865,name:"Fort William"}
 ];
 let gpsWatch=null;
@@ -534,7 +536,7 @@ const geoStations=[
  {name:"Mallaig",lat:57.0052,lon:-5.8290},{name:"Morar",lat:56.9685,lon:-5.8212},
  {name:"Arisaig",lat:56.9136,lon:-5.8406},{name:"Lochailort",lat:56.8812,lon:-5.6633},
  {name:"Glenfinnan",lat:56.8717,lon:-5.4490},{name:"Locheilside",lat:56.8560,lon:-5.2903},
- {name:"Loch Eil Outward Bound",lat:56.8554,lon:-5.1929},
+ {name:"Loch Eil Outward Bound",lat:56.8554,lon:-5.1929},{name:"Corpach",lat:56.8430,lon:-5.1220},
  {name:"Fort William",lat:56.8201,lon:-5.1061}
 ];
 const mapLabels=[
