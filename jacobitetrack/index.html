@@ -572,10 +572,10 @@ function scheduledTimetableMarkers(now=Date.now()){
   timeZone:"Europe/London",timeZoneName:"shortOffset"
  }).formatToParts(new Date(now));
  const offsetStr=offsetParts.find(p=>p.type==="timeZoneName")?.value||"GMT";
- const match=offsetStr.match(/GMT([+-])(\\d{1,2})(?::(\\d{2}))?/);
+ const match=offsetStr.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
  const offsetMinutes=match?(match[1]==="-"?-1:1)*(Number(match[2])*60+Number(match[3]||0)):0;
  const localAt=time=>{
-  if(!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(time))return NaN;
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time))return NaN;
   const [hour,minute]=time.split(":").map(Number);
   return Date.parse(date+"T00:00:00Z")+(hour*60+minute-offsetMinutes)*60000;
  };
