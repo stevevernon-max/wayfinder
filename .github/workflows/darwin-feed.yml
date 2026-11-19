@@ -82,10 +82,14 @@ jobs:
           RDM_POLL_SECONDS: "12"
         run: python jacobitetrack/scripts/darwin_feed.py
 
-      - name: Collect mapped station departure boards
+      - name: Collect mapped station departure boards and seven-day works notices
         env:
           RDM_MODE: ldb
           RDM_LDB_API_KEY: ${{ secrets.RDM_LDB_API_KEY }}
+          # Optional authorised source: JSON {"works":[{"title","start","end","stations","url"}]}.
+          # If not configured the app clearly says engineering works data unavailable.
+          RAIL_PLANNED_WORKS_URL: ${{ secrets.RAIL_PLANNED_WORKS_URL }}
+          RAIL_PLANNED_WORKS_TOKEN: ${{ secrets.RAIL_PLANNED_WORKS_TOKEN }}
         run: python jacobitetrack/scripts/darwin_feed.py
 
       - name: Publish updated feed
