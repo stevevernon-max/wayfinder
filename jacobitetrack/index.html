@@ -886,7 +886,19 @@ function updateViaductCountdown(){
  try{liveNext=getViaductApproaching()[0]||null;}catch(error){console.warn("Viaduct live ETA unavailable",error)}
  const now=Date.now();
  const feedNext=scheduledCrossings.filter(c=>Number.isFinite(Date.parse(c.at))&&Date.parse(c.at)>now).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))[0];
- const pdfNext=nextPublishedViaductCrossing(now);
+ // A station-board crossing and a slightly different PDF crossing can be
+ // the SAME service. After the board crossing passes, never start a second
+ // countdown to the PDF's nearby time (often Glenfinnan station arrival).
+ const boardCrossingTimes=scheduledCrossings
+  .map(c=>Date.parse(c.at))
+  .filter(at=>Number.isFinite(at));
+ let pdfNext=nextPublishedViaductCrossing(now);
+ for(let attempts=0;pdfNext&&attempts<8;attempts++){
+  const isDuplicate=boardCrossingTimes.some(at=>
+   Math.abs(pdfNext.at-at)<=5*60000&&at<=now+60000);
+  if(!isDuplicate)break;
+  pdfNext=nextPublishedViaductCrossing(pdfNext.at+5*60000);
+ }
  const feedMinutes=feedNext?(Date.parse(feedNext.at)-now)/60000:null;
  const pdfMinutes=pdfNext?(pdfNext.at-now)/60000:null;
  // Prefer the next future event; give a matching fresh live ETA precedence
