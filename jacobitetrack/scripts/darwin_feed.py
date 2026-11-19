@@ -221,7 +221,10 @@ def collect_ldb(state: dict[str, Any], now: datetime) -> int:
     failures: list[str] = []
     for crs in LDB_STATION_CRSES:
         query = urllib.parse.urlencode({"numRows": "50", "timeWindow": "120", "timeOffset": "0"})
-        request = urllib.request.Request(f"{base_url}/{crs}?{query}", headers={"x-apikey": api_key, "Accept": "application/json"})
+        request = urllib.request.Request(
+            f"{base_url}/{crs}?{query}",
+            headers={"x-apikey": api_key, "Accept": "application/json", "User-Agent": "JacobiteTrack/1.0"},
+        )
         try:
             with urllib.request.urlopen(request, timeout=15) as response:
                 payload = json.loads(response.read().decode("utf-8"))
