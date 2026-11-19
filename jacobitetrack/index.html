@@ -904,7 +904,7 @@ function updateViaductCountdown(){
  // over the static timetable so a small delay does not hide the real train.
  // Prioritise train times currently reported by station arrival/departure boards.
  // If no further board-based crossing remains, use the PDF timetable.
- const boardFresh=Number.isFinite(Date.parse(feedUpdated||""))&&now-Date.parse(feedUpdated)<15*60000;
+ const boardFresh=Number.isFinite(Date.parse(feedUpdated||""))&&Date.parse(feedUpdated)<=now+60000;
  const boardCandidates=boardFresh?[
   Number.isFinite(liveNext?.remaining)?{at:now+liveNext.remaining*60000,type:"boards"}:null,
   Number.isFinite(feedMinutes)?{at:Date.parse(feedNext.at),type:"boards"}:null
@@ -1117,15 +1117,18 @@ async function load(){
  const r=await fetch(FEED_URL,{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);
  const d=await r.json();if(!Array.isArray(d.trains)||!d.updated||!Number.isFinite(Date.parse(d.updated)))throw Error("Invalid feed");
  const feedAge=Date.now()-Date.parse(d.updated);
- if(feedAge>7200000||Date.parse(d.updated)>Date.now()+60000)throw Error("Stale feed");
+ if(Date.parse(d.updated)>Date.now()+60000)throw Error("Future-dated feed");
+ // A delayed board refresh must not hide a train whose previously reported
+ // journey is still in progress. Each marker is valid only for its own
+ // time-bounded station leg; older data never implies indefinite movement.
  // Board feed age is checked before making movement predictions.
- services=(feedAge<15*60000?d.trains:[]).filter(t=>typeof t.id==="string"&&Number.isFinite(Date.parse(t.observedAt))&&(t.scheduled===true||Date.now()-Date.parse(t.observedAt)<600000)&&t.viewpoints&&typeof t.viewpoints==="object").map(t=>({...t,progress:Number.isFinite(t.progress)&&t.progress>=0&&t.progress<=100?t.progress:null,direction:["out","back"].includes(t.direction)?t.direction:"unknown",locationVerified:false,lat:null,lon:null})).slice(0,50);
- scheduledCrossings=feedAge<15*60000&&Array.isArray(d.futureCrossings)?d.futureCrossings.filter(c=>c&&typeof c.at==="string"&&Number.isFinite(Date.parse(c.at))):[];
+ services=d.trains.filter(t=>typeof t.id==="string"&&Number.isFinite(Date.parse(t.observedAt))&&(t.scheduled===true||Date.now()-Date.parse(t.observedAt)<600000)&&t.viewpoints&&typeof t.viewpoints==="object").map(t=>({...t,progress:Number.isFinite(t.progress)&&t.progress>=0&&t.progress<=100?t.progress:null,direction:["out","back"].includes(t.direction)?t.direction:"unknown",locationVerified:false,lat:null,lon:null})).slice(0,50);
+ scheduledCrossings=Array.isArray(d.futureCrossings)?d.futureCrossings.filter(c=>c&&typeof c.at==="string"&&Number.isFinite(Date.parse(c.at))):[];
  plannedWorksFeed=d.plannedWorks&&typeof d.plannedWorks==="object"?d.plannedWorks:{status:"unavailable",items:[]};
  renderPlannedWorks();
  source=String(d.source||"Railway feed");feedUpdated=d.updated;
  const positioned=visibleTrainMarkers().length;
- $("feedBadge").textContent="Station boards";$("trackStatus").textContent=services.length?positioned+" train(s) estimated from station times. "+"Updated "+new Date(d.updated).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})+" · Estimates, not GPS.":"No current movement estimate from station boards.";
+ $("feedBadge").textContent=feedAge>15*60000?"Station boards delayed":"Station boards";$("trackStatus").textContent=services.length?positioned+" train(s) estimated from station times. "+(feedAge>15*60000?"Board refresh delayed · ":"")+"Updated "+new Date(d.updated).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})+" · Estimates, not GPS.":"No current movement estimate from station boards.";
  render();
  }catch(e){services=[];scheduledCrossings=[];plannedWorksFeed={status:"unavailable",items:[]};renderPlannedWorks();source=null;feedUpdated=null;$("feedBadge").textContent="Unavailable";$("trackStatus").textContent="Station board data unavailable; train positions cannot be estimated.";render();}
 }
