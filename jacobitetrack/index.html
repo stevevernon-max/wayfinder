@@ -530,6 +530,30 @@ function visibleTrainMarkers(){
    const a=points[i],b=points[i+1];
    if(a.station==="Mallaig"&&b.progress<a.progress&&b.at>a.at)departures.push(a.at);
   }
+  // A train remains active while stopped between its scheduled arrival
+  // and departure at the SAME station. This was previously excluded because
+  // progress did not change, making both the track and map marker vanish.
+  // Require matching station AND progress; never turn an unpaired old
+  // station report into an indefinite hold.
+  if(lower&&upper&&upper.at>lower.at&&now>=lower.at&&now<upper.at&&
+     upper.at-lower.at<=30*60000&&
+     lower.station.toLowerCase()===upper.station.toLowerCase()&&
+     Math.abs(upper.progress-lower.progress)<0.001){
+    const nextAfterDeparture=points.find(p=>p.at>upper.at&&Math.abs(p.progress-upper.progress)>0.001);
+    const previousBeforeArrival=points.filter(p=>p.at<lower.at&&Math.abs(p.progress-lower.progress)>0.001).at(-1);
+    const direction=nextAfterDeparture
+     ?(nextAfterDeparture.progress>upper.progress?"back":"out")
+     :previousBeforeArrival
+      ?(lower.progress>previousBeforeArrival.progress?"back":"out")
+      :g.records[0].direction;
+    const train={...g.records[0],id:g.id,direction,positionQuality:"station_stop",
+      positionLabel:"At "+lower.station+" · awaiting scheduled departure (estimated)",
+      position:{fromAt:new Date(lower.at).toISOString(),toAt:new Date(upper.at).toISOString(),
+       fromProgress:lower.progress,toProgress:lower.progress,
+       fromStation:lower.station,toStation:lower.station,basis:"station_stop"}};
+    active.push({train,progress:lower.progress});
+    continue;
+  }
   // A location is valid on the line only while travelling between two
   // documented railway stations, not after an unpaired endpoint report.
   if(lower&&upper&&upper.at>lower.at&&upper.at-lower.at<=40*60000&&
