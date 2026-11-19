@@ -90,6 +90,9 @@ jobs:
           # If not configured the app clearly says engineering works data unavailable.
           RAIL_PLANNED_WORKS_URL: ${{ secrets.RAIL_PLANNED_WORKS_URL }}
           RAIL_PLANNED_WORKS_TOKEN: ${{ secrets.RAIL_PLANNED_WORKS_TOKEN }}
+          # Optional licensed published timetable: JSON {"crossings":[{"at":"ISO8601","direction":"mallaig|fort_william","id":"..."}]}.
+          RAIL_FUTURE_TIMETABLE_URL: ${{ secrets.RAIL_FUTURE_TIMETABLE_URL }}
+          RAIL_FUTURE_TIMETABLE_TOKEN: ${{ secrets.RAIL_FUTURE_TIMETABLE_TOKEN }}
         run: python jacobitetrack/scripts/darwin_feed.py
 
       - name: Publish updated feed
