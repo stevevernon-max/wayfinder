@@ -6,12 +6,12 @@ body{margin:0;background:#0b1017}header{padding:16px;background:#101721;border-b
 main{max-width:1080px;margin:auto;padding:11px}.tile{background:#171d27;border:1px solid #30394a;border-radius:22px;padding:16px;margin-bottom:12px}.row{display:flex;justify-content:space-between;align-items:center;gap:9px}.eyebrow{font-size:10px;letter-spacing:1.5px;font-weight:800;color:#9aaabd}.heading{font-size:21px;font-weight:750;letter-spacing:-.5px;margin:5px 0 10px}.badge{font-size:11px;background:#44341e;color:#f3cc91;border-radius:25px;padding:7px 9px;font-weight:750;white-space:nowrap}.muted{font-size:13px;line-height:1.5;color:#9caec1}.small{font-size:12px;color:#95a6bc;line-height:1.55}.field{display:block;font-size:12px;font-weight:700;color:#a4b4c6;margin:11px 0}
 select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:11px;width:100%;font-size:15px;padding:11px;margin-top:6px}
 .button{background:#183e61;color:#c0e4ff;border:1px solid #426990;border-radius:12px;padding:11px 13px;font-size:13px;font-weight:750;cursor:pointer}.button:disabled{opacity:.4;cursor:not-allowed}
-.rail-scroll{overflow:hidden;margin:6px 0;width:100%;min-width:0}.rail-svg{display:block;width:100%;height:auto}.bed{stroke:#0b141b;stroke-width:15;stroke-linecap:round}.track{stroke:#398f72;stroke-width:10;stroke-linecap:round}.node{stroke:#429b7d;stroke-width:5;fill:#171d27}.station-label{fill:#e8edf4;font-size:25px;font-weight:600}
+.rail-scroll{overflow:hidden;margin:6px 0;width:100%;min-width:0}.rail-svg{display:block;width:100%;height:auto}.bed{stroke:#0b141b;stroke-width:15;stroke-linecap:round}.track{stroke:#398f72;stroke-width:10;stroke-linecap:round}.node{stroke:#429b7d;stroke-width:5;fill:#171d27}.station-label{fill:#e8edf4;font-size:16px;font-weight:600}
 .train-halo{fill:#5dbeff;opacity:.3;animation:pulse 1.5s ease-out infinite;transform-origin:center;transform-box:fill-box}.train-body{fill:#60c1fb;stroke:#f1f9ff;stroke-width:2}.train-arrow{fill:#112d45;font-weight:900;font-size:17px;text-anchor:middle;dominant-baseline:middle}.user-ripple{fill:#3d9fff;opacity:.65;animation:pulse 1.65s ease-out infinite;transform-origin:center;transform-box:fill-box}.user-spot{fill:#3d9fff;stroke:#e7f7ff;stroke-width:3.5}.user-center{fill:#fff}
 .train-estimated .train-body{fill:#f0b84a;stroke:#fff1c7}.train-estimated .train-arrow{fill:#3b2a0b}.train-map-halo{fill:#ffbf47;opacity:.22;animation:pulse 1.7s ease-out infinite;transform-origin:center;transform-box:fill-box}.train-map-body{fill:#f0b84a;stroke:#fff4d4;stroke-width:3}.train-map-arrow{fill:#3b2a0b;font-size:16px;font-weight:900;text-anchor:middle;dominant-baseline:middle}.train-map-reported .train-map-halo{fill:#55baff}.train-map-reported .train-map-body{fill:#60c1fb;stroke:#f1f9ff}.train-map-reported .train-map-arrow{fill:#112d45}
 @keyframes pulse{0%{transform:scale(.8);opacity:.6}80%{transform:scale(2);opacity:0}100%{opacity:0}}.gps-row{display:flex;align-items:center;gap:9px;margin-top:11px;color:#a9c7e0;font-size:13px;line-height:1.45}.gps-indicator{width:12px;height:12px;flex-shrink:0;border-radius:50%;background:#697789}.gps-indicator.active{background:#5fd5aa;animation:gpsFlash 1.2s ease-in-out infinite;box-shadow:0 0 0 4px #5fd5aa33}.gps-indicator.error{background:#eb807c}@keyframes gpsFlash{50%{opacity:.2;box-shadow:0 0 0 8px #5fd5aa00}}.value{font-size:45px;font-weight:800;color:#81beff;letter-spacing:-2px;line-height:1.1;margin:10px 0}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}.spot{background:#111924;border:1px solid #324154;border-radius:14px;padding:13px;margin:10px 0}.spot h3{font-size:15px;margin:0 0 5px}.spot .sub{font-size:12px;color:#a7b8c9;line-height:1.5}.spot .actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.tag{color:#95cfff;font-size:11px;font-weight:750;letter-spacing:.3px}.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}.stat{padding:12px;background:#101823;border:1px solid #2b394b;border-radius:13px}.stat b{font-size:21px;display:block;margin-top:5px}.notice{padding:10px 12px;background:#122338;border:1px solid #2a4d6e;border-radius:11px;color:#c4def4;font-size:12px;line-height:1.5;margin-top:10px}.weather-row{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}.weather-row>div{min-width:75px}.weather-row b{font-size:19px}.alerts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.alerts select{max-width:135px;margin:0;padding:9px}.alert-tag{font-size:12px;color:#9cb1c8}.countdown{font-variant-numeric:tabular-nums}footer{padding:2px 4px 25px;color:#8295ad;font-size:11px;line-height:1.55}
-@media(max-width:760px){.cols{grid-template-columns:1fr}.tile{border-radius:20px}main{padding:10px}.station-label{font-size:25px}}
+@media(max-width:760px){.cols{grid-template-columns:1fr}.tile{border-radius:20px}main{padding:10px}.station-label{font-size:16px}}
 
 /* Tile 2: geographic maps using OpenStreetMap railway geometry */
 .geo-panel{border:1px solid #324055;border-radius:17px;overflow:hidden;background:#111a26;margin:13px 0}
@@ -162,14 +162,17 @@ body.geo-fullscreen-open{overflow:hidden}
 <header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div></div></header><main>
 <section class="tile" id="trackerTile">
 <div class="row"><div><div class="eyebrow">TRAIN TRACKER</div></div><span class="badge gps-line-pill" id="gpsLineBadge">Finding location…</span><span id="feedBadge" hidden aria-live="polite">Checking</span></div>
-<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Six station schematic railway from Mallaig to Fort William" role="img">
+<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Nine mapped stations from Mallaig to Fort William" role="img">
 <line class="bed" x1="13" y1="83" x2="887" y2="83"/><line class="track" x1="13" y1="83" x2="887" y2="83"/>
 <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="9" y="45" text-anchor="start">Mallaig</text>
-<circle class="node" cx="201" cy="83" r="12"/><text class="station-label" x="201" y="132" text-anchor="middle">Morar</text>
-<circle class="node" cx="367" cy="83" r="12"/><text class="station-label" x="367" y="45" text-anchor="middle">Arisaig</text>
-<circle class="node" cx="533" cy="83" r="12"/><text class="station-label" x="533" y="132" text-anchor="middle">Lochailort</text>
-<circle class="node" cx="699" cy="83" r="12"/><text class="station-label" x="699" y="45" text-anchor="middle">Glenfinnan</text>
-<circle class="node" cx="865" cy="83" r="12"/><text class="station-label" x="892" y="132" text-anchor="end">Fort William</text>
+<circle class="node" cx="139" cy="83" r="12"/><text class="station-label" x="139" y="132" text-anchor="middle">Morar</text>
+<circle class="node" cx="243" cy="83" r="12"/><text class="station-label" x="243" y="45" text-anchor="middle">Arisaig</text>
+<circle class="node" cx="346" cy="83" r="12"/><text class="station-label" x="346" y="132" text-anchor="middle">Lochailort</text>
+<circle class="node" cx="450" cy="83" r="12"/><text class="station-label" x="450" y="45" text-anchor="middle">Glenfinnan</text>
+<circle class="node" cx="554" cy="83" r="12"/><text class="station-label" x="554" y="132" text-anchor="middle">Locheilside</text>
+<circle class="node" cx="657" cy="83" r="12"/><text class="station-label" x="657" y="39" text-anchor="middle"><tspan x="657">Loch Eil</tspan><tspan x="657" dy="18">Outward Bound</tspan></text>
+<circle class="node" cx="761" cy="83" r="12"/><text class="station-label" x="761" y="132" text-anchor="middle">Banavie</text>
+<circle class="node" cx="865" cy="83" r="12"/><text class="station-label" x="892" y="45" text-anchor="end">Fort William</text>
 <g id="trains"></g>
 <g id="userPosition" style="display:none" aria-label="Your approximate closest position on railway schematic">
  <circle class="user-ripple" r="22"/><circle class="user-spot" r="12"/><circle class="user-center" r="4"/>
@@ -189,7 +192,7 @@ body.geo-fullscreen-open{overflow:hidden}
 <p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
 </section>
 <div class="cols single-viewpoint">
-<section class="tile"><div class="eyebrow">YOUR VIEWPOINT</div><div class="heading">Photography timing</div><label class="field">Location<select id="viewpoint"><option value="glenfinnan">Glenfinnan Viaduct</option><option value="lochailort">Lochailort</option><option value="arisaig">Arisaig</option><option value="morar">Morar</option><option value="glenStation">Glenfinnan station</option><option value="beasdale">Beasdale</option><option value="eilt">Loch Eilt</option><option value="corpach">Corpach</option><option value="mallaig">Mallaig</option><option value="fortWilliam">Fort William</option></select></label><div class="value countdown" id="eta">—</div><div class="muted" id="etaNote">No verified train ETA available.</div><div class="small" id="etaSource"></div>
+<section class="tile"><div class="eyebrow">YOUR VIEWPOINT</div><div class="heading">Photography timing</div><label class="field">Location<select id="viewpoint"><option value="glenfinnan">Glenfinnan Viaduct</option><option value="lochailort">Lochailort</option><option value="arisaig">Arisaig</option><option value="morar">Morar</option><option value="glenStation">Glenfinnan station</option><option value="beasdale">Beasdale</option><option value="locheilside">Locheilside</option><option value="lochEilOutwardBound">Loch Eil Outward Bound</option><option value="banavie">Banavie</option><option value="eilt">Loch Eilt</option><option value="corpach">Corpach</option><option value="mallaig">Mallaig</option><option value="fortWilliam">Fort William</option></select></label><div class="value countdown" id="eta">—</div><div class="muted" id="etaNote">No verified train ETA available.</div><div class="small" id="etaSource"></div>
 <div class="alerts" style="margin-top:12px"><select id="alertLead" aria-label="Train approaching warning"><option value="5">5 min alert</option><option value="10" selected>10 min alert</option><option value="15">15 min alert</option><option value="20">20 min alert</option></select><button class="button" id="notifyBtn">Enable alerts</button><button class="button" id="disableAlertsBtn" style="display:none">Disable alerts</button></div><div class="small" id="notificationStatus">Checking whether background notifications are available…</div><div class="small" id="installHint"></div>
 </section></div>
 <div class="cols">
@@ -389,13 +392,14 @@ load();fetchWeather();setupPush();setInterval(load,60000);setInterval(fetchWeath
    simplified station-based railway alignment is displayed. Nothing is uploaded. */
 const railFixes=[
  {lat:57.0052,lon:-5.8290,x:35,name:"Mallaig"},
- {lat:56.9685,lon:-5.8212,x:201,name:"Morar"},
- {lat:56.9136,lon:-5.8406,x:367,name:"Arisaig"},
- {lat:56.8990,lon:-5.7630,x:451,name:"Beasdale"},
- {lat:56.8812,lon:-5.6633,x:533,name:"Lochailort"},
- {lat:56.8717,lon:-5.4490,x:699,name:"Glenfinnan"},
- {lat:56.8570,lon:-5.1880,x:789,name:"Loch Eil"},
- {lat:56.8430,lon:-5.1220,x:837,name:"Corpach"},
+ {lat:56.9685,lon:-5.8212,x:139,name:"Morar"},
+ {lat:56.9136,lon:-5.8406,x:243,name:"Arisaig"},
+ {lat:56.8990,lon:-5.7630,x:294,name:"Beasdale timing point"},
+ {lat:56.8812,lon:-5.6633,x:346,name:"Lochailort"},
+ {lat:56.8717,lon:-5.4490,x:450,name:"Glenfinnan"},
+ {lat:56.8560,lon:-5.2903,x:554,name:"Locheilside"},
+ {lat:56.8554,lon:-5.1929,x:657,name:"Loch Eil Outward Bound"},
+ {lat:56.8439,lon:-5.0960,x:761,name:"Banavie"},
  {lat:56.8201,lon:-5.1061,x:865,name:"Fort William"}
 ];
 let gpsWatch=null;
@@ -523,7 +527,9 @@ const geoViews=[{id:"mapOverview",bounds:{...defaultGeoBounds},label:"Overview"}
 const geoStations=[
  {name:"Mallaig",lat:57.0052,lon:-5.8290},{name:"Morar",lat:56.9685,lon:-5.8212},
  {name:"Arisaig",lat:56.9136,lon:-5.8406},{name:"Lochailort",lat:56.8812,lon:-5.6633},
- {name:"Glenfinnan",lat:56.8717,lon:-5.4490},{name:"Fort William",lat:56.8201,lon:-5.1061}
+ {name:"Glenfinnan",lat:56.8717,lon:-5.4490},{name:"Locheilside",lat:56.8560,lon:-5.2903},
+ {name:"Loch Eil Outward Bound",lat:56.8554,lon:-5.1929},{name:"Banavie",lat:56.8439,lon:-5.0960},
+ {name:"Fort William",lat:56.8201,lon:-5.1061}
 ];
 const mapLabels=[
  {name:"Loch Morar",lat:56.958,lon:-5.731},
