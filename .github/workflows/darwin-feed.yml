@@ -39,7 +39,9 @@ jobs:
           RDM_CONSUMER_PASSWORD: ${{ secrets.RDM_CONSUMER_PASSWORD }}
           RDM_GROUP_ID: ${{ secrets.RDM_GROUP_ID }}
           RDM_TOPIC: ${{ secrets.RDM_TOPIC }}
-          RDM_POLL_SECONDS: "75"
+          # Keep the shared feed consumer connected for most of each 5 minute
+          # scheduled interval; only West Highland services are retained locally.
+          RDM_POLL_SECONDS: "240"
         run: python jacobitetrack/scripts/darwin_feed.py
 
       - name: Publish updated feed
