@@ -307,6 +307,14 @@ main{padding-top:8px}
 .app-header.viaduct-imminent #proximityTile .viaduct-main-time{color:#ffc15e}
 @media(max-width:420px){.app-header{padding:2px 8px 0}.app-header .header-shell{padding:8px 10px 9px}.app-header .header-main{margin-bottom:7px}.app-header .header-brand>strong{font-size:21px}.app-header #proximityTile{padding:8px 9px}.app-header #proximityTile .viaduct-icon{width:39px;height:39px}.app-header #proximityTile .viaduct-main-time{font-size:30px}.app-header #proximityTile .viaduct-location{margin-left:49px;font-size:10px}}
 @media(prefers-reduced-motion:reduce){.app-header.viaduct-imminent .header-shell{animation:none;background:#302719;border-color:#ffce65}}
+
+/* Live status: only the status dot pulses, not the complete pill. */
+@keyframes trainStatusDotPulse{0%,100%{opacity:1;box-shadow:0 0 0 0 #39cc764b}50%{opacity:.55;box-shadow:0 0 0 5px #39cc7600}}
+#activeTrainsPill.has-trains::before{animation:trainStatusDotPulse 1.35s ease-in-out infinite}
+#activeTrainsPill{font-variant-numeric:tabular-nums;white-space:normal;text-align:left;line-height:1.25;max-width:57%;gap:7px}
+#activeTrainsPill::before{min-width:8px}
+@media(max-width:420px){#activeTrainsPill{font-size:10px;max-width:59%;padding:6px 8px;gap:5px}}
+@media(prefers-reduced-motion:reduce){#activeTrainsPill.has-trains::before{animation:none}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span></div>
@@ -600,7 +608,7 @@ function updateViaductCountdown(){
 setInterval(updateViaductCountdown,1000);
 function updateActiveTrainsPill(){
  const count=visibleTrainMarkers().length,pill=$("activeTrainsPill");
- pill.textContent=count?count+(count===1?" train running":" trains running"):"No trains running";
+ pill.textContent=(count?count+(count===1?" train running":" trains running"):"No trains running")+(Number.isFinite(gpsAccuracyMetres)?" · GPS ±"+Math.round(gpsAccuracyMetres)+"m":" · GPS "+(userCoords?"acquiring…":"waiting…"));
  pill.classList.toggle("has-trains",count>0);
 }
 function render(){
@@ -630,6 +638,7 @@ function renderSpots(){
 function bearing(a,b,c,d){const r=Math.PI/180;const y=Math.sin((d-b)*r)*Math.cos(c*r),x=Math.cos(a*r)*Math.sin(c*r)-Math.sin(a*r)*Math.cos(c*r)*Math.cos((d-b)*r);return (Math.atan2(y,x)*180/Math.PI+360)%360;}
 function cardinal(deg){return ["north","north-east","east","south-east","south","south-west","west","north-west"][Math.round(deg/45)%8];}
 let userCoords=null;
+let gpsAccuracyMetres=null;
 function showDirections(key){
  const v=siteData[key],origin=userCoords||{lat:v.parkingLat,lon:v.parkingLon};
  const km=111.195*Math.hypot(origin.lat-v.lat,(origin.lon-v.lon)*Math.cos(v.lat*Math.PI/180));
@@ -862,11 +871,13 @@ function updateTrackerGps(){
  pill.title=result.verified?"Distance to nearest mapped railway track":"Estimated distance based on approximate station-to-station alignment";
 }
 function startGps(){
- if(!navigator.geolocation){$("gpsIndicator").classList.add("error");$("gpsStatus").textContent="GPS unavailable";return;}
+ if(!navigator.geolocation){gpsAccuracyMetres=null;$("gpsIndicator").classList.add("error");$("gpsStatus").textContent="GPS unavailable";updateActiveTrainsPill();return;}
  if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);
- $("gpsIndicator").classList.remove("active","error");$("gpsStatus").textContent="Finding GPS…";
+ gpsAccuracyMetres=null;$("gpsIndicator").classList.remove("active","error");$("gpsStatus").textContent="Finding GPS…";updateActiveTrainsPill();
  gpsWatch=navigator.geolocation.watchPosition(position=>{
    userCoords={lat:position.coords.latitude,lon:position.coords.longitude};
+   gpsAccuracyMetres=Number.isFinite(position.coords.accuracy)?position.coords.accuracy:null;
+   updateActiveTrainsPill();
    updateHeaderDistances();
    updateTrackerGps();
    updateGeoLocation(userCoords.lat,userCoords.lon);
@@ -876,7 +887,7 @@ function startGps(){
    
    $("gpsIndicator").classList.remove("error");$("gpsIndicator").classList.add("active");$("gpsStatus").textContent="GPS tracking · ±"+Math.round(position.coords.accuracy)+" m";
  },err=>{
-   userCoords=null;updateHeaderDistances();updateTrackerGps();
+   userCoords=null;gpsAccuracyMetres=null;updateActiveTrainsPill();updateHeaderDistances();updateTrackerGps();
    $("gpsIndicator").classList.remove("active");$("gpsIndicator").classList.add("error");
    $("gpsStatus").textContent=err.code===1?"Location permission denied. Allow location in Safari settings.":err.code===2?"Could not determine your location.":"GPS unavailable. Check location permissions.";
    if(gpsWatch!==null){navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;}
