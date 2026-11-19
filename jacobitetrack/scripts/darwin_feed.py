@@ -291,8 +291,8 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
         if not observed or (now - observed).total_seconds() > FRESH_SECONDS or (observed - now).total_seconds() > 60:
             continue
         viewpoints: dict[str, dict[str, float]] = {}
-        current_indices: list[tuple[datetime, int, str]] = []
-        direction_values: list[int] = []
+        current_indices: list[tuple[datetime, float, str]] = []
+        direction_values: list[float] = []
         route = service.get("route", [])
         line_sequence = [STATION_BY_TIPLOC[code][1] for code in route if code in STATION_BY_TIPLOC]
         if len(line_sequence) >= 2:
@@ -316,8 +316,6 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
             if station[0] in VIEWPOINT_BY_KEY and actual_at and abs((now - actual_at).total_seconds()) < 180:
                 key = VIEWPOINT_BY_KEY[station[0]]
                 viewpoints.setdefault(key, {"etaMinutes": 0.0})
-        if not viewpoints and progress is None:
-            continue
         position = max(current_indices, default=None, key=lambda item: item[0])
         progress = None
         position_label = None
@@ -325,6 +323,8 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
             _, station_index, station_key = position
             progress = float((5 - station_index) * 20)
             position_label = "Last actual report: " + STATION_NAME_BY_KEY.get(station_key, station_key)
+        if not viewpoints and progress is None:
+            continue
         trains.append({
             "id": str(service.get("id") or service.get("uid") or service.get("rid")),
             "observedAt": service["observedAt"],
