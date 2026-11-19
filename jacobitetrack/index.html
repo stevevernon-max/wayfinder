@@ -342,19 +342,20 @@ main{padding-top:8px}
 .app-header #proximityTile.viaduct-arriving .viaduct-main-time{color:#75ecab}
 .app-header #proximityTile.viaduct-arriving .viaduct-icon{background:#174832;color:#a5f7c7}
 @media(prefers-reduced-motion:reduce){.app-header.viaduct-arriving .header-shell{animation:none;background:#173e2a;border-color:#54e69c}}
+
+/* iPhone top safe area; leave a small gap beneath the status bar. */
+.app-header{padding-top:8px}
+@media(display-mode:standalone){.app-header{padding-top:calc(env(safe-area-inset-top, 0px) + 8px)}}
+@supports(padding-top:constant(safe-area-inset-top)){
+ @media(display-mode:standalone){.app-header{padding-top:calc(constant(safe-area-inset-top) + 8px)}}
+}
+/* Tracker first, then the viaduct countdown inside the same card. */
+.app-header #trackerTile{border-top:0;border-bottom:1px solid #30394a;padding:4px 2px 6px}
+.app-header #proximityTile{padding:8px 3px 4px}
+@media(max-width:420px){.app-header #trackerTile{padding:3px 0 6px}.app-header #proximityTile{padding:7px 2px 4px}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span></div>
-<section id="proximityTile" aria-label="Glenfinnan Viaduct next train">
-<div class="viaduct-top"><div class="viaduct-icon" aria-hidden="true"><svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
- <path d="M7 33H65" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
- <rect x="18" y="19" width="32" height="13" rx="2" stroke="currentColor" stroke-width="3"/>
- <rect x="26" y="23" width="12" height="5" rx="1" fill="currentColor"/>
- <path d="M49 26H57V33" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
- <path d="M10 63V50C10 42 21 42 21 50V63M21 63V50C21 42 32 42 32 50V63M32 63V50C32 42 43 42 43 50V63M43 63V50C43 42 54 42 54 50V63M54 63V50C54 42 65 42 65 50V63" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
- </svg></div><div class="viaduct-details"><div class="viaduct-time-row"><strong id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</strong><span class="viaduct-location">Glenfinnan Viaduct</span></div><div class="viaduct-subtitle"><span id="viaductTileCountdown">Awaiting railway prediction</span><span id="viaductTileNote" hidden></span></div></div></div>
-<span id="nearestTrain" hidden>—</span>
-</section>
 <section id="trackerTile" aria-label="Railway train tracker">
 <div class="row"><div><div class="eyebrow">TRAIN TRACKER</div></div><span id="feedBadge" hidden aria-live="polite">Checking</span></div>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Nine evenly spaced mapped stations from Mallaig to Fort William" role="img">
@@ -371,6 +372,16 @@ main{padding-top:8px}
 <g id="trains"></g>
 </svg></div>
 <div class="muted" id="trackStatus" hidden></div>
+</section>
+<section id="proximityTile" aria-label="Glenfinnan Viaduct next train">
+<div class="viaduct-top"><div class="viaduct-icon" aria-hidden="true"><svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+ <path d="M7 33H65" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+ <rect x="18" y="19" width="32" height="13" rx="2" stroke="currentColor" stroke-width="3"/>
+ <rect x="26" y="23" width="12" height="5" rx="1" fill="currentColor"/>
+ <path d="M49 26H57V33" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+ <path d="M10 63V50C10 42 21 42 21 50V63M21 63V50C21 42 32 42 32 50V63M32 63V50C32 42 43 42 43 50V63M43 63V50C43 42 54 42 54 50V63M54 63V50C54 42 65 42 65 50V63" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
+ </svg></div><div class="viaduct-details"><div class="viaduct-time-row"><strong id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</strong><span class="viaduct-location">Glenfinnan Viaduct</span></div><div class="viaduct-subtitle"><span id="viaductTileCountdown">Awaiting railway prediction</span><span id="viaductTileNote" hidden></span></div></div></div>
+<span id="nearestTrain" hidden>—</span>
 </section></div></header><main>
 <section class="tile" id="geoTile">
 <div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with roads, lochs, railway and estimated train position markers; drag or pinch to navigate"></div>
