@@ -693,11 +693,11 @@ function extractShapes(elements,kind){
  return shapes;
 }
 function cacheGeo(){
- try{localStorage.setItem("jacobitetrack-osm-geometry-v4",JSON.stringify({saved:Date.now(),rail:geoMapFeatures.rail,water:geoMapFeatures.water,coast:geoMapFeatures.coast}))}catch{}
+ try{localStorage.setItem("jacobitetrack-osm-geometry-v5",JSON.stringify({saved:Date.now(),rail:geoMapFeatures.rail,water:geoMapFeatures.water,coast:geoMapFeatures.coast}))}catch{}
 }
 function restoreGeo(){
  try{
-  const raw=JSON.parse(localStorage.getItem("jacobitetrack-osm-geometry-v4")||"null");
+  const raw=JSON.parse(localStorage.getItem("jacobitetrack-osm-geometry-v5")||"null");
   if(raw&&Date.now()-raw.saved<14*86400000&&Array.isArray(raw.rail)&&Array.isArray(raw.water)){
    geoMapFeatures.rail=raw.rail;geoMapFeatures.water=raw.water;geoMapFeatures.coast=raw.coast||[];
    renderGeoMaps();updateTrackerGps();$("geoStatus").textContent="Cached OSM geography";
@@ -707,12 +707,21 @@ function restoreGeo(){
 async function loadGeoRailway(){
  restoreGeo();
  const bounds="(56.795,-5.96,57.03,-5.03)";
- const railQuery='[out:json][timeout:35];way["railway"="rail"]'+bounds+';out geom;';
  const waterQuery='[out:json][timeout:35];(way["natural"="water"]["name"~"Loch (Shiel|Eilt|Morar|Linnhe|nan Uamh|Ailort)",i]'+bounds+';relation["natural"="water"]["name"~"Loch (Shiel|Eilt|Morar|Linnhe|nan Uamh|Ailort)",i]'+bounds+';way["water"="lake"]["name"~"Loch (Shiel|Eilt|Morar|Linnhe|nan Uamh|Ailort)",i]'+bounds+';relation["water"="lake"]["name"~"Loch (Shiel|Eilt|Morar|Linnhe|nan Uamh|Ailort)",i]'+bounds+';way["natural"="coastline"]'+bounds+';);out geom;';
  $("geoStatus").textContent="Loading OSM geography";
- const results=await Promise.allSettled([overpassGeometry(railQuery),overpassGeometry(waterQuery)]);
- const r=results[0],w=results[1];
- if(r.status==="fulfilled"){const lines=extractShapes(r.value,"rail");if(lines.length)geoMapFeatures.rail=lines}
+ let r={status:"rejected"},w;
+ try{
+  const response=await fetch("./data/railway-geometry.json",{cache:"force-cache"});
+  if(!response.ok)throw Error("Railway geometry HTTP "+response.status);
+  const data=await response.json();
+  if(!Array.isArray(data.paths)||!data.paths.length)throw Error("No railway paths in bundled map data");
+  geoMapFeatures.rail=data.paths.map(path=>path.map(([lat,lon])=>({lat,lon}))).filter(path=>path.length>1);
+  if(geoMapFeatures.rail.length){r={status:"fulfilled"};renderGeoMaps();$("geoStatus").textContent="Mapped railway loaded"}
+ }catch(error){
+  const railQuery='[out:json][timeout:35];way["railway"="rail"]'+bounds+';out geom;';
+  try{const fresh=extractShapes(await overpassGeometry(railQuery),"rail");if(fresh.length){geoMapFeatures.rail=fresh;r={status:"fulfilled"}}}catch{}
+ }
+ w=(await Promise.allSettled([overpassGeometry(waterQuery)]))[0];
  updateTrackerGps();
  if(w.status==="fulfilled"){const lakes=extractShapes(w.value,"water");if(lakes.length)geoMapFeatures.water=lakes;geoMapFeatures.coast=extractShapes(w.value,"coast")}
  renderGeoMaps();cacheGeo();
