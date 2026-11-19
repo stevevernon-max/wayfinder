@@ -512,16 +512,14 @@ main>.planned-works-status{margin:0 0 10px}
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
 <section id="trackerTile" aria-label="Railway train tracker">
 <span id="feedBadge" hidden aria-live="polite">Checking</span>
-<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Nine evenly spaced mapped stations from Mallaig to Fort William" role="img">
+<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Seven evenly spaced railway stations from Mallaig to Fort William" role="img">
 <line class="bed" x1="13" y1="83" x2="887" y2="83"/><line class="track" x1="13" y1="83" x2="887" y2="83"/>
 <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="9" y="45" text-anchor="start">Mallaig</text>
-<circle class="node" cx="139" cy="83" r="12"/><text class="station-label" x="139" y="132" text-anchor="middle">Morar</text>
-<circle class="node" cx="243" cy="83" r="12"/><text class="station-label" x="243" y="45" text-anchor="middle">Arisaig</text>
-<circle class="node" cx="346" cy="83" r="12"/><text class="station-label" x="346" y="132" text-anchor="middle">Lochailort</text>
-<circle class="node" cx="450" cy="83" r="12"/><text class="station-label" x="450" y="45" text-anchor="middle">Glenfinnan</text>
-<circle class="node" cx="554" cy="83" r="12"/><text class="station-label" x="554" y="132" text-anchor="middle">Locheilside</text>
-<circle class="node" cx="657" cy="83" r="12"/><text class="station-label" x="657" y="39" text-anchor="middle"><tspan x="657">Loch Eil</tspan><tspan x="657" dy="18">Outward Bound</tspan></text>
-<circle class="node" cx="761" cy="83" r="12"/><text class="station-label" x="761" y="132" text-anchor="middle">Corpach</text>
+<circle class="node" cx="173" cy="83" r="12"/><text class="station-label" x="173" y="132" text-anchor="middle">Morar</text>
+<circle class="node" cx="311" cy="83" r="12"/><text class="station-label" x="311" y="45" text-anchor="middle">Arisaig</text>
+<circle class="node" cx="450" cy="83" r="12"/><text class="station-label" x="450" y="132" text-anchor="middle">Lochailort</text>
+<circle class="node" cx="588" cy="83" r="12"/><text class="station-label" x="588" y="45" text-anchor="middle">Glenfinnan</text>
+<circle class="node" cx="726" cy="83" r="12"/><text class="station-label" x="726" y="132" text-anchor="middle">Corpach</text>
 <circle class="node" cx="865" cy="83" r="12"/><text class="station-label" x="892" y="45" text-anchor="end">Fort William</text>
 <g id="trains"></g>
 </svg></div>
@@ -600,18 +598,41 @@ function positionProgress(t){
  const fraction=Math.max(0,Math.min(1,(Date.now()-from)/(to-from)));
  return p.fromProgress+(p.toProgress-p.fromProgress)*fraction;
 }
-const schematicStations=[
+// Keep every intermediate timing point for train positions, even though
+// Tile 1 shows only seven evenly-spaced stations.
+const timingStations=[
  ["Mallaig",35],["Morar",139],["Arisaig",243],["Beasdale",294],["Lochailort",346],
  ["Glenfinnan",450],["Locheilside",554],["Loch Eil Outward Bound",657],["Corpach",761],["Fort William",865]
 ];
+const schematicStations=[
+ ["Mallaig",35],["Morar",173],["Arisaig",311],["Lochailort",450],
+ ["Glenfinnan",588],["Corpach",726],["Fort William",865]
+];
+function displayRailX(rawX){
+ if(!Number.isFinite(rawX))return null;
+ for(let i=1;i<schematicStations.length;i++){
+  const left=schematicStations[i-1],right=schematicStations[i];
+  const originalLeft=timingStations.find(([name])=>name===left[0])[1];
+  const originalRight=timingStations.find(([name])=>name===right[0])[1];
+  if(rawX<=originalRight||i===schematicStations.length-1){
+   const f=Math.max(0,Math.min(1,(rawX-originalLeft)/(originalRight-originalLeft)));
+   return left[1]+f*(right[1]-left[1]);
+  }
+ }
+ return schematicStations[0][1];
+}
 function schematicTrainX(t){
- const p=t.position;if(!p?.fromStation)return Number.isFinite(positionProgress(t))?xAt(positionProgress(t)):null;
- const find=name=>schematicStations.findIndex(([label])=>label.toLowerCase()===String(name||"").toLowerCase());
+ const p=t.position;
+ if(!p?.fromStation)return displayRailX(Number.isFinite(positionProgress(t))?xAt(positionProgress(t)):null);
+ const find=name=>timingStations.findIndex(([label])=>label.toLowerCase()===String(name||"").toLowerCase());
  const a=find(p.fromStation),b=find(p.toStation);
- if(a<0)return Number.isFinite(positionProgress(t))?xAt(positionProgress(t)):null;
- if(b<0||!Number.isFinite(Date.parse(p.fromAt))||!Number.isFinite(Date.parse(p.toAt||""))||Date.parse(p.toAt)<=Date.parse(p.fromAt))return schematicStations[a][1];
- const fraction=Math.max(0,Math.min(1,(Date.now()-Date.parse(p.fromAt))/(Date.parse(p.toAt)-Date.parse(p.fromAt))));
- return schematicStations[a][1]+(schematicStations[b][1]-schematicStations[a][1])*fraction;
+ if(a<0)return displayRailX(Number.isFinite(positionProgress(t))?xAt(positionProgress(t)):null);
+ let rawX=timingStations[a][1];
+ if(b>=0&&Number.isFinite(Date.parse(p.fromAt))&&Number.isFinite(Date.parse(p.toAt||""))&&Date.parse(p.toAt)>Date.parse(p.fromAt)){
+  const fraction=Math.max(0,Math.min(1,(Date.now()-Date.parse(p.fromAt))/(Date.parse(p.toAt)-Date.parse(p.fromAt))));
+  rawX+=fraction*(timingStations[b][1]-rawX);
+ }
+ return displayRailX(rawX);
 }
 function isTrainOnLineNow(t){
  if(t.cancelled===true||!t.position)return false;
@@ -678,7 +699,7 @@ function visibleTrainMarkers(){
  // Feed age must not hide a still-running timetable leg. Position markers
  // are derived from the current interval between station times, so they
  // naturally disappear once that leg's scheduled end has passed.
- const stationNames=new Set(schematicStations.map(([name])=>name.toLowerCase()));
+ const stationNames=new Set(timingStations.map(([name])=>name.toLowerCase()));
  const baseId=id=>(String(id).match(/^(\d{8})(?:[A-Z_]+)?$/)||[])[1]||String(id);
  const stationOk=name=>stationNames.has(String(name||"").toLowerCase());
  for(const t of services){
@@ -885,7 +906,7 @@ function getViaductApproaching(){
  // station; Mallaig-bound trains cross approximately 1 min before arriving.
  // Use timed station anchors rather than treating station time as crossing.
  const groups=new Map(),now=Date.now(),minute=60000;
- const stationNames=new Set(schematicStations.map(([name])=>name.toLowerCase()));
+ const stationNames=new Set(timingStations.map(([name])=>name.toLowerCase()));
  for(const t of services){
   if(t.cancelled)continue;
   const key=(String(t.id).match(/^(\d{8})(?:[A-Z_]+)?$/)||[])[1]||String(t.id);
