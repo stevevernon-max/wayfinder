@@ -876,13 +876,15 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
                     viaduct_basis = "scheduled" if a[3] == b[3] == "schedule" else "live_or_scheduled"
             if viaduct_eta:
                 minutes = (viaduct_eta - now).total_seconds() / 60
-                old = viewpoints.get("glenfinnan")
-                if old is None or minutes < old["etaMinutes"]:
-                    viewpoints["glenfinnan"] = {
-                        "etaMinutes": round(minutes, 2),
-                        "quality": "estimated_between_station_times",
-                        "basis": viaduct_basis or "station_times",
-                    }
+                # This viewpoint is the viaduct crossing itself. For Mallaig-
+                # bound trains the crossing is after Glenfinnan station, so
+                # always replace any station-call ETA with the interpolated
+                # crossing time in either direction.
+                viewpoints["glenfinnan"] = {
+                    "etaMinutes": round(minutes, 2),
+                    "quality": "estimated_between_station_times",
+                    "basis": viaduct_basis or "station_times",
+                }
 
         # If route ordering is incomplete, infer direction from time-ordered
         # station reports and then from the next Darwin forecast.
