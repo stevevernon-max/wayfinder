@@ -1009,7 +1009,7 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
 
         trains.append({
             "id": str(service.get("id") or service.get("uid") or service.get("rid")),
-            "observedAt": service["observedAt"],
+            "observedAt": str(service.get("observedAt") or now.isoformat().replace("+00:00", "Z")),
             "direction": direction or "unknown",
             "progress": progress,
             "positionLabel": position_label,
@@ -1067,11 +1067,11 @@ def main() -> int:
             return 1
         state.setdefault("sources", {})["ldb"] = {"updated": now.isoformat().replace("+00:00", "Z"), "servicesMatched": matched}
         state["savedAt"] = now.isoformat().replace("+00:00", "Z")
-        write_json(STATE_PATH, state)
         try:
             collect_planned_works(state, now)
         except (ValueError, OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
             print(f"Planned works feed unavailable: {type(exc).__name__}", file=sys.stderr)
+        write_json(STATE_PATH, state)
         feed = build_feed(state, now)
         write_json(FEED_PATH, feed)
         print(f"Published {len(feed['trains'])} West Highland service estimate(s); LDB matched {matched} station-board records.")
@@ -1191,6 +1191,7 @@ def main() -> int:
         elif not observed or (now - observed).total_seconds() > 6 * 3600:
             del state["services"][rid]
     state["savedAt"] = now.isoformat().replace("+00:00", "Z")
+    # Works updates run in the LDB stage to avoid repeated requests.
     write_json(STATE_PATH, state)
     feed = build_feed(state, now)
     write_json(FEED_PATH, feed)
