@@ -465,6 +465,26 @@ main>.planned-works-status{margin:0 0 10px}
 #crossingWeatherTile .crossing-weather-features span{white-space:nowrap}
 #crossingWeatherTile .crossing-weather-advice{margin:0;color:#969a93;font-size:clamp(12px,3vw,16px);line-height:1.4}
 @media(max-width:370px){#crossingWeatherTile{padding:13px 12px}#crossingWeatherTile .crossing-weather-features{column-gap:10px}}
+
+/* Crossing weather: compact glassy blue slate panel with legible status chips. */
+#crossingWeatherTile{background:linear-gradient(140deg,#19283a 0%,#161f2e 100%);border:1px solid #30455c;border-radius:21px;box-shadow:0 3px 16px #050d1840;gap:9px}
+#crossingWeatherTile .crossing-weather-heading{color:#e5efff;font-weight:700}
+#crossingWeatherTile .crossing-weather-rating{border-radius:999px;padding:5px 11px;background:#123e31;color:#83edbf;border:1px solid #327d60}
+#crossingWeatherTile .crossing-weather-rating[data-grade="good"]{background:#153c39;color:#95dce8;border-color:#2f777e}
+#crossingWeatherTile .crossing-weather-rating[data-grade="fair"]{background:#4a371e;color:#ffd188;border-color:#8a6337}
+#crossingWeatherTile .crossing-weather-rating[data-grade="poor"]{background:#48252c;color:#ffb2b0;border-color:#92505b}
+#crossingWeatherTile .crossing-weather-features{display:flex;gap:7px;flex-wrap:wrap}
+#crossingWeatherTile .crossing-weather-chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 8px;background:#24354c;border:1px solid #425773;color:#cfdbeb;font-size:clamp(11px,2.8vw,14px);line-height:1.15;white-space:nowrap}
+#crossingWeatherTile .crossing-weather-icon{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;background:#36516c;color:#aad8ff;font-size:14px;font-weight:800}
+#crossingWeatherTile .crossing-weather-chip[data-tone="good"] .crossing-weather-icon{color:#9cf5bb;background:#285446}
+#crossingWeatherTile .crossing-weather-chip[data-tone="warn"] .crossing-weather-icon{color:#ffe4a1;background:#67512e}
+#crossingWeatherTile .crossing-weather-chip[data-tone="bad"] .crossing-weather-icon{color:#ffb4b4;background:#733d46}
+#crossingWeatherTile .crossing-weather-chip[data-tone="muted"]{opacity:.7}
+#crossingWeatherTile .crossing-weather-advice{font-size:clamp(11px,2.9vw,14px);color:#9eb3ca}
+/* Give the direction blip visual priority over the mapped railway and photo pins. */
+#mapOverview .train-direction-blip .train-map-body{fill:#edb35f;stroke:#fff4d2;stroke-width:3}
+#mapOverview .train-direction-blip .train-map-direction{paint-order:stroke;filter:drop-shadow(0 0 3px #102533)}
+#mapOverview .train-direction-blip.train-map-reported .train-map-body{fill:#64caff}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -496,17 +516,17 @@ main>.planned-works-status{margin:0 0 10px}
 <span id="nearestTrain" hidden>—</span>
 </section>
 </div></header><main>
-<section class="tile" id="crossingWeatherTile" aria-label="Photography weather at next Glenfinnan Viaduct crossing">
- <div class="crossing-weather-head"><div class="crossing-weather-heading" id="crossingWeatherHeading">Weather at next crossing</div><span class="crossing-weather-rating" id="crossingWeatherRating" hidden>—</span></div>
- <div class="crossing-weather-features" id="crossingWeatherFeatures"><span>Checking crossing-time forecast…</span></div>
- <p class="crossing-weather-advice" id="crossingWeatherAdvice">Forecast for Glenfinnan Viaduct at the predicted crossing time.</p>
-</section>
 <section class="tile" id="geoTile">
 <div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with roads, lochs, railway and estimated train position markers; drag or pinch to navigate"></div>
 <div class="geo-map-overlay"><span class="geo-load-status" id="geoStatus">Loading map</span>
 <div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view">Reset</button><button type="button" id="geoFullscreen" aria-label="Expand map to full screen" aria-pressed="false">⛶</button></div></div>
 <div class="geo-map-bottom"><span><i class="geo-line"></i> Railway</span><span><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#60c1fb;border:2px solid #f1f9ff"></i> Reported</span><span><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#f0b84a;border:2px solid #fff4d4"></i> Estimated</span><span>Drag · Pinch to zoom</span></div>
 <p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
+</section>
+<section class="tile" id="crossingWeatherTile" aria-label="Photography weather at next Glenfinnan Viaduct crossing">
+ <div class="crossing-weather-head"><div class="crossing-weather-heading" id="crossingWeatherHeading">Weather at next crossing</div><span class="crossing-weather-rating" id="crossingWeatherRating" hidden>—</span></div>
+ <div class="crossing-weather-features" id="crossingWeatherFeatures"><span>Checking crossing-time forecast…</span></div>
+ <p class="crossing-weather-advice" id="crossingWeatherAdvice">Forecast for Glenfinnan Viaduct at the predicted crossing time.</p>
 </section>
 <div class="cols single-viewpoint weather-first"><section class="tile"><div class="eyebrow">PHOTOGRAPHY CONDITIONS</div><div class="heading">Glenfinnan weather & light</div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="notice" id="photoAdvice">Forecast conditions will appear here when available.</div><div class="small" id="weatherTime"></div></section></div>
 <section class="tile" id="timetableTile" aria-labelledby="timetableHeading">
@@ -969,7 +989,7 @@ function updateViaductCountdown(){
  const when=crossingLocal===nowLocal?"Today":dateOf(Date.now()+86400000)===crossingLocal?"Tomorrow"
   :new Date(trainAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"});
  const inPositionDay=dateOf(inPositionAt)===crossingLocal?"":dateOf(inPositionAt)===nowLocal?"Today ":""+new Date(inPositionAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"})+" ";
- time.textContent="Next crossing · "+when+" "+fmt(trainAt);
+ time.textContent="Next viaduct crossing · "+when+" "+fmt(trainAt);
  // Keep Tile 2 focused on the countdown and crossing time.
  // Timetable predictions remain estimates internally, without a warning/error label.
  note.hidden=true;
@@ -1079,7 +1099,19 @@ function renderCrossingWeather(){
  const precipitation=rain===null?"Rain unknown":rain<20?"Dry likely":rain<50?"Rain possible":"Rain likely";
  const breeze=wind===null?"Wind unknown":Math.round(wind)+" km/h wind";
  const items=[light,clarity,precipitation,breeze];
- features.replaceChildren(...items.map(label=>{const el=document.createElement("span");el.textContent=label;return el}));
+ const symbols=["☀","△","☂","≋"];
+ const tones=[
+  daylight===false?"muted":golden?"good":"neutral",
+  visibility===null?"muted":visibility<5000?"bad":visibility<12000?"warn":"good",
+  rain===null?"muted":rain>=50?"bad":rain>=20?"warn":"good",
+  wind===null?"muted":wind>=25?"bad":wind>=12?"warn":"good"
+ ];
+ features.replaceChildren(...items.map((label,i)=>{
+  const chip=document.createElement("span");chip.className="crossing-weather-chip";chip.dataset.tone=tones[i];
+  const icon=document.createElement("span");icon.className="crossing-weather-icon";icon.textContent=symbols[i];icon.setAttribute("aria-hidden","true");
+  const text=document.createElement("span");text.textContent=label;
+  chip.append(icon,text);return chip;
+ }));
  if(rain===null&&wind===null&&visibility===null&&cloud===null){
   advice.textContent="Weather details unavailable for this crossing time.";
   return;
@@ -1303,7 +1335,7 @@ $("disableAlertsBtn").addEventListener("click",async()=>{
 });
 $("viewpoint").addEventListener("change",render);
 $("alertLead").addEventListener("change",render);
-load();loadTimetable();fetchWeather();setupPush();setInterval(load,60000);setInterval(fetchWeather,600000);setInterval(()=>{if(source)render()},15000);
+load();loadTimetable();fetchWeather();setupPush();setInterval(load,60000);setInterval(fetchWeather,600000);setInterval(()=>{render();updateGeoTrainMarkers()},15000);
 /* GPS stays entirely in the device browser; only its nearest position on this
    simplified station-based railway alignment is displayed. Nothing is uploaded. */
 const railFixes=[
@@ -1409,7 +1441,7 @@ function updateGeoTrainMarkers(){
   const point=mapped||({...rough,angle:0,approximate:true});
   if(point.lat>geoViews[0].bounds.north||point.lat<geoViews[0].bounds.south||point.lon<geoViews[0].bounds.west||point.lon>geoViews[0].bounds.east)continue;
   const [x,y]=geoPoint(point.lat,point.lon,geoViews[0].bounds);
-  const marker=geoSVG("g",{transform:"translate("+x.toFixed(1)+","+y.toFixed(1)+")",class:train.positionQuality==="last_actual_report"?"train-map-reported":"train-estimated"});
+  const marker=geoSVG("g",{transform:"translate("+x.toFixed(1)+","+y.toFixed(1)+")",class:"train-direction-blip "+(train.positionQuality==="last_actual_report"?"train-map-reported":"train-estimated")});
   const halo=geoSVG("circle",{r:17,class:"train-map-halo",style:"animation:none"});
   halo.appendChild(geoSVG("animate",{attributeName:"r",values:"16;37",dur:"1.4s",repeatCount:"indefinite"}));
   halo.appendChild(geoSVG("animate",{attributeName:"opacity",values:".75;0",dur:"1.4s",repeatCount:"indefinite"}));marker.appendChild(halo);
@@ -1425,7 +1457,10 @@ function updateGeoTrainMarkers(){
    const [tx,ty]=geoPoint(to.lat,to.lon,geoViews[0].bounds);
    angle=Math.atan2(ty-fy,tx-fx)*180/Math.PI;
   }
-  const arrow=geoSVG("text",{y:1,class:"train-map-arrow",transform:"rotate("+angle.toFixed(1)+")"});arrow.textContent="→";marker.appendChild(arrow);
+  // Use an explicit vector pointer rather than a font-dependent arrow glyph.
+  const pointer=geoSVG("path",{d:"M -7 -6 L 8 0 L -7 6 Z",class:"train-map-direction",
+   transform:"rotate("+angle.toFixed(1)+")",fill:"#152b3d",stroke:"#efffff","stroke-width":1.8,
+   "stroke-linejoin":"round"});marker.appendChild(pointer);
   const title=geoSVG("title");title.textContent=train.id+" · "+(train.positionLabel||"Estimated position")+(mapped?" · projected onto mapped railway":" · approximate station-based position")+"; not GPS";marker.appendChild(title);
   group.appendChild(marker);
  }
