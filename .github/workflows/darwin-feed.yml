@@ -41,7 +41,7 @@ jobs:
           RDM_GROUP_ID: ${{ secrets.RDM_GROUP_ID }}
           RDM_TOPIC: ${{ secrets.RDM_TOPIC }}
           # Leave time in the five-minute run for each supplementary stream.
-          RDM_POLL_SECONDS: "145"
+          RDM_POLL_SECONDS: "75"
         run: python jacobitetrack/scripts/darwin_feed.py
 
       - name: Collect Network Rail movement reports
@@ -52,7 +52,7 @@ jobs:
           RDM_NWR_CONSUMER_PASSWORD: ${{ secrets.RDM_NWR_CONSUMER_PASSWORD }}
           RDM_MOVEMENTS_GROUP_ID: ${{ secrets.RDM_MOVEMENTS_GROUP_ID }}
           RDM_MOVEMENTS_TOPIC: ${{ secrets.RDM_MOVEMENTS_TOPIC }}
-          RDM_POLL_SECONDS: "35"
+          RDM_POLL_SECONDS: "12"
         run: python jacobitetrack/scripts/darwin_feed.py
 
       - name: Collect VSTP timetable changes
@@ -63,7 +63,7 @@ jobs:
           RDM_NWR_CONSUMER_PASSWORD: ${{ secrets.RDM_NWR_CONSUMER_PASSWORD }}
           RDM_VSTP_GROUP_ID: ${{ secrets.RDM_VSTP_GROUP_ID }}
           RDM_VSTP_TOPIC: ${{ secrets.RDM_VSTP_TOPIC }}
-          RDM_POLL_SECONDS: "35"
+          RDM_POLL_SECONDS: "12"
         run: python jacobitetrack/scripts/darwin_feed.py
 
       - name: Collect Train Describer updates
@@ -74,7 +74,13 @@ jobs:
           RDM_NWR_CONSUMER_PASSWORD: ${{ secrets.RDM_NWR_CONSUMER_PASSWORD }}
           RDM_TD_GROUP_ID: ${{ secrets.RDM_TD_GROUP_ID }}
           RDM_TD_TOPIC: ${{ secrets.RDM_TD_TOPIC }}
-          RDM_POLL_SECONDS: "35"
+          RDM_POLL_SECONDS: "12"
+        run: python jacobitetrack/scripts/darwin_feed.py
+
+      - name: Collect mapped station departure boards
+        env:
+          RDM_MODE: ldb
+          RDM_LDB_API_KEY: ${{ secrets.RDM_LDB_API_KEY }}
         run: python jacobitetrack/scripts/darwin_feed.py
 
       - name: Publish updated feed
