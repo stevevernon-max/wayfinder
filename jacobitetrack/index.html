@@ -414,6 +414,18 @@ main{padding-top:8px}
 main>.planned-works-status{margin:0 0 10px}
 /* Weather moved to full-width tile above photography-timing controls. */
 .weather-first{margin-bottom:0}
+
+/* GPS indicator is inline status, not a pill. Keep only blip and text. */
+.app-header .gps-accuracy-pill,
+.app-header .gps-accuracy-pill.gps-ready,
+.app-header .gps-accuracy-pill.gps-poor{
+ display:inline-flex;align-items:center;gap:6px;min-height:0;
+ padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;
+ color:#c9dced;white-space:nowrap;
+}
+.app-header .gps-accuracy-pill.gps-ready{color:#d7f4fc}
+.app-header .gps-accuracy-pill.gps-poor{color:#f4d4a1}
+@media(max-width:430px){.app-header .gps-accuracy-pill{padding:0;gap:5px}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
