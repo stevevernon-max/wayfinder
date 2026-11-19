@@ -88,7 +88,7 @@ LINE_DISTANCE_KM = 59.214
 # The viaduct is roughly 1.1 km beyond Glenfinnan toward Fort William.
 # Distances increase from Mallaig to Fort William; this is a map-distance proxy.
 VIADUCT_DISTANCE_KM = 35.843
-SCHEDULE_HORIZON = timedelta(hours=48)
+SCHEDULE_HORIZON = timedelta(days=7)
 
 
 def _ldb_time(value: Any, now: datetime) -> datetime | None:
@@ -721,6 +721,107 @@ def _to_utc(value: Any) -> datetime | None:
         return None
 
 
+
+def future_viaduct_crossings(state: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
+    """Seven-day predictions from dated station schedules (never live GPS)."""
+    end = now + SCHEDULE_HORIZON
+    items: list[dict[str, Any]] = []
+    for service in state.get("services", {}).values():
+        if not isinstance(service, dict) or service.get("cancelled"):
+            continue
+        scheduled = service.get("scheduleAt", {})
+        route = service.get("route", [])
+        if not isinstance(scheduled, dict) or not isinstance(route, list):
+            continue
+        timed = [(code, _to_utc(scheduled.get(code)), STATION_BY_TIPLOC[code][1])
+                 for code in route if code in STATION_BY_TIPLOC]
+        timed = [(code, at, km) for code, at, km in timed if at is not None]
+        for i, (code, at, km) in enumerate(timed):
+            if code != "GLNFNNN":
+                continue
+            previous = next((p for p in reversed(timed[:i]) if p[2] != km), None)
+            following = next((p for p in timed[i + 1:] if p[2] != km), None)
+            if following and following[2] > km:  # Towards Fort William
+                crossing_at, direction = at + timedelta(minutes=1), "fort_william"
+            elif previous and previous[2] > km:  # Towards Mallaig
+                crossing_at, direction = at - timedelta(minutes=1), "mallaig"
+            else:
+                continue
+            if not now < crossing_at <= end:
+                continue
+            items.append({
+                "id": str(service.get("uid") or service.get("rid") or service.get("id") or ""),
+                "at": crossing_at.isoformat().replace("+00:00", "Z"),
+                "direction": direction,
+                "basis": "published_schedule_station_offset",
+            })
+    items.sort(key=lambda x: x["at"])
+    unique: list[dict[str, Any]] = []
+    for item in items:
+        if not any(abs((datetime.fromisoformat(item["at"].replace("Z", "+00:00")) -
+                        datetime.fromisoformat(old["at"].replace("Z", "+00:00"))).total_seconds()) < 120
+                   and item["direction"] == old["direction"] for old in unique):
+            unique.append(item)
+    return unique
+
+
+def planned_works(state: dict[str, Any], now: datetime) -> dict[str, Any]:
+    """Only display dated engineering works supplied by an authorised source.
+
+    The optional source is a JSON endpoint returning {"works":[{"id", "title",
+    "start", "end", "url", "stations"}]}. Without this data the UI must show
+    'not checked', never assume there are no engineering works.
+    """
+    source = state.get("plannedWorks", {})
+    saved_at = _to_utc(source.get("updated")) if isinstance(source, dict) else None
+    if not saved_at or now - saved_at > timedelta(days=1):
+        return {"status": "unavailable", "updated": source.get("updated") if isinstance(source, dict) else None, "items": []}
+    items = []
+    for item in source.get("items", []):
+        if not isinstance(item, dict):
+            continue
+        start, end = _to_utc(item.get("start")), _to_utc(item.get("end"))
+        if not start or not end or start > now + SCHEDULE_HORIZON or end < now:
+            continue
+        items.append(item)
+    return {"status": "checked", "updated": saved_at.isoformat().replace("+00:00", "Z"), "items": items[:20]}
+
+
+def collect_planned_works(state: dict[str, Any], now: datetime) -> None:
+    """Optional authenticated works provider with a deliberately strict schema."""
+    url = os.getenv("RAIL_PLANNED_WORKS_URL", "").strip()
+    if not url:
+        return
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme != "https" or not parsed.hostname:
+        raise RuntimeError("RAIL_PLANNED_WORKS_URL must be a valid HTTPS URL")
+    headers = {"Accept": "application/json", "User-Agent": "JacobiteTrack/1.0"}
+    token = os.getenv("RAIL_PLANNED_WORKS_TOKEN", "").strip()
+    if token:
+        headers["Authorization"] = "Bearer " + token
+    request = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(request, timeout=20) as response:
+        payload = json.loads(response.read(1_000_000).decode("utf-8"))
+    if not isinstance(payload, dict) or not isinstance(payload.get("works"), list):
+        raise ValueError("Planned works source must return a JSON 'works' array")
+    items = []
+    for raw in payload["works"]:
+        if not isinstance(raw, dict):
+            continue
+        start, end = _to_utc(raw.get("start")), _to_utc(raw.get("end"))
+        if not start or not end or end < start:
+            continue
+        items.append({
+            "id": str(raw.get("id", ""))[:80],
+            "title": str(raw.get("title") or "Planned engineering works")[:180],
+            "start": start.isoformat().replace("+00:00", "Z"),
+            "end": end.isoformat().replace("+00:00", "Z"),
+            "stations": [str(x)[:70] for x in raw.get("stations", [])[:15]] if isinstance(raw.get("stations"), list) else [],
+            "url": str(raw.get("url", ""))[:500] if str(raw.get("url", "")).startswith("https://") else "",
+        })
+    state["plannedWorks"] = {"updated": now.isoformat().replace("+00:00", "Z"), "items": items[:100]}
+
+
 def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, Any]:
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     trains: list[dict[str, Any]] = []
@@ -931,6 +1032,8 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
         "status": "ok" if trains else "no_recent_reports",
         "sources": state.get("sources", {}),
         "trains": trains,
+        "futureCrossings": future_viaduct_crossings(state, now),
+        "plannedWorks": planned_works(state, now),
     }
 
 
@@ -965,6 +1068,10 @@ def main() -> int:
         state.setdefault("sources", {})["ldb"] = {"updated": now.isoformat().replace("+00:00", "Z"), "servicesMatched": matched}
         state["savedAt"] = now.isoformat().replace("+00:00", "Z")
         write_json(STATE_PATH, state)
+        try:
+            collect_planned_works(state, now)
+        except (ValueError, OSError, urllib.error.URLError, json.JSONDecodeError) as exc:
+            print(f"Planned works feed unavailable: {type(exc).__name__}", file=sys.stderr)
         feed = build_feed(state, now)
         write_json(FEED_PATH, feed)
         print(f"Published {len(feed['trains'])} West Highland service estimate(s); LDB matched {matched} station-board records.")
