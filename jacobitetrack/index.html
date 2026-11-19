@@ -257,11 +257,30 @@ function isTrainOnLineNow(t){
  return now>=from-60000&&now<=from+20*60000;
 }
 function visibleTrainMarkers(){
- const active=services.filter(isTrainOnLineNow).map(train=>({train,progress:positionProgress(train)})).filter(item=>Number.isFinite(item.progress));
- // Different board feeds can describe the same working. Collapse only marker
- // overlaps; preserve the service records for ETAs and the upcoming roster.
- return active.sort((a,b)=>((b.train.position?.basis==="actual_plus_forecast_estimate")?1:0)-((a.train.position?.basis==="actual_plus_forecast_estimate")?1:0))
-  .filter((item,index,list)=>!list.slice(0,index).some(other=>other.train.direction===item.train.direction&&Math.abs(other.progress-item.progress)<1.25));
+ // Board IDs have a station suffix. Join their timed anchors into one working.
+ const groups=new Map();
+ for(const train of services){
+  const key=(train.id.match(/^(\d{8})(?:[A-Z_]+)?$/)||[])[1]||train.id;
+  if(!groups.has(key))groups.set(key,[]);groups.get(key).push(train);
+ }
+ const active=[];
+ for(const [id,records] of groups){
+  const points=[];
+  for(const t of records){const p=t.position;if(!p||t.cancelled)continue;
+   for(const side of ['from','to']){const at=Date.parse(p[side+'At']||'');const progress=p[side+'Progress'];const station=p[side+'Station'];
+    if(Number.isFinite(at)&&Number.isFinite(progress)&&station&&!points.some(x=>x.at===at&&x.station===station))points.push({at,progress,station});
+   }
+  }
+  points.sort((a,b)=>a.at-b.at);
+  const now=Date.now(),lower=points.filter(p=>p.at<=now).at(-1),upper=points.find(p=>p.at>now);
+  let train=records.find(isTrainOnLineNow);
+  if(lower&&upper&&upper.at>lower.at&&Math.abs(upper.progress-lower.progress)>0){
+   train={...records[0],id,direction:upper.progress>lower.progress?'back':'out',positionQuality:'scheduled_estimate',positionLabel:'Estimated '+lower.station+'–'+upper.station,
+    position:{fromAt:new Date(lower.at).toISOString(),toAt:new Date(upper.at).toISOString(),fromProgress:lower.progress,toProgress:upper.progress,fromStation:lower.station,toStation:upper.station,basis:'scheduled_estimate'}};
+  }
+  if(train&&isTrainOnLineNow(train))active.push({train,progress:positionProgress(train)});
+ }
+ return active.filter(item=>Number.isFinite(item.progress));
 }
 function etaAt(t,id){
  if(t.cancelled===true)return null;
@@ -298,7 +317,7 @@ function getApproaching(id){
  return services.map(t=>({...t,remaining:etaAt(t,id)})).filter(t=>t.remaining!==null&&t.remaining>=0).sort((a,b)=>a.remaining-b.remaining);
 }
 function render(){
- $("trains").innerHTML=visibleTrainMarkers().map(({train:t})=>'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+schematicTrainX(t)+',83)"><circle class="train-halo" r="15"/><circle class="train-body" r="13"/><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Rail report")+'</title></g>').join("");
+ $("trains").innerHTML=visibleTrainMarkers().map(({train:t})=>'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+schematicTrainX(t)+',83)"><circle class="train-halo" r="15" style="animation:none"><animate attributeName="r" values="14;29" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".7;0" dur="1.4s" repeatCount="indefinite"/></circle><circle class="train-body" r="13" style="animation:none"><animate attributeName="r" values="11;15;11" dur="1.4s" repeatCount="indefinite"/></circle><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Rail report")+'</title></g>').join("");
  updateGeoTrainMarkers();
  let glen=getApproaching("glenfinnan")[0];
 
@@ -513,8 +532,11 @@ function updateGeoTrainMarkers(){
   if(point.lat>geoViews[0].bounds.north||point.lat<geoViews[0].bounds.south||point.lon<geoViews[0].bounds.west||point.lon>geoViews[0].bounds.east)continue;
   const [x,y]=geoPoint(point.lat,point.lon,geoViews[0].bounds);
   const marker=geoSVG("g",{transform:"translate("+x.toFixed(1)+","+y.toFixed(1)+")",class:train.positionQuality==="last_actual_report"?"train-map-reported":"train-estimated"});
-  marker.appendChild(geoSVG("circle",{r:17,class:"train-map-halo"}));
-  marker.appendChild(geoSVG("circle",{r:12,class:"train-map-body"}));
+  const halo=geoSVG("circle",{r:17,class:"train-map-halo",style:"animation:none"});
+  halo.appendChild(geoSVG("animate",{attributeName:"r",values:"13;31",dur:"1.4s",repeatCount:"indefinite"}));
+  halo.appendChild(geoSVG("animate",{attributeName:"opacity",values:".75;0",dur:"1.4s",repeatCount:"indefinite"}));marker.appendChild(halo);
+  const core=geoSVG("circle",{r:12,class:"train-map-body",style:"animation:none"});
+  core.appendChild(geoSVG("animate",{attributeName:"r",values:"10;15;10",dur:"1.4s",repeatCount:"indefinite"}));marker.appendChild(core);
   const angle=point.angle+(train.direction==="back"?180:0);
   const arrow=geoSVG("text",{y:1,class:"train-map-arrow",transform:"rotate("+angle.toFixed(1)+")"});arrow.textContent="→";marker.appendChild(arrow);
   const title=geoSVG("title");title.textContent=train.id+" · "+(train.positionLabel||"Estimated position")+" · estimated on mapped railway; not GPS";marker.appendChild(title);
