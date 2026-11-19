@@ -37,6 +37,9 @@ jobs:
       - name: Validate feed generator syntax
         run: python -m py_compile jacobitetrack/scripts/darwin_feed.py
 
+      - name: Test seven-day timetable and works handling
+        run: python -m unittest discover -s jacobitetrack/tests -p 'test_*.py'
+
       - name: Install Kafka client
         run: python -m pip install --disable-pip-version-check 'confluent-kafka==2.6.1'
 
