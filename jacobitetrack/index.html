@@ -1177,6 +1177,7 @@ async function loadTimetable(){
   source.textContent=data.source;
   $("timetableSource").replaceChildren("Viaduct times are estimates from scheduled calls. Check ScotRail for changes. Source: ",source);
   publishedTimetable=data;
+  renderedTimetableDate=null;
   updateViaductCountdown();
   renderTimetable();
   render();
