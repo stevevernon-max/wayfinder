@@ -155,11 +155,8 @@ body.geo-fullscreen-open{overflow:hidden}
  border-radius:999px;font-weight:800;
 }
 #trackerTile>.row{align-items:center}
-#trackerTile>.row>.eyebrow{font-size:14px;letter-spacing:1.3px}
-#trackerTile .gps-line-pill{font-size:clamp(12px,3vw,14px)}
-#trackerTile #trackStatus{font-size:14px;line-height:1.45}
 #trackerTile .station-label{font-size:20px}
-@media(max-width:380px){#trackerTile>.row>.eyebrow{font-size:13px}#trackerTile .gps-line-pill{font-size:12px}#trackerTile .station-label{font-size:19px}}
+@media(max-width:380px){#trackerTile .station-label{font-size:19px}}
 .app-header .header-brand{flex:1}
 .app-header .header-main{justify-content:flex-start}
 </style></head><body>
@@ -548,26 +545,6 @@ const mapLabels=[
  {name:"Loch Linnhe",lat:56.851,lon:-5.24}
 ];
 const geoMapFeatures={rail:[],water:[],coast:[]};let geoLocation=null;
-function removeBanavieFortWilliamSegment(ways){
- const a={lat:56.8439,lon:-5.0960},b={lat:56.8201,lon:-5.1061};
- const latScale=111195,lonScale=111195*Math.cos(56.83*Math.PI/180);
- const bx=(b.lon-a.lon)*lonScale,by=(b.lat-a.lat)*latScale,len=bx*bx+by*by;
- const output=[];
- for(const way of ways){
-  let chunk=[];
-  const flush=()=>{if(chunk.length>1)output.push(chunk);chunk=[]};
-  for(let i=0;i<way.length-1;i++){
-   const p=way[i],q=way[i+1],mx=((p.lon+q.lon)/2-a.lon)*lonScale,my=((p.lat+q.lat)/2-a.lat)*latScale;
-   const t=(mx*bx+my*by)/len,dist=Math.hypot(mx-t*bx,my-t*by);
-   const remove=t>=-.08&&t<=1.08&&dist<520;
-   if(remove){flush();continue}
-   if(!chunk.length)chunk.push(p);
-   chunk.push(q);
-  }
-  flush();
- }
- return output;
-}
 const svgNS="http://www.w3.org/2000/svg";
 function mercator(lat,lon,z=10){
  const n=2**z,angle=Math.max(-85,Math.min(85,lat))*Math.PI/180;
@@ -717,11 +694,11 @@ function extractShapes(elements,kind){
  return shapes;
 }
 function cacheGeo(){
- try{localStorage.setItem("jacobitetrack-osm-geometry-v3",JSON.stringify({saved:Date.now(),rail:geoMapFeatures.rail,water:geoMapFeatures.water,coast:geoMapFeatures.coast}))}catch{}
+ try{localStorage.setItem("jacobitetrack-osm-geometry-v4",JSON.stringify({saved:Date.now(),rail:geoMapFeatures.rail,water:geoMapFeatures.water,coast:geoMapFeatures.coast}))}catch{}
 }
 function restoreGeo(){
  try{
-  const raw=JSON.parse(localStorage.getItem("jacobitetrack-osm-geometry-v3")||"null");
+  const raw=JSON.parse(localStorage.getItem("jacobitetrack-osm-geometry-v4")||"null");
   if(raw&&Date.now()-raw.saved<14*86400000&&Array.isArray(raw.rail)&&Array.isArray(raw.water)){
    geoMapFeatures.rail=raw.rail;geoMapFeatures.water=raw.water;geoMapFeatures.coast=raw.coast||[];
    renderGeoMaps();updateTrackerGps();$("geoStatus").textContent="Cached OSM geography";
@@ -736,7 +713,7 @@ async function loadGeoRailway(){
  $("geoStatus").textContent="Loading OSM geography";
  const results=await Promise.allSettled([overpassGeometry(railQuery),overpassGeometry(waterQuery)]);
  const r=results[0],w=results[1];
- if(r.status==="fulfilled"){const lines=extractShapes(r.value,"rail");if(lines.length)geoMapFeatures.rail=removeBanavieFortWilliamSegment(lines)}
+ if(r.status==="fulfilled"){const lines=extractShapes(r.value,"rail");if(lines.length)geoMapFeatures.rail=lines}
  updateTrackerGps();
  if(w.status==="fulfilled"){const lakes=extractShapes(w.value,"water");if(lakes.length)geoMapFeatures.water=lakes;geoMapFeatures.coast=extractShapes(w.value,"coast")}
  renderGeoMaps();cacheGeo();
