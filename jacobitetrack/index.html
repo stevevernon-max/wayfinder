@@ -827,7 +827,10 @@ function renderPlannedWorks(){
  }
 }
 function updateViaductCountdown(){
- const liveNext=getViaductApproaching()[0],now=Date.now();
+ // A malformed or missing live feed must never stop the published timetable timer.
+ let liveNext=null;
+ try{liveNext=getViaductApproaching()[0]||null;}catch(error){console.warn("Viaduct live ETA unavailable",error)}
+ const now=Date.now();
  const feedNext=scheduledCrossings.filter(c=>Number.isFinite(Date.parse(c.at))&&Date.parse(c.at)>now).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))[0];
  const pdfNext=nextPublishedViaductCrossing(now);
  const feedMinutes=feedNext?(Date.parse(feedNext.at)-now)/60000:null;
@@ -855,7 +858,7 @@ function updateViaductCountdown(){
  if(!Number.isFinite(minutes)||minutes<0){
   label.textContent="—";
   time.textContent="No crossing available in the current railway data or published timetable";
-  note.textContent=publishedTimetable?"No scheduled crossing found within the timetable’s valid dates.":"Waiting for published timetable.";
+  note.textContent=publishedTimetable&&new Date().toISOString().slice(0,10)>publishedTimetable.validThrough?"Published timetable has expired; update required.":"No upcoming published crossing within the valid timetable dates.";
   note.hidden=false;
   return;
  }
@@ -938,7 +941,10 @@ async function fetchWeather(){
  $("weatherTime").textContent="Glenfinnan forecast · Updated "+now.time.replace("T"," ")+" (UK local) · Open-Meteo weather data";
  }catch(e){$("weather").innerHTML='<div class="muted">Weather forecast unavailable.</div>';$("photoAdvice").textContent="Unable to load weather and visibility information."; $("weatherTime").textContent=e.message;}
 }
-let publishedTimetable=null;
+// Bundled, date-limited viaduct times copied from the published ScotRail timetable.
+// Tile 2 must still count down if a separate JSON fetch fails or takes time.
+const BUNDLED_VIADUCT_TIMETABLE={"validFrom":"2026-11-19","validThrough":"2026-12-12","patterns":{"weekday":[{"viaduct":"06:57","from":"Mallaig","to":"Fort William"},{"viaduct":"08:48","from":"Fort William","to":"Mallaig"},{"viaduct":"11:02","from":"Mallaig","to":"Fort William"},{"viaduct":"12:50","from":"Fort William","to":"Mallaig"},{"viaduct":"16:53","from":"Fort William","to":"Mallaig"},{"viaduct":"16:55","from":"Mallaig","to":"Fort William"},{"viaduct":"19:07","from":"Mallaig","to":"Fort William"},{"viaduct":"22:44","from":"Fort William","to":"Mallaig"}],"friday":[{"viaduct":"06:57","from":"Mallaig","to":"Fort William"},{"viaduct":"08:48","from":"Fort William","to":"Mallaig"},{"viaduct":"11:02","from":"Mallaig","to":"Fort William"},{"viaduct":"12:50","from":"Fort William","to":"Mallaig"},{"viaduct":"16:53","from":"Fort William","to":"Mallaig"},{"viaduct":"16:55","from":"Mallaig","to":"Fort William"},{"viaduct":"19:07","from":"Mallaig","to":"Fort William"},{"viaduct":"22:46","from":"Fort William","to":"Mallaig"}],"saturday":[{"viaduct":"06:57","from":"Mallaig","to":"Fort William"},{"viaduct":"08:48","from":"Fort William","to":"Mallaig"},{"viaduct":"11:02","from":"Mallaig","to":"Fort William"},{"viaduct":"12:46","from":"Fort William","to":"Mallaig"},{"viaduct":"16:53","from":"Fort William","to":"Mallaig"},{"viaduct":"16:55","from":"Mallaig","to":"Fort William"},{"viaduct":"19:07","from":"Mallaig","to":"Fort William"},{"viaduct":"22:45","from":"Fort William","to":"Mallaig"}],"sunday":[{"viaduct":"11:01","from":"Mallaig","to":"Fort William"},{"viaduct":"12:45","from":"Fort William","to":"Mallaig"},{"viaduct":"16:53","from":"Fort William","to":"Mallaig"},{"viaduct":"16:55","from":"Mallaig","to":"Fort William"},{"viaduct":"19:07","from":"Mallaig","to":"Fort William"},{"viaduct":"22:46","from":"Fort William","to":"Mallaig"}]}};
+let publishedTimetable=BUNDLED_VIADUCT_TIMETABLE;
 let renderedTimetableDate=null;
 
 // The downloaded ScotRail timetable is the last-resort source of planned
@@ -1021,11 +1027,12 @@ async function loadTimetable(){
   source.textContent=data.source;
   $("timetableSource").replaceChildren("Viaduct times are estimates from scheduled calls. Check ScotRail for changes. Source: ",source);
   publishedTimetable=data;
-  renderTimetable();
   updateViaductCountdown();
+  renderTimetable();
   setInterval(renderTimetable,60000);
  }catch(error){
-  $("timetableStatus").textContent="The published timetable is unavailable.";
+  $("timetableStatus").textContent="Using bundled published crossing times; detailed timetable unavailable.";
+  updateViaductCountdown();
   $("timetableTable").hidden=true;
   $("timetableSource").replaceChildren();
  }
