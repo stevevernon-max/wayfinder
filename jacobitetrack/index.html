@@ -6,7 +6,7 @@ body{margin:0;background:#0b1017}header{padding:16px;background:#101721;border-b
 main{max-width:1080px;margin:auto;padding:11px}.tile{background:#171d27;border:1px solid #30394a;border-radius:22px;padding:16px;margin-bottom:12px}.row{display:flex;justify-content:space-between;align-items:center;gap:9px}.eyebrow{font-size:10px;letter-spacing:1.5px;font-weight:800;color:#9aaabd}.heading{font-size:21px;font-weight:750;letter-spacing:-.5px;margin:5px 0 10px}.badge{font-size:11px;background:#44341e;color:#f3cc91;border-radius:25px;padding:7px 9px;font-weight:750;white-space:nowrap}.muted{font-size:13px;line-height:1.5;color:#9caec1}.small{font-size:12px;color:#95a6bc;line-height:1.55}.field{display:block;font-size:12px;font-weight:700;color:#a4b4c6;margin:11px 0}
 select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:11px;width:100%;font-size:15px;padding:11px;margin-top:6px}
 .button{background:#183e61;color:#c0e4ff;border:1px solid #426990;border-radius:12px;padding:11px 13px;font-size:13px;font-weight:750;cursor:pointer}.button:disabled{opacity:.4;cursor:not-allowed}
-.rail-scroll{overflow:hidden;margin:6px 0;width:100%;min-width:0}.rail-svg{display:block;width:100%;height:auto}.bed{stroke:#0b141b;stroke-width:15;stroke-linecap:round}.track{stroke:#398f72;stroke-width:10;stroke-linecap:round}.node{stroke:#429b7d;stroke-width:5;fill:#171d27}.station-label{fill:#e8edf4;font-size:16px;font-weight:600}
+.rail-scroll{overflow:hidden;margin:6px 0;width:100%;min-width:0}.rail-svg{display:block;width:100%;height:auto}.bed{stroke:#0b141b;stroke-width:15;stroke-linecap:round}.track{stroke:#398f72;stroke-width:10;stroke-linecap:round}.node{stroke:#d7e2ec;stroke-width:3;fill:#173149}.station-label{fill:#e8edf4;font-size:16px;font-weight:600}
 .train-halo{fill:#5dbeff;opacity:.3;animation:pulse 1.5s ease-out infinite;transform-origin:center;transform-box:fill-box}.train-body{fill:#60c1fb;stroke:#f1f9ff;stroke-width:2}.train-arrow{fill:#112d45;font-weight:900;font-size:17px;text-anchor:middle;dominant-baseline:middle}.user-ripple{fill:#3d9fff;opacity:.65;animation:pulse 1.65s ease-out infinite;transform-origin:center;transform-box:fill-box}.user-spot{fill:#3d9fff;stroke:#e7f7ff;stroke-width:3.5}.user-center{fill:#fff}
 .train-estimated .train-body{fill:#f0b84a;stroke:#fff1c7}.train-estimated .train-arrow{fill:#3b2a0b}.train-map-halo{fill:#ffbf47;opacity:.22;animation:pulse 1.7s ease-out infinite;transform-origin:center;transform-box:fill-box}.train-map-body{fill:#f0b84a;stroke:#fff4d4;stroke-width:3}.train-map-arrow{fill:#3b2a0b;font-size:16px;font-weight:900;text-anchor:middle;dominant-baseline:middle}.train-map-reported .train-map-halo{fill:#55baff}.train-map-reported .train-map-body{fill:#60c1fb;stroke:#f1f9ff}.train-map-reported .train-map-arrow{fill:#112d45}
 @keyframes pulse{0%{transform:scale(.8);opacity:.6}80%{transform:scale(2);opacity:0}100%{opacity:0}}.gps-row{display:flex;align-items:center;gap:9px;margin-top:11px;color:#a9c7e0;font-size:13px;line-height:1.45}.gps-indicator{width:12px;height:12px;flex-shrink:0;border-radius:50%;background:#697789}.gps-indicator.active{background:#5fd5aa;animation:gpsFlash 1.2s ease-in-out infinite;box-shadow:0 0 0 4px #5fd5aa33}.gps-indicator.error{background:#eb807c}@keyframes gpsFlash{50%{opacity:.2;box-shadow:0 0 0 8px #5fd5aa00}}.value{font-size:45px;font-weight:800;color:#81beff;letter-spacing:-2px;line-height:1.1;margin:10px 0}
@@ -152,8 +152,9 @@ body.geo-fullscreen-open{overflow:hidden}
 #trackerTile .gps-line-pill{
  background:#143957;color:#d8f0ff;border:1px solid #4faaff;
  box-shadow:inset 0 0 0 1px #9ad6ff20,0 0 9px #329aff24;
- border-radius:999px;font-weight:800;
+ border-radius:999px;font-weight:800;font-size:9px;padding:4px 6px;
 }
+#trackerTile #trackStatus{font-size:10px;line-height:1.3;margin-top:2px}
 #trackerTile>.row{align-items:center}
 #trackerTile .station-label{font-size:20px}
 @media(max-width:380px){#trackerTile .station-label{font-size:19px}}
@@ -163,7 +164,7 @@ body.geo-fullscreen-open{overflow:hidden}
 <header class="app-header"><div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><small>WEST HIGHLAND LINE</small><div class="gps-row header-gps"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsStatus">Finding GPS…</span></div></div></div></header><main>
 <section class="tile" id="trackerTile">
 <div class="row"><div><div class="eyebrow">TRAIN TRACKER</div></div><span class="badge gps-line-pill" id="gpsLineBadge">Finding location…</span><span id="feedBadge" hidden aria-live="polite">Checking</span></div>
-<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Nine mapped stations from Mallaig to Fort William" role="img">
+<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Eight mapped stations from Mallaig to Fort William" role="img">
 <line class="bed" x1="13" y1="83" x2="887" y2="83"/><line class="track" x1="13" y1="83" x2="887" y2="83"/>
 <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="9" y="45" text-anchor="start">Mallaig</text>
 <circle class="node" cx="139" cy="83" r="12"/><text class="station-label" x="139" y="132" text-anchor="middle">Morar</text>
@@ -172,7 +173,6 @@ body.geo-fullscreen-open{overflow:hidden}
 <circle class="node" cx="450" cy="83" r="12"/><text class="station-label" x="450" y="45" text-anchor="middle">Glenfinnan</text>
 <circle class="node" cx="554" cy="83" r="12"/><text class="station-label" x="554" y="132" text-anchor="middle">Locheilside</text>
 <circle class="node" cx="657" cy="83" r="12"/><text class="station-label" x="657" y="39" text-anchor="middle"><tspan x="657">Loch Eil</tspan><tspan x="657" dy="18">Outward Bound</tspan></text>
-<circle class="node" cx="761" cy="83" r="12"/><text class="station-label" x="761" y="132" text-anchor="middle">Banavie</text>
 <circle class="node" cx="865" cy="83" r="12"/><text class="station-label" x="892" y="45" text-anchor="end">Fort William</text>
 <g id="trains"></g>
 <g id="userPosition" style="display:none" aria-label="Your approximate closest position on railway schematic">
@@ -406,7 +406,6 @@ const railFixes=[
  {lat:56.8717,lon:-5.4490,x:522,name:"Glenfinnan"},
  {lat:56.8560,lon:-5.2903,x:659,name:"Locheilside"},
  {lat:56.8554,lon:-5.1929,x:742,name:"Loch Eil Outward Bound"},
- {lat:56.8439,lon:-5.0960,x:827,name:"Banavie"},
  {lat:56.8201,lon:-5.1061,x:865,name:"Fort William"}
 ];
 let gpsWatch=null;
@@ -626,7 +625,7 @@ function makeMap(view){
  for(const station of geoStations){
   if(station.lat>view.bounds.north||station.lat<view.bounds.south||station.lon<view.bounds.west||station.lon>view.bounds.east)continue;
   const [x,y]=geoPoint(station.lat,station.lon,view.bounds);
-  svg.appendChild(geoSVG("circle",{cx:x,cy:y,r:9,fill:"#112b25",stroke:"#68d5ac","stroke-width":3}));
+  svg.appendChild(geoSVG("circle",{cx:x,cy:y,r:8,fill:"#173149",stroke:"#d7e2ec","stroke-width":2.5}));
   const label=geoSVG("text",{x:x+10,y:y-12,fill:"#f2f5ff","font-size":18,"font-weight":"700",stroke:"#0a1525","stroke-width":3,"paint-order":"stroke"});label.textContent=station.name;svg.appendChild(label);
  }
  for(const label of mapLabels){
@@ -664,7 +663,7 @@ function updateGeoLocation(lat,lon){
 }
 
 async function overpassGeometry(query){
- const endpoints=["https://overpass.kumi.systems/api/interpreter","https://overpass.private.coffee/api/interpreter"];
+ const endpoints=["https://overpass.kumi.systems/api/interpreter","https://overpass.private.coffee/api/interpreter","https://overpass-api.de/api/interpreter","https://overpass.nchc.org.tw/api/interpreter"];
  let failure="No Overpass response";
  for(const endpoint of endpoints){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),19000);
