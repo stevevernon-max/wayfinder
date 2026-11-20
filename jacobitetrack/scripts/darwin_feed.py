@@ -1061,6 +1061,34 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
         else:
             quality = "no_position_anchor"
 
+        # Live Departure Boards do not provide train coordinates or a
+        # guaranteed delay reason. Derive a delay ONLY where an actual or
+        # forecast station time can be compared with that same station's
+        # published time. Never infer delays just from a moving map blip.
+        delay_samples: list[tuple[int, int, str, str]] = []
+        for tiploc, station_data in service.get("locations", {}).items():
+            scheduled_at = _to_utc(service.get("scheduleAt", {}).get(tiploc))
+            if not scheduled_at or not isinstance(station_data, dict):
+                continue
+            actual_at = _to_utc(station_data.get("actualAt"))
+            forecast_at = _to_utc(station_data.get("forecastAt"))
+            for reported_at, basis_name, priority in (
+                (actual_at, "actual_station_report", 0),
+                (forecast_at, "forecast_station_time", 1),
+            ):
+                if reported_at is None:
+                    continue
+                if not (-timedelta(minutes=15) <= reported_at-now <= timedelta(minutes=90)):
+                    continue
+                delay = round((reported_at-scheduled_at).total_seconds()/60)
+                if not -15 <= delay <= 180:
+                    continue
+                distance = abs(int((reported_at-now).total_seconds()))
+                delay_samples.append((distance + priority*300, delay,
+                                      station_data.get("stationKey", ""), basis_name))
+        delay_samples.sort(key=lambda item: item[0])
+        reported_delay = delay_samples[0] if delay_samples and observed and now-observed<=timedelta(minutes=10) else None
+
         trains.append({
             "id": str(service.get("id") or service.get("uid") or service.get("rid")),
             "observedAt": str(service.get("observedAt") or now.isoformat().replace("+00:00", "Z")),
@@ -1074,6 +1102,9 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
             "lat": None,
             "lon": None,
             "cancelled": bool(service.get("cancelled", False)),
+            "delayMinutes": reported_delay[1] if reported_delay else None,
+            "delayBasis": reported_delay[3] if reported_delay else None,
+            "delayStation": STATION_NAME_BY_KEY.get(reported_delay[2], reported_delay[2]) if reported_delay else None,
             "viewpoints": viewpoints,
             "quality": "Darwin actual/forecast report or scheduled timetable; interpolated line position is an estimate, not GPS",
         })
