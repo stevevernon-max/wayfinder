@@ -1145,7 +1145,7 @@ function maybeVibrateForCrossing(at,minutes){
  if(!Number.isFinite(minutes)||minutes<0||minutes>15||!Number.isFinite(at))return;
  const key=Math.round(at/60000);
  for(const threshold of [15,2]){
-  if(minutes>threshold)continue;
+  if(minutes>threshold||(threshold===15&&minutes<=2))continue;
   const eventKey=key+"-"+threshold;
   if(crossingVibrations.has(eventKey))continue;
   crossingVibrations.add(eventKey);
@@ -1234,7 +1234,7 @@ function updateActiveTrainsPill(){
  const markers=visibleTrainMarkers(),count=markers.length,pill=$("activeTrainsPill");
  const expected=markers.filter(item=>item.train.positionQuality==="timetable_only").length;
  const reported=count-expected;
- pill.textContent=expected?(reported?reported+" on track · "+expected+" expected":expected+" "+(expected===1?"train":"trains")+" expected"):count+" "+(count===1?"train":"trains")+" on track";
+ pill.textContent=count?count+" train"+(count===1?"":"s")+(expected===count?" expected":""): "0 trains shown";
  pill.title=expected?"Expected markers use the published timetable; actual movement is unconfirmed. Other positions come from station-board timings.":"Positions are inferred from station-board times, not GPS";
  pill.classList.toggle("has-trains",count>0);
  const gpsPill=$("gpsAccuracyPill");
@@ -1308,7 +1308,7 @@ function renderWholeLine(){
  }
  blips.innerHTML=drawn.join("");
  const total=east+west;
- count.textContent=total?total+" train"+(total===1?"":"s")+" · "+east+" east / "+west+" west":"No trains estimated";
+ count.textContent=total?total+" train"+(total===1?"":"s")+" · "+east+" eastbound / "+west+" westbound":"No trains estimated";
  count.title="Directions and positions inferred from station-board timing and published timetable, not GPS";
 }
 function renderViaductApproach(){
