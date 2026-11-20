@@ -506,3 +506,20 @@ body.journey-active #leave-time { font-size: 38px; }
 #saved-trips-panel { display: block; margin-top: 12px; }
 #saved-trips-panel > summary { min-height: 44px; padding: 12px 0; color: var(--ink); cursor: pointer; }
 #saved-trips-panel[open] > summary { margin-bottom: 5px; }
+
+#journey-status[data-lateness="amber"] { border-color: #d7a84c; box-shadow: inset 0 0 25px #d7a84c18; }
+#journey-status[data-lateness="red"] { border-color: #ff817a; box-shadow: inset 0 0 25px #ff817a22; }
+#journey-status[data-lateness="amber"] :is(#countdown,#live-eta,#live-margin,#leave-time,#stop-remaining) { color: #ffd17d; }
+#journey-status[data-lateness="amber"] #trip-badge { background: #40321b; color: #ffd17d; }
+@media (prefers-reduced-motion: no-preference) {
+  #journey-status[data-lateness="amber"] { animation: tile-late-amber 2s ease-in-out infinite; }
+  #journey-status[data-lateness="red"] { animation: tile-late-red 2s ease-in-out infinite; }
+}
+@keyframes tile-late-amber {
+  0%,100% { border-color: #d7a84c; box-shadow: inset 0 0 18px #d7a84c12,0 0 0 #d7a84c00; }
+  50% { border-color: #ffd17d; box-shadow: inset 0 0 40px #d7a84c35,0 0 12px #d7a84c40; }
+}
+@keyframes tile-late-red {
+  0%,100% { border-color: #ff817a; box-shadow: inset 0 0 18px #ff817a12,0 0 0 #ff817a00; }
+  50% { border-color: #ffaaa4; box-shadow: inset 0 0 40px #ff817a40,0 0 15px #ff817a50; }
+}

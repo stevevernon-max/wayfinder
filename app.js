@@ -681,6 +681,8 @@
     $('live-eta').dataset.tone=journeyLate?'late':'early';
     $('timeline').dataset.tone=journeyLate?'late':'early';
     $('journey-status').dataset.tone=$('timeline').dataset.tone;
+    const lateMinutes=underway ? Math.max(0,-(arrivalMargin ?? 0)) : late?(now-deadline)/60000:0;
+    $('journey-status').dataset.lateness=lateMinutes>15?'red':lateMinutes>0?'amber':'none';
     if(!$('gps-status').textContent)$('gps-status').textContent=gpsFix?'GPS ready':'Waiting for GPS';
     $('gps-status').dataset.signal=gpsFix && now-gpsFix.timestamp<30000 && gpsFix.coords.accuracy<=65?'ok':'issue';
     $('leave-time').textContent=total()?clock(leave.getHours()*60+leave.getMinutes()):'—:—';
