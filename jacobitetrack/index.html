@@ -639,6 +639,11 @@ main>.planned-works-status{margin:0 0 10px}
 .photo-rating-pill[data-grade="good"]{color:#91f3c1}
 .photo-rating-pill[data-grade="fair"]{color:#ffd388}
 .photo-rating-pill[data-grade="poor"]{color:#ff9a92}
+/* Both countdown columns share a font scale; day and clock align right. */
+.app-header #proximityTile .viaduct-main-time,
+.app-header #proximityTile .hero-cross-time{font-size:clamp(23px,6.2vw,42px)!important;line-height:1.1;letter-spacing:-.8px}
+.app-header #proximityTile .hero-cross-time{text-align:right;display:flex!important;flex-direction:column;align-items:flex-end;white-space:nowrap}
+.app-header #proximityTile .hero-day,.app-header #proximityTile .hero-clock{display:block;font:inherit;line-height:1.12}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span></button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -1217,7 +1222,7 @@ function updateViaductCountdown(){
  const when=crossingLocal===nowLocal?"Today":dateOf(Date.now()+86400000)===crossingLocal?"Tomorrow"
   :new Date(trainAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"});
  const inPositionDay=dateOf(inPositionAt)===crossingLocal?"":dateOf(inPositionAt)===nowLocal?"Today ":""+new Date(inPositionAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"})+" ";
- time.textContent=when+" "+fmt(trainAt);
+ time.innerHTML='<span class="hero-day">'+safe(when)+'</span><span class="hero-clock">'+safe(fmt(trainAt))+'</span>';
  maybeVibrateForCrossing(trainAt,minutes);
  // Keep Tile 2 focused on the countdown and crossing time.
  // Timetable predictions remain estimates internally, without a warning/error label.
@@ -1816,7 +1821,7 @@ function mapAutoBounds(){
   if(p&&Number.isFinite(p.lat)&&Number.isFinite(p.lon))points.push(p);
  }
  if(geoLocation&&Number.isFinite(geoLocation.lat)&&Number.isFinite(geoLocation.lon))points.push(geoLocation);
- if(points.length===1)return {...defaultGeoBounds};
+ if(points.length===1)return {north:56.93,south:56.82,west:-5.53,east:-5.32};
  const lats=points.map(p=>p.lat),lons=points.map(p=>p.lon);
  const latSpan=Math.max(.045,Math.max(...lats)-Math.min(...lats));
  const lonSpan=Math.max(.10,Math.max(...lons)-Math.min(...lons));
