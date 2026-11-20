@@ -1021,13 +1021,45 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
             lower = min(schedule_points, default=None, key=lambda item: item[0])
             basis = "scheduled_timetable"
 
+        # The next positional anchor must use a live forecast ahead of the
+        # published schedule. Choosing the earliest of both can put a late
+        # train at its on-time location despite a later Darwin prediction.
+        # With no forward forecast, carry a fresh measured delay into the
+        # next scheduled anchor. Never overwrite an observed actual time.
+        delay_candidates: list[tuple[float, float]] = []
+        if observed and abs((now - observed).total_seconds()) <= 10 * 60:
+            for code, report in service.get("locations", {}).items():
+                scheduled_at = _to_utc(service.get("scheduleAt", {}).get(code))
+                if not scheduled_at or not isinstance(report, dict):
+                    continue
+                for source_key, penalty in (("actualAt", 0), ("forecastAt", 300)):
+                    reported_at = _to_utc(report.get(source_key))
+                    if not reported_at or not (-timedelta(minutes=45) <= reported_at-now <= timedelta(minutes=90)):
+                        continue
+                    offset = (reported_at-scheduled_at).total_seconds()
+                    if 0 < offset <= 90 * 60:
+                        delay_candidates.append((abs((reported_at-now).total_seconds())+penalty, offset))
+        measured_delay_seconds = min(delay_candidates)[1] if delay_candidates else 0
+
         upper = None
         if lower is not None and direction:
-            ahead = [
-                p for p in forecast_points + schedule_points
-                if p[0] > now and (p[1] - lower[1]) * (1 if direction == "out" else -1) > 0
+            sign = 1 if direction == "out" else -1
+            future_forecasts = [
+                p for p in forecast_points
+                if p[0] > now and (p[1] - lower[1]) * sign > 0
             ]
-            upper = min(ahead, default=None, key=lambda item: item[0])
+            if future_forecasts:
+                # Next observed forecast station in route order, not the
+                # soonest scheduled arrival on another portion of the line.
+                upper = min(future_forecasts, key=lambda p: (abs(p[1]-lower[1]), p[0]))
+            else:
+                adjusted_schedule = [
+                    (at + timedelta(seconds=measured_delay_seconds), distance, key)
+                    for at, distance, key in schedule_points
+                    if (distance-lower[1]) * sign > 0
+                ]
+                adjusted_schedule = [p for p in adjusted_schedule if p[0] > now]
+                upper = min(adjusted_schedule, default=None, key=lambda p: (abs(p[1]-lower[1]), p[0]))
 
         progress = None
         position_label = None
