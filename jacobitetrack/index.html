@@ -1145,49 +1145,62 @@ function getApproaching(id){
  return services.map(t=>({...t,remaining:etaAt(t,id)})).filter(t=>t.remaining!==null&&t.remaining>=0).sort((a,b)=>a.remaining-b.remaining);
 }
 function getViaductApproaching(){
- // Glenfinnan Viaduct is about one minute east of Glenfinnan station.
- // Fort William-bound trains cross approximately 1 min after leaving the
- // station; Mallaig-bound trains cross approximately 1 min before arriving.
- // Use timed station anchors rather than treating station time as crossing.
- const groups=new Map(),now=Date.now(),minute=60000;
- const stationNames=new Set(timingStations.map(([name])=>name.toLowerCase()));
- for(const t of services){
-  if(t.cancelled)continue;
-  const key=(String(t.id).match(/^(\d{8})(?:[A-Z_]+)?$/)||[])[1]||String(t.id);
+ // A single physical service can appear on several station boards. Choose
+ // the latest dependable station prediction for that service, not the
+ // earliest published schedule. Live train positions are interpolations.
+ const now=Date.now(),minute=60000,groups=new Map();
+ const feedAge=now-Date.parse(feedUpdated||"");
+ if(!Number.isFinite(feedAge)||feedAge< -minute||feedAge>15*minute)return [];
+ const baseId=id=>(String(id).match(/^(\\d{8})(?:[A-Z_]+)?$/)||[])[1]||String(id);
+ for(const train of services){
+  if(train.cancelled||!train.position)continue;
+  const key=baseId(train.id);
   if(!groups.has(key))groups.set(key,[]);
-  groups.get(key).push(t);
+  groups.get(key).push(train);
  }
- const arrivals=[];
+ const approaching=[];
  for(const records of groups.values()){
-  const points=[],seen=new Set();
-  for(const t of records){
-   const p=t.position;if(!p)continue;
-   for(const side of ["from","to"]){
-    const station=String(p[side+"Station"]||"");
-    const progress=p[side+"Progress"],at=Date.parse(p[side+"At"]||"");
-    if(!stationNames.has(station.toLowerCase())||!Number.isFinite(progress)||!Number.isFinite(at))continue;
-    const key=at+"|"+station.toLowerCase();
-    if(!seen.has(key)){seen.add(key);points.push({station,progress,at})}
+  const candidates=[];
+  for(const train of records){
+   const p=train.position||{},from=String(p.fromStation||"").toLowerCase(),
+    to=String(p.toStation||"").toLowerCase();
+   const fromTime=Date.parse(p.fromAt||""),toTime=Date.parse(p.toAt||"");
+   if(!Number.isFinite(fromTime)||!Number.isFinite(toTime)||toTime<=fromTime)continue;
+   if(toTime-fromTime>45*minute||fromTime>now+40*minute||toTime<now-4*minute)continue;
+   const out=Number(p.toProgress)<Number(p.fromProgress);
+   const back=Number(p.toProgress)>Number(p.fromProgress);
+   let crossingAt=null,direction=null;
+   if(back&&to==="glenfinnan"){
+    crossingAt=toTime-2*minute;direction="back";
+   }else if(out&&from==="glenfinnan"){
+    crossingAt=fromTime+minute;direction="out";
+   }else if(out&&to==="glenfinnan"){
+    // Approaching the station from the west: the train crosses
+    // the viaduct AFTER passing Glenfinnan station.
+    crossingAt=toTime+minute;direction="out";
    }
+   if(!Number.isFinite(crossingAt)||crossingAt<now-3*minute||
+      crossingAt>now+45*minute)continue;
+   const observed=Date.parse(train.observedAt||"");
+   const observedFresh=Number.isFinite(observed)&&observed<=now+minute&&now-observed<=15*minute;
+   const quality=String(train.positionQuality||"");
+   const isForecast=/actual_plus_forecast|darwin_estimate|forecast/.test(quality);
+   const isSchedule=/scheduled|timetable/.test(quality);
+   const rank=(observedFresh?100:0)+(isForecast?60:isSchedule?0:20)+
+    (Number.isFinite(train.delayMinutes)?5:0);
+   candidates.push({train,crossingAt,direction,rank,observed});
   }
-  points.sort((a,b)=>a.at-b.at);
-  for(let i=0;i<points.length-1;i++){
-   const a=points[i],b=points[i+1];
-   if(b.at<=a.at)continue;
-   let at=null;
-   if(a.station.toLowerCase()==="glenfinnan"&&b.progress<a.progress-0.001){
-    at=a.at+minute; // Towards Fort William, after station departure
-   }else if(b.station.toLowerCase()==="glenfinnan"&&b.progress>a.progress+0.001){
-    at=b.at-2*minute; // Provisional calibration: 2 min before Glenfinnan arrival
-   }
-   if(at!==null&&at>now&&at<=b.at+2*minute){
-    arrivals.push({...records[0],remaining:(at-now)/minute,
-     viewpoints:{glenfinnan:{quality:"estimated_from_station_time",basis:"one_minute_station_offset"}}});
-   }
-  }
+  // Same working: only one crossing prediction. Prefer fresh reported
+  // movement over schedule-only variants, even if the schedule is earlier.
+  candidates.sort((a,b)=>b.rank-a.rank||b.observed-a.observed||
+    b.crossingAt-a.crossingAt);
+  if(!candidates.length)continue;
+  const best=candidates[0];
+  approaching.push({...best.train,direction:best.direction,
+   remaining:Math.max(0,(best.crossingAt-now)/minute),
+   crossingAt:best.crossingAt,nearViaduct:true});
  }
- return arrivals.sort((a,b)=>a.remaining-b.remaining).filter((item,i,all)=>
-  !all.slice(0,i).some(other=>Math.abs(other.remaining-item.remaining)<2));
+ return approaching.sort((a,b)=>a.remaining-b.remaining);
 }
 function renderPlannedWorks(){
  const alert=$("plannedWorksAlert");if(!alert)return;
@@ -1242,8 +1255,8 @@ function updateViaductCountdown(){
  // If no further board-based crossing remains, use the PDF timetable.
  const boardAge=now-Date.parse(feedUpdated||"");
  const boardFresh=Number.isFinite(boardAge)&&boardAge>=-60000&&boardAge<15*60000;
- const liveCandidate=boardFresh&&Number.isFinite(liveNext?.remaining)&&liveNext.remaining>0?
-  {at:now+liveNext.remaining*60000,type:"reported_station_times"}:null;
+ const liveCandidate=boardFresh&&Number.isFinite(liveNext?.remaining)&&liveNext.remaining>=0?
+  {at:Math.max(now,liveNext.crossingAt||now+liveNext.remaining*60000),type:"reported_station_times"}:null;
  const scheduleCandidate=boardFresh&&Number.isFinite(feedMinutes)&&feedMinutes>0?
   {at:adjustedCrossingAt(feedNext),type:"schedule"}:null;
  // Do not let an on-time crossing supplied by the schedule win against a
@@ -1255,8 +1268,9 @@ function updateViaductCountdown(){
   (feedNext.direction==="mallaig"&&liveNext.direction==="back");
  const sameWorking=liveCandidate&&scheduleCandidate&&sameDirection&&
   Math.abs(liveCandidate.at-scheduleCandidate.at)<=90*60000;
- const boards=liveCandidate&&(sameWorking||!scheduleCandidate)?liveCandidate:
-  [liveCandidate,scheduleCandidate].filter(Boolean).sort((a,b)=>a.at-b.at)[0]||null;
+ // A train physically approaching the viaduct wins over a later
+ // timetable service. Schedule entries are retained only as fallback.
+ const boards=liveCandidate||scheduleCandidate;
  const chosen=boards||
   (pdfNext&&Number.isFinite(pdfCrossingAt(pdfNext))&&pdfCrossingAt(pdfNext)>now?{at:pdfCrossingAt(pdfNext),type:"timetable"}:null);
  // Keep both wall-clock labels anchored to the same crossing timestamp.
