@@ -161,7 +161,7 @@
   const weather=new Map();
   const total=()=>state.stops.reduce((a,s)=>a+n(s.drive)+n(s.stay),0)+n(state.destinationDrive);
   function departure(){const now=new Date(),d=new Date();d.setHours(0,0,0,0);d.setMinutes(mins(state.arrive));if(d.getTime()<=now.getTime())d.setDate(d.getDate()+1);return new Date(d.getTime()-total()*60000)}
-  function renderStops(){ $('stops').innerHTML=(state.stops.length ? '<div class="stop-head" aria-hidden="true"><span></span><span>Stops</span><span>Drive</span><span>Stay</span></div>' : '')+state.stops.map((s,i)=>`<div class="stop-row" data-i="${i}"><button type="button" class="reorder" data-reorder="${i}" aria-label="Reorder stop ${i+1}. Drag or use the up and down arrow keys." title="Drag to reorder">≡</button><div class="stop-place"><a class="map-link" data-map="${i}" aria-label="Open stop ${i+1} in Apple Maps"></a><input autocomplete="off" data-field="name" aria-label="Stop ${i+1}" placeholder="Stop ${i+1}" value="${esc(shortPlace(s.name))}"></div><input class="stop-time stop-drive" readonly aria-label="Drive minutes to stop ${i+1}" type="text" placeholder="—" value="${esc(s.drive)}"><select class="stop-time stay-time" data-field="stay" aria-label="Stay minutes at stop ${i+1}">${Array.from({length:61},(_,k)=>k*5).map(v=>`<option value="${v}" ${n(s.stay)===v?'selected':''}>${v}</option>`).join('')}</select><button class="remove" data-remove="${i}" aria-label="Remove stop">×</button></div>`).join(''); }
+  function renderStops(){ $('stops').innerHTML=(state.stops.length ? '<div class="stop-head" aria-hidden="true"><span></span><span>Stops</span><span>Drive</span><span>Stay</span></div>' : '')+state.stops.map((s,i)=>`<div class="stop-row" data-i="${i}"><button type="button" class="reorder" data-reorder="${i}" aria-label="Reorder stop ${i+1}. Drag or use the up and down arrow keys." title="Drag to reorder">≡</button><div class="stop-place"><a class="map-link" data-map="${i}" aria-label="Open stop ${i+1} in Apple Maps"></a><textarea rows="2" autocomplete="off" data-field="name" aria-label="Stop ${i+1}" placeholder="Stop ${i+1}">${esc(shortPlace(s.name))}</textarea></div><input class="stop-time stop-drive" readonly aria-label="Drive minutes to stop ${i+1}" type="text" placeholder="—" value="${esc(s.drive)}"><select class="stop-time stay-time" data-field="stay" aria-label="Stay minutes at stop ${i+1}">${Array.from({length:61},(_,k)=>k*5).map(v=>`<option value="${v}" ${n(s.stay)===v?'selected':''}>${v}</option>`).join('')}</select><button class="remove" data-remove="${i}" aria-label="Remove stop">×</button></div>`).join(''); }
   function render(){
     closeLookup();
     $('start').value=shortPlace(state.start);
@@ -209,13 +209,13 @@
       const next=events[index+1];
       const driveMinutes=next?Math.max(0,(next.forecastTime-event.time)/60000):0;
       const stayMinutes=Math.max(0,(event.time-event.forecastTime)/60000);
-      const driveHeight=next?Math.max(18,Math.min(100,driveMinutes*1.1)):0;
-      const stayHeight=stayMinutes?Math.max(5,Math.min(38,stayMinutes*.65)):0;
+      const driveHeight=next?24:0;
+      const stayHeight=0;
       const coord=route?.coords[event.location] || selectedPlaces.get(names[event.location]);
       const hourly=weather.get(coord);
       const hour=Math.ceil(event.forecastTime/3600000)*3600;
       const probability=hourly?.precipitation_probability[hourly.time.indexOf(hour)];
-      const rain=Number.isFinite(probability)?'<span class="rain'+(probability>50?' rain-high':'')+'" title="Hourly precipitation probability">☂ '+probability+'%</span>':'';
+      const rain=Number.isFinite(probability) && probability>20?'<span class="rain'+(probability>50?' rain-high':'')+'" title="Hourly precipitation probability">☂ '+probability+'%</span>':'';
       const timeText=stamp=>{
         const date=new Date(stamp);
         return clock(date.getHours()*60+date.getMinutes());
@@ -223,11 +223,12 @@
       const times='<time>'+timeText(event.forecastTime)+'</time>'
         +(event.range?'<time class="stop-end-time" aria-label="Leave '+timeText(event.time)+'">'+timeText(event.time)+'</time>':'');
       const delayReason=route?.reasons[event.location-1]||'Reason unavailable';
+      const significantDelay=event.delay>5;
       const roadworks=event.delay>0 && delayReason.includes('Roadworks');
       const delayText=event.delay>0?'+'+event.delay+(event.delay===1?' minute':' minutes'):'';
       const delay=roadworks
-        ? '<span class="timeline-pill roadworks-pill" title="'+esc(delayReason)+'">Roadworks · '+delayText+'</span>'
-        : delayText?' <span class="inline-delay" title="'+esc(delayReason)+'">'+delayText+'</span>':'';
+        ? '<span class="timeline-pill roadworks-pill'+(significantDelay?' warning-pill':'')+'" title="'+esc(delayReason)+'">Roadworks · '+delayText+'</span>'
+        : delayText?' <span class="inline-delay'+(significantDelay?' warning-delay':'')+'" title="'+esc(delayReason)+'">'+delayText+'</span>':'';
       const facility=event.facility || (
         /\b(public toilets?|restrooms?)\b/i.test(event.title)?'toilet':
         /\b(charging station|ev charger|supercharger|bp pulse)\b/i.test(event.title)?'charger':
@@ -239,10 +240,11 @@
       const endpoint=event.location===0?'S':event.location===names.length-1?'E':'';
       const marker=endpoint || (facility==='toilet' ? $('toilet-lookup').innerHTML : facility==='charger' ? '⚡' : '');
       const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(endpoint==='S'?'Start':endpoint==='E'?'End':facility==='toilet'?'Public toilet':'EV charger')+'">'+marker+'</span>':'')
-        +(event.location<events.length-1?'<span class="timeline-segments" aria-hidden="true">'+'<i></i>'.repeat(Math.max(2,Math.round(driveHeight/9)))+'</span>':'')+'</span>';
+        +(event.location<events.length-1?'<span class="timeline-segments" aria-hidden="true">'+'<i></i>'+'</span>':'')+'</span>';
       return '<div class="event" style="--leg-height:'+driveHeight+'px;--stay-height:'+stayHeight+'px"><div class="event-times">'+times+'</div>'+track+'<div>'
-        +'<div class="event-heading"><b'+(roadworks?' class="roadworks-location"':'')+'>'+esc(event.title)+(roadworks?'':delay)+'</b>'+rain+'</div>'
-        +(details?'<div class="event-details">'+details+'</div>':'')+'</div></div>';
+        +'<div class="event-heading"><b'+(significantDelay?' class="roadworks-location"':'')+'>'+esc(event.title)+(roadworks?'':delay)+'</b>'+rain+'</div>'
+        +(details?'<div class="event-details">'+details+'</div>':'')
+        +(next?'<div class="leg-drive">'+Math.round(driveMinutes)+' min drive</div>':'')+'</div></div>';
     }).join('');
     drawProgress();
   }
@@ -549,6 +551,7 @@
     const current=best?.i===leg;
     const completed=current ? Math.floor(best.progress*segments.length) : 0;
     segments.forEach((segment,index)=>{
+      segment.style.setProperty('--line-progress',arrived || (stayIndex>=0 ? leg<stayIndex : leg<best?.i)?'100%':current?Math.round(best.progress*100)+'%':'0%');
       segment.classList.toggle('complete',arrived || (stayIndex>=0 ? leg<stayIndex : leg<best?.i || (current && index<completed)));
       segment.classList.toggle('current',(waitingToDepart && leg===0 && index===0)
         || (stayIndex<0 && current && index===Math.min(completed,segments.length-1)));
@@ -741,7 +744,16 @@
     }
     updatePlan();
   });
-  $('stops').addEventListener('click',e=>{if(e.target.dataset.remove!==undefined){state.stops.splice(+e.target.dataset.remove,1);render()}});
+  $('stops').addEventListener('click',event=>{
+    const button=event.target.closest('[data-remove]');
+    if(!button)return;
+    const index=Number(button.dataset.remove);
+    const stop=state.stops[index];
+    if(stop && confirm('Remove '+(stop.name || 'this stop')+'?')){
+      state.stops.splice(index,1);
+      render();
+    }
+  });
   function moveStop(from,to){
     if(from===to || to<0 || to>=state.stops.length)return;
     const [stop]=state.stops.splice(from,1);
@@ -1321,7 +1333,7 @@
   document.addEventListener('focusout',event=>{
     if(event.target===activeInput)closeLookup();
     const value=placeValue(event.target);
-    if(value!==undefined)event.target.value=shortPlace(value);
+    if(value!==undefined){event.target.value=shortPlace(value);if(event.target.matches('textarea'))event.target.scrollTop=0;}
   });
 
   let gpsRequestPending=false, gpsSession=0;
