@@ -680,6 +680,18 @@ main>.planned-works-status{margin:0 0 10px}
  .app-header #viaductCombinedTile .viaduct-combined-heading{font-size:clamp(10px,2.8vw,12px)!important;margin-top:2px!important}
  .app-header #viaductCombinedTile .viaduct-next-clock{font-size:clamp(9px,2.45vw,11px)!important}
 }
+
+/* Tile 1 refinement: remove duplicated divider, enlarge the approach illustration. */
+.app-header #trackerTile{border-bottom:0!important}
+.app-header #viaductCombinedTile{border-top:0!important;margin-top:0!important}
+.app-header #viaductCombinedTile .viaduct-integrated-row{grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:7px}
+.app-header #viaductTrackTile{min-width:0}
+.app-header #viaductTrackTile .viaduct-hero-rail{width:100%;max-width:100%;height:auto}
+@media(max-width:520px){
+ .app-header #viaductCombinedTile .viaduct-integrated-row{grid-template-columns:minmax(0,.98fr) minmax(0,1.02fr);gap:5px}
+ .app-header #viaductCombinedTile .viaduct-countdown-layout>.viaduct-icon{flex-basis:26px!important;width:26px!important;height:34px!important}
+ .app-header #viaductCombinedTile #viaductRemaining{font-size:clamp(20px,5.7vw,28px)!important}
+}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span></button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -1326,7 +1338,7 @@ function updateViaductCountdown(markers){
  const when=crossingLocal===nowLocal?"Today":dateOf(Date.now()+86400000)===crossingLocal?"Tomorrow"
   :new Date(trainAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"});
  const inPositionDay=dateOf(inPositionAt)===crossingLocal?"":dateOf(inPositionAt)===nowLocal?"Today ":""+new Date(inPositionAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"})+" ";
- time.textContent=when+" "+fmt(trainAt)+" crossing · Get in position by "+(inPositionDay||"")+fmt(inPositionAt);
+ time.textContent=when+" "+fmt(trainAt)+" crossing";
  // Keep Tile 2 focused on the countdown and crossing time.
  // Timetable predictions remain estimates internally, without a warning/error label.
  note.hidden=true;
