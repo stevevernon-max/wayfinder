@@ -507,9 +507,17 @@ main>.planned-works-status{margin:0 0 10px}
 #todayTimetableTile details summary{cursor:pointer;color:#93ccff;font-weight:700}
 #todayTimetableTile .stop-list{display:flex;flex-direction:column;min-width:165px;gap:7px;padding-top:8px}
 #todayTimetableTile .stop-list>span{display:flex;justify-content:space-between;gap:14px}
+
+/* Manual source refresh: always visible beside the train count. */
+.app-header .force-sync-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex-shrink:0;border:1px solid #416a83;border-radius:999px;background:#18364a;color:#dcf4ff;font:inherit;font-size:12px;font-weight:700;line-height:1;padding:8px 10px;min-height:30px;cursor:pointer}
+.app-header .force-sync-btn:active{background:#26556b}
+.app-header .force-sync-btn:disabled{opacity:.65;cursor:progress}
+.app-header .force-sync-btn[aria-busy="true"] span{display:inline-block;animation:sync-spin 900ms linear infinite}
+@keyframes sync-spin{to{transform:rotate(360deg)}}
+@media(max-width:380px){.app-header .force-sync-btn{font-size:11px;padding:7px 8px}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
-<div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
+<div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span> Refresh</button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
 <section id="trackerTile" aria-label="Railway train tracker">
 <span id="feedBadge" hidden aria-live="polite">Checking</span>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Seven evenly spaced railway stations from Mallaig to Fort William" role="img">
@@ -1351,6 +1359,30 @@ $("disableAlertsBtn").addEventListener("click",async()=>{
 });
 $("viewpoint").addEventListener("change",render);
 $("alertLead").addEventListener("change",render);
+
+async function refreshNow(){
+ const btn=$("forceSyncBtn");
+ if(btn.disabled)return;
+ btn.disabled=true;btn.setAttribute("aria-busy","true");
+ btn.innerHTML='<span aria-hidden="true">↻</span> Syncing';
+ try{
+  await Promise.allSettled([load(),loadTimetable(),fetchWeather()]);
+  render();
+  if(typeof renderGeoMaps==="function")renderGeoMaps();
+  const updated=Number.isFinite(Date.parse(feedUpdated||""))?Date.parse(feedUpdated):null;
+  const stale=!updated||Date.now()-updated>15*60000;
+  btn.title=stale?"Refreshed app; railway source has not published a recent update":"Train data refreshed from latest published railway feed";
+  btn.innerHTML='<span aria-hidden="true">↻</span> '+(stale?"Feed delayed":"Updated");
+ }catch(error){
+  btn.title="Refresh failed: "+error.message;
+  btn.innerHTML='<span aria-hidden="true">↻</span> Retry';
+ }finally{
+  btn.disabled=false;btn.removeAttribute("aria-busy");
+  // Use the normal caption after the next tap; data never appears newer than its source.
+ }
+}
+$("forceSyncBtn").addEventListener("click",refreshNow);
+
 load();loadTimetable();fetchWeather();setupPush();setInterval(load,60000);setInterval(fetchWeather,600000);setInterval(updatePhotographyLightStatus,60000);setInterval(()=>{render();updateGeoTrainMarkers()},15000);
 /* GPS stays entirely in the device browser; only its nearest position on this
    simplified station-based railway alignment is displayed. Nothing is uploaded. */
