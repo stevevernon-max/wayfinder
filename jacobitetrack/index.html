@@ -548,7 +548,7 @@ main>.planned-works-status{margin:0 0 10px}
 @media(prefers-reduced-motion:reduce){.app-header #trackerTile.crossing-two-minutes{animation:none;background:#20593c}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
-<div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span> Refresh</button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
+<div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span></button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
 <section id="trackerTile" aria-label="Railway train tracker">
 <span id="feedBadge" hidden aria-live="polite">Checking</span>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Seven evenly spaced railway stations from Mallaig to Fort William" role="img">
@@ -565,7 +565,7 @@ main>.planned-works-status{margin:0 0 10px}
 <div class="muted" id="trackStatus" hidden></div>
 </section>
 <section id="viaductTrackTile" aria-label="Close-up train tracker Lochailort to Corpach">
- <div class="focus-title"><span>Viaduct approach</span><span class="focus-hint">Lochailort – Corpach · estimated</span></div>
+ <div class="focus-title"><span>Viaduct approach</span></div>
  <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 175" role="img" aria-label="Enlarged Lochailort to Corpach railway with marked Glenfinnan Viaduct and estimated trains">
  <line class="bed" x1="35" y1="83" x2="865" y2="83"/><line class="track" x1="35" y1="83" x2="865" y2="83"/>
  <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="6" y="45" text-anchor="start">Lochailort</text>
@@ -579,7 +579,7 @@ main>.planned-works-status{margin:0 0 10px}
  <text x="303" y="132" text-anchor="middle" class="focus-viaduct-label">Viaduct</text>
  <g id="viaductTrains"></g>
  </svg></div>
- <div class="focus-caption">Blips follow estimated station-to-station progress, not live GPS.</div>
+ 
 </section>
 <section id="proximityTile" aria-label="Glenfinnan Viaduct next train">
 <div class="viaduct-top"><div class="viaduct-icon" aria-hidden="true"><svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1231,11 +1231,29 @@ function updatePhotographyLightStatus(){
  const currentMinutes=Number(uk.hour)*60+Number(uk.minute);
  const timeOf=value=>value&&/T\d{2}:\d{2}$/.test(value)?Number(value.slice(-5,-3))*60+Number(value.slice(-2)):null;
  const first=timeOf(rise),last=timeOf(set);
- const dark=first!==null&&last!==null&&(currentMinutes<first||currentMinutes>=last);
+ // A sunrise/sunset-based *estimate* of the light phase, not measured
+ // brightness. Twilight is approximated as 30 minutes on either side.
+ const twilight=30;
+ const valid=first!==null&&last!==null&&last>first;
+ let lightPercent=null;
+ if(valid){
+  if(currentMinutes<first-twilight||currentMinutes>=last+twilight)lightPercent=0;
+  else if(currentMinutes<first)lightPercent=10*(currentMinutes-(first-twilight))/twilight;
+  else if(currentMinutes>=last)lightPercent=10*(1-(currentMinutes-last)/twilight);
+  else{
+   // Solar-height-shaped daylight estimate: rises from 10% at sunrise,
+   // peaks near solar noon, falls towards sunset.
+   const progress=(currentMinutes-first)/(last-first);
+   lightPercent=10+90*Math.sin(Math.PI*progress);
+  }
+ }
+ const rounded=lightPercent===null?null:Math.max(0,Math.min(100,Math.round(lightPercent)));
  const pill=$("photoStatus"),advice=$("photoAdvice");
- pill.textContent=dark?"After dark":weatherData.daylightRating;
- pill.dataset.grade=dark?"poor":weatherData.daylightRating.toLowerCase();
- const summary=[dark?"After dark":null,weatherData.summary].filter(Boolean).join(" · ");
+ const dark=rounded!==null&&rounded<50;
+ pill.textContent=rounded===null?"Light unavailable":dark?(100-rounded)+"% dark":rounded+"% light";
+ pill.title="Approximate daylight phase from sunrise and sunset; not a measured brightness percentage";
+ pill.dataset.grade=rounded===null?"fair":rounded>=70?"good":rounded>=35?"fair":"poor";
+ const summary=[weatherData.summary].filter(Boolean).join(" · ");
  advice.textContent=summary;advice.hidden=!summary;
  if(index>=0){
   $("photoSunrise").textContent=rise?rise.slice(-5):"—";
@@ -1486,15 +1504,18 @@ function updateRefreshButton(){
  btn.disabled=blocked||refreshInFlight;
  if(refreshInFlight){
   btn.setAttribute("aria-busy","true");
-  btn.innerHTML='<span aria-hidden="true">↻</span> Syncing';
+  btn.setAttribute("aria-label","Synchronising train information");
+  btn.innerHTML='<span aria-hidden="true">↻</span>';
  }else{
   btn.removeAttribute("aria-busy");
   if(blocked){
    const mins=Math.floor(remaining/60000),secs=Math.ceil(remaining%60000/1000);
-   btn.innerHTML='<span aria-hidden="true">↻</span> '+mins+':'+String(secs).padStart(2,"0");
+   btn.innerHTML='<span aria-hidden="true">↻</span>';
+   btn.setAttribute("aria-label","Refresh available in "+mins+" minutes "+secs+" seconds");
    btn.title="Manual refresh available in "+mins+" min "+secs+" sec. Automatic synchronisation continues.";
   }else{
-   btn.innerHTML='<span aria-hidden="true">↻</span> Refresh';
+   btn.innerHTML='<span aria-hidden="true">↻</span>';
+   btn.setAttribute("aria-label","Refresh train information");
    btn.title="Manually sync the latest available railway data";
   }
  }
