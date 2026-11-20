@@ -1012,7 +1012,7 @@ function updateViaductCountdown(){
  let liveNext=null;
  try{liveNext=getViaductApproaching()[0]||null;}catch(error){console.warn("Viaduct live ETA unavailable",error)}
  const now=Date.now();
- const feedNext=scheduledCrossings.filter(c=>Number.isFinite(Date.parse(c.at))&&Date.parse(c.at)>now).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))[0];
+ const feedNext=scheduledCrossings.filter(c=>Number.isFinite(Date.parse(c.at))&&Date.parse(c.at)-(c.direction==="mallaig"&&c.basis==="published_schedule_station_offset"?60000:0)>now).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))[0];
  // A station-board crossing and a slightly different PDF crossing can be
  // the SAME service. After the board crossing passes, never start a second
  // countdown to the PDF's nearby time (often Glenfinnan station arrival).
@@ -1027,7 +1027,7 @@ function updateViaductCountdown(){
  for(let attempts=0;pdfNext&&attempts<8;attempts++){
   const isDuplicate=boardCrossingTimes.some(at=>
    Math.abs(pdfCrossingAt(pdfNext)-at)<=5*60000&&at<=now+60000);
-  if(!isDuplicate)break;
+  if(!isDuplicate&&pdfCrossingAt(pdfNext)>now)break;
   pdfNext=nextPublishedViaductCrossing(pdfNext.at+5*60000);
  }
  const feedMinutes=feedNext?(adjustedCrossingAt(feedNext)-now)/60000:null;
