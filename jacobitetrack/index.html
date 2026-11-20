@@ -974,7 +974,7 @@ function getViaductApproaching(){
    if(a.station.toLowerCase()==="glenfinnan"&&b.progress<a.progress-0.001){
     at=a.at+minute; // Towards Fort William, after station departure
    }else if(b.station.toLowerCase()==="glenfinnan"&&b.progress>a.progress+0.001){
-    at=b.at-minute; // Towards Mallaig, before station arrival
+    at=b.at-2*minute; // Provisional calibration: 2 min before Glenfinnan arrival
    }
    if(at!==null&&at>now&&at<=b.at+2*minute){
     arrivals.push({...records[0],remaining:(at-now)/minute,
@@ -1016,18 +1016,22 @@ function updateViaductCountdown(){
  // A station-board crossing and a slightly different PDF crossing can be
  // the SAME service. After the board crossing passes, never start a second
  // countdown to the PDF's nearby time (often Glenfinnan station arrival).
+ const adjustedCrossingAt=c=>Date.parse(c.at)-(c.direction==="mallaig"&&c.basis==="published_schedule_station_offset"?60000:0);
  const boardCrossingTimes=scheduledCrossings
-  .map(c=>Date.parse(c.at))
+  .map(adjustedCrossingAt)
   .filter(at=>Number.isFinite(at));
- let pdfNext=nextPublishedViaductCrossing(now);
+ let pdfNext=nextPublishedViaductCrossing(now-2*60000);
+ // PDF viaduct times are the published baseline. Apply only a display
+ // calibration for Mallaig-bound crossings; do not rewrite source times.
+ const pdfCrossingAt=p=>p.at-(p.to==="Mallaig"?2*60000:0);
  for(let attempts=0;pdfNext&&attempts<8;attempts++){
   const isDuplicate=boardCrossingTimes.some(at=>
-   Math.abs(pdfNext.at-at)<=5*60000&&at<=now+60000);
+   Math.abs(pdfCrossingAt(pdfNext)-at)<=5*60000&&at<=now+60000);
   if(!isDuplicate)break;
   pdfNext=nextPublishedViaductCrossing(pdfNext.at+5*60000);
  }
- const feedMinutes=feedNext?(Date.parse(feedNext.at)-now)/60000:null;
- const pdfMinutes=pdfNext?(pdfNext.at-now)/60000:null;
+ const feedMinutes=feedNext?(adjustedCrossingAt(feedNext)-now)/60000:null;
+ const pdfMinutes=pdfNext?(pdfCrossingAt(pdfNext)-now)/60000:null;
  // Prefer the next future event; give a matching fresh live ETA precedence
  // over the static timetable so a small delay does not hide the real train.
  // Prioritise train times currently reported by station arrival/departure boards.
@@ -1035,10 +1039,10 @@ function updateViaductCountdown(){
  const boardFresh=Number.isFinite(Date.parse(feedUpdated||""))&&Date.parse(feedUpdated)<=now+60000;
  const boardCandidates=boardFresh?[
   Number.isFinite(liveNext?.remaining)?{at:now+liveNext.remaining*60000,type:"boards"}:null,
-  Number.isFinite(feedMinutes)?{at:Date.parse(feedNext.at),type:"boards"}:null
+  Number.isFinite(feedMinutes)&&feedMinutes>0?{at:adjustedCrossingAt(feedNext),type:"boards"}:null
  ].filter(x=>x&&Number.isFinite(x.at)&&x.at>now).sort((a,b)=>a.at-b.at):[];
  const chosen=boardCandidates[0]||
-  (pdfNext&&Number.isFinite(pdfNext.at)&&pdfNext.at>now?{at:pdfNext.at,type:"timetable"}:null);
+  (pdfNext&&Number.isFinite(pdfCrossingAt(pdfNext))&&pdfCrossingAt(pdfNext)>now?{at:pdfCrossingAt(pdfNext),type:"timetable"}:null);
  // Keep both wall-clock labels anchored to the same crossing timestamp.
  const trainAt=chosen?.at;
  const minutes=Number.isFinite(trainAt)?(trainAt-now)/60000:null;
