@@ -1144,63 +1144,43 @@ function updateHeaderDistances(){
 function getApproaching(id){
  return services.map(t=>({...t,remaining:etaAt(t,id)})).filter(t=>t.remaining!==null&&t.remaining>=0).sort((a,b)=>a.remaining-b.remaining);
 }
-function getViaductApproaching(){
- // A single physical service can appear on several station boards. Choose
- // the latest dependable station prediction for that service, not the
- // earliest published schedule. Live train positions are interpolations.
- const now=Date.now(),minute=60000,groups=new Map();
- const feedAge=now-Date.parse(feedUpdated||"");
- if(!Number.isFinite(feedAge)||feedAge< -minute||feedAge>15*minute)return [];
- const baseId=id=>(String(id).match(/^(\d{8})(?:[A-Z_]+)?$/)||[])[1]||String(id);
- for(const train of services){
+function getViaductApproaching(markers=visibleTrainMarkers()){
+ // Use EXACTLY the selected services and station-time segments displayed
+ // by Tile 1. Do not independently select another version of a train from
+ // station boards: that was making the countdown disagree with the marker.
+ const now=Date.now(),minute=60000,results=[];
+ const glen=timingStations.find(([name])=>name==="Glenfinnan")?.[1];
+ const pos=name=>timingStations.find(([label])=>label.toLowerCase()===String(name||"").toLowerCase())?.[1];
+ for(const {train} of markers){
   if(train.cancelled||!train.position)continue;
-  const key=baseId(train.id);
-  if(!groups.has(key))groups.set(key,[]);
-  groups.get(key).push(train);
- }
- const approaching=[];
- for(const records of groups.values()){
-  const candidates=[];
-  for(const train of records){
-   const p=train.position||{},from=String(p.fromStation||"").toLowerCase(),
-    to=String(p.toStation||"").toLowerCase();
-   const fromTime=Date.parse(p.fromAt||""),toTime=Date.parse(p.toAt||"");
-   if(!Number.isFinite(fromTime)||!Number.isFinite(toTime)||toTime<=fromTime)continue;
-   if(toTime-fromTime>45*minute||fromTime>now+40*minute||toTime<now-4*minute)continue;
-   const out=Number(p.toProgress)<Number(p.fromProgress);
-   const back=Number(p.toProgress)>Number(p.fromProgress);
-   let crossingAt=null,direction=null;
-   if(back&&to==="glenfinnan"){
-    crossingAt=toTime-2*minute;direction="back";
-   }else if(out&&from==="glenfinnan"){
-    crossingAt=fromTime+minute;direction="out";
-   }else if(out&&to==="glenfinnan"){
-    // Approaching the station from the west: the train crosses
-    // the viaduct AFTER passing Glenfinnan station.
-    crossingAt=toTime+minute;direction="out";
-   }
-   if(!Number.isFinite(crossingAt)||crossingAt<now-3*minute||
-      crossingAt>now+45*minute)continue;
-   const observed=Date.parse(train.observedAt||"");
-   const observedFresh=Number.isFinite(observed)&&observed<=now+minute&&now-observed<=15*minute;
-   const quality=String(train.positionQuality||"");
-   const isForecast=/actual_plus_forecast|darwin_estimate|forecast/.test(quality);
-   const isSchedule=/scheduled|timetable/.test(quality);
-   const rank=(observedFresh?100:0)+(isForecast?60:isSchedule?0:20)+
-    (Number.isFinite(train.delayMinutes)?5:0);
-   candidates.push({train,crossingAt,direction,rank,observed});
+  const p=train.position,from=pos(p.fromStation),to=pos(p.toStation);
+  const start=Date.parse(p.fromAt||""),end=Date.parse(p.toAt||"");
+  if(!Number.isFinite(from)||!Number.isFinite(to)||!Number.isFinite(start)||!Number.isFinite(end)||end<=start||from===to)continue;
+  const towardFortWilliam=to>from;
+  const nearStation=String(p.fromStation||"").toLowerCase()==="glenfinnan"||
+    String(p.toStation||"").toLowerCase()==="glenfinnan";
+  let crossingAt=null;
+  if(towardFortWilliam){
+   if(p.fromStation==="Glenfinnan")crossingAt=start+minute;
+   else if(p.toStation==="Glenfinnan")crossingAt=end+minute;
+  }else{
+   if(p.toStation==="Glenfinnan")crossingAt=end-2*minute;
+   else if(p.fromStation==="Glenfinnan")crossingAt=start-2*minute;
   }
-  // Same working: only one crossing prediction. Prefer fresh reported
-  // movement over schedule-only variants, even if the schedule is earlier.
-  candidates.sort((a,b)=>b.rank-a.rank||b.observed-a.observed||
-    b.crossingAt-a.crossingAt);
-  if(!candidates.length)continue;
-  const best=candidates[0];
-  approaching.push({...best.train,direction:best.direction,
-   remaining:Math.max(0,(best.crossingAt-now)/minute),
-   crossingAt:best.crossingAt,nearViaduct:true});
+  // On longer approaches use this *same displayed train's* prediction,
+  // never a separate board record or another scheduled service.
+  if(!nearStation){
+   const predicted=etaAt(train,"glenfinnan");
+   const currentRaw=from+(to-from)*Math.max(0,Math.min(1,(now-start)/(end-start)));
+   const ahead=towardFortWilliam?currentRaw<glen:currentRaw>glen;
+   if(ahead&&Number.isFinite(predicted)&&predicted>0&&predicted<120)
+    crossingAt=now+predicted*minute;
+  }
+  if(!Number.isFinite(crossingAt)||crossingAt<now-2*minute||crossingAt>now+120*minute)continue;
+  results.push({...train,crossingAt,remaining:Math.max(0,(crossingAt-now)/minute),
+   nearViaduct:true,direction:towardFortWilliam?"out":"back"});
  }
- return approaching.sort((a,b)=>a.remaining-b.remaining);
+ return results.sort((a,b)=>a.crossingAt-b.crossingAt);
 }
 function renderPlannedWorks(){
  const alert=$("plannedWorksAlert");if(!alert)return;
@@ -1224,10 +1204,10 @@ function renderPlannedWorks(){
   alert.append(row);
  }
 }
-function updateViaductCountdown(){
+function updateViaductCountdown(markers){
  // A malformed or missing live feed must never stop the published timetable timer.
  let liveNext=null;
- try{liveNext=getViaductApproaching()[0]||null;}catch(error){console.warn("Viaduct live ETA unavailable",error)}
+ try{liveNext=getViaductApproaching(markers||visibleTrainMarkers())[0]||null;}catch(error){console.warn("Viaduct live ETA unavailable",error)}
  const now=Date.now();
  const feedNext=scheduledCrossings.filter(c=>Number.isFinite(Date.parse(c.at))&&Date.parse(c.at)-(c.direction==="mallaig"&&c.basis==="published_schedule_station_offset"?60000:0)>now).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))[0];
  // A station-board crossing and a slightly different PDF crossing can be
@@ -1255,7 +1235,7 @@ function updateViaductCountdown(){
  // If no further board-based crossing remains, use the PDF timetable.
  const boardAge=now-Date.parse(feedUpdated||"");
  const boardFresh=Number.isFinite(boardAge)&&boardAge>=-60000&&boardAge<15*60000;
- const liveCandidate=boardFresh&&Number.isFinite(liveNext?.remaining)&&liveNext.remaining>=0?
+ const liveCandidate=Number.isFinite(liveNext?.remaining)&&liveNext.remaining>=0?
   {at:Math.max(now,liveNext.crossingAt||now+liveNext.remaining*60000),type:"reported_station_times"}:null;
  const scheduleCandidate=boardFresh&&Number.isFinite(feedMinutes)&&feedMinutes>0?
   {at:adjustedCrossingAt(feedNext),type:"schedule"}:null;
@@ -1303,8 +1283,8 @@ function updateViaductCountdown(){
  note.textContent="";
 }
 setInterval(updateViaductCountdown,1000);
-function updateActiveTrainsPill(){
- const markers=visibleTrainMarkers(),count=markers.length,pill=$("activeTrainsPill");
+function updateActiveTrainsPill(markers=visibleTrainMarkers()){
+ const count=markers.length,pill=$("activeTrainsPill");
  const expected=markers.filter(item=>item.train.positionQuality==="timetable_only").length;
  const reported=count-expected;
  pill.textContent=expected?(reported?reported+" on track · "+expected+" expected":expected+" "+(expected===1?"train":"trains")+" expected"):count+" "+(count===1?"train":"trains")+" on track";
@@ -1329,14 +1309,14 @@ function updateActiveTrainsPill(){
  gpsPill.classList.toggle("gps-poor",accurate&&gpsAccuracyMetres>100);
  gpsPill.title=accurate?"Estimated horizontal location accuracy: ±"+Math.round(gpsAccuracyMetres)+" metres":"Waiting for GPS accuracy";
 }
-function renderViaductApproach(){
+function renderViaductApproach(markers=visibleTrainMarkers()){
  const group=$("viaductTrains");if(!group)return;
  // We preserve station-to-station timing anchors, rather than stretching
  // unrelated sections of the railway to manufacture an accurate GPS position.
  const rawOf=name=>timingStations.find(([label])=>label.toLowerCase()===String(name||"").toLowerCase())?.[1];
  const west=rawOf("Lochailort"),east=rawOf("Corpach");
  const visible=[];
- for(const {train} of visibleTrainMarkers()){
+ for(const {train} of markers){
   const p=train.position||{},from=rawOf(p.fromStation),to=rawOf(p.toStation);
   if(!Number.isFinite(from))continue;
   let raw=from;
@@ -1372,14 +1352,12 @@ function renderViaductApproach(){
 }
 
 function render(){
- updateActiveTrainsPill();
- $("trains").innerHTML=visibleTrainMarkers().map(({train:t})=>'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+schematicTrainX(t)+',83)"><circle class="train-halo" r="15" style="animation:none"><animate attributeName="r" values="17;35" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".7;0" dur="1.4s" repeatCount="indefinite"/></circle><circle class="train-body" r="13" style="animation:none"><animate attributeName="r" values="14;19;14" dur="1.4s" repeatCount="indefinite"/></circle><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Rail report")+'</title></g>').join("");
+ const markers=visibleTrainMarkers();
+ updateActiveTrainsPill(markers);
+ $("trains").innerHTML=markers.map(({train:t})=>'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+schematicTrainX(t)+',83)"><circle class="train-halo" r="15" style="animation:none"><animate attributeName="r" values="17;35" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".7;0" dur="1.4s" repeatCount="indefinite"/></circle><circle class="train-body" r="13" style="animation:none"><animate attributeName="r" values="14;19;14" dur="1.4s" repeatCount="indefinite"/></circle><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Rail report")+'</title></g>').join("");
  updateGeoTrainMarkers();
- renderViaductApproach();
- let glen=getViaductApproaching()[0];
-
-
- updateViaductCountdown();
+ renderViaductApproach(markers);
+ updateViaductCountdown(markers);
  updateHeaderDistances();
 
  const id=$("viewpoint").value;const next=getApproaching(id)[0];
