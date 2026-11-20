@@ -634,6 +634,11 @@ main>.planned-works-status{margin:0 0 10px}
 #geoTile .train-direction-blip{filter:drop-shadow(0 0 6px #9befd4)}
 .photo-best-light{font-size:12px;color:#efce8e;margin:5px 0 7px;line-height:1.45}
 @media(max-width:375px){.app-header .header-brand>strong{font-size:16px!important}.app-header #activeTrainsPill,.app-header .gps-accuracy-pill{font-size:9px;padding:4px 5px}.app-header .direction-count{font-size:9px}}
+.photo-header{gap:8px;flex-wrap:wrap}
+.photo-light-percent{font-size:11px;color:#abc9d8;font-weight:750;white-space:nowrap;margin-left:auto}
+.photo-rating-pill[data-grade="good"]{color:#91f3c1}
+.photo-rating-pill[data-grade="fair"]{color:#ffd388}
+.photo-rating-pill[data-grade="poor"]{color:#ff9a92}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span></button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -677,7 +682,7 @@ main>.planned-works-status{margin:0 0 10px}
 
 <p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway drawn from OSM</p>
 </section>
-<div class="cols single-viewpoint weather-first"><section class="tile"><div class="eyebrow">GLENFINNAN</div><div class="photo-header"><div class="heading">Photography conditions</div><span id="photoStatus" class="photo-rating-pill" role="status">Checking</span></div><div id="photoBestLight" class="photo-best-light">Calculating best light…</div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="photo-light-row"><span>☀ Sunrise <b id="photoSunrise">—</b></span><span>☾ Sunset <b id="photoSunset">—</b></span><span id="photoAdvice">Checking conditions</span></div><div class="small" id="weatherTime"></div></section></div>
+<div class="cols single-viewpoint weather-first"><section class="tile"><div class="eyebrow">GLENFINNAN</div><div class="photo-header"><div class="heading">Photography conditions</div><span id="photoLightPercent" class="photo-light-percent">—</span><span id="photoStatus" class="photo-rating-pill" role="status">Checking</span></div><div id="photoBestLight" class="photo-best-light">Calculating best light…</div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="photo-light-row"><span>☀ Sunrise <b id="photoSunrise">—</b></span><span>☾ Sunset <b id="photoSunset">—</b></span><span id="photoAdvice">Checking conditions</span></div><div class="small" id="weatherTime"></div></section></div>
 <section class="tile" id="timetableTile" aria-labelledby="timetableHeading">
 <div class="eyebrow">PUBLISHED SERVICE TIMES</div><div class="heading" id="timetableHeading">Next 10 scheduled services</div>
 <div class="small" id="timetableStatus">Loading upcoming services…</div>
@@ -1382,13 +1387,31 @@ function updatePhotographyLightStatus(){
   }
  }
  const rounded=lightPercent===null?null:Math.max(0,Math.min(100,Math.round(lightPercent)));
- const pill=$("photoStatus"),advice=$("photoAdvice");
+ const pill=$("photoStatus"),advice=$("photoAdvice"),light=$("photoLightPercent"),best=$("photoBestLight");
+ const skyScore=weatherData.skyScore??60;
+ const rating=rounded===null?"Fair":rounded<15||skyScore<45?"Poor":rounded<50||skyScore<68?"Fair":"Good";
+ pill.textContent=rating;
+ pill.dataset.grade=rating.toLowerCase();
  const dark=rounded!==null&&rounded<50;
- pill.textContent=rounded===null?"Light unavailable":dark?(100-rounded)+"% dark":rounded+"% light";
- pill.title="Approximate daylight phase from sunrise and sunset; not a measured brightness percentage";
- pill.dataset.grade=rounded===null?"fair":rounded>=70?"good":rounded>=35?"fair":"poor";
+ light.textContent=rounded===null?"Light —":dark?(100-rounded)+"% dark":rounded+"% light";
+ light.title="Estimated daylight phase, not a measured brightness percentage";
  const summary=[weatherData.summary].filter(Boolean).join(" · ");
  advice.textContent=summary;advice.hidden=!summary;
+ if(valid){
+  const pretty=mins=>String(Math.floor(mins/60)).padStart(2,"0")+":"+String(mins%60).padStart(2,"0");
+  if(currentMinutes>=first&&currentMinutes<first+60)
+   best.textContent="Morning golden hour · until approximately "+pretty(Math.min(first+60,last));
+  else if(currentMinutes>=last-60&&currentMinutes<last)
+   best.textContent="Evening golden hour · until sunset "+pretty(last);
+  else if(currentMinutes<first)
+   best.textContent="Next golden hour · sunrise "+pretty(first)+"–"+pretty(Math.min(last,first+60));
+  else if(currentMinutes<last-60)
+   best.textContent="Next golden hour · "+pretty(last-60)+"–"+pretty(last);
+  else{
+   const nextSunrise=weatherData.daily.sunrise?.[index+1];
+   best.textContent=nextSunrise?"Next golden hour · tomorrow "+nextSunrise.slice(-5):"Next golden hour · after sunrise";
+  }
+ }else best.textContent="Golden hour timing unavailable";
  if(index>=0){
   $("photoSunrise").textContent=rise?rise.slice(-5):"—";
   $("photoSunset").textContent=set?set.slice(-5):"—";
@@ -1414,7 +1437,7 @@ async function fetchWeather(){
  else if(precip>=70)score-=40;else if(precip>=40)score-=25;else if(precip>=20)score-=12;
  if(cloud>=90)score-=16;else if(cloud>=70)score-=8;
  const daylightRating=score>=85?"Excellent":score>=68?"Good":score>=45?"Fair":"Poor";
- weatherData={daylightRating,summary:Number.isFinite(vis)&&vis<5000?"Low visibility":Number.isFinite(precip)&&precip>=50?"Rain likely":cloud>=85?"Overcast":"",daily:d.daily};
+ weatherData={daylightRating,skyScore:score,summary:Number.isFinite(vis)&&vis<5000?"Low visibility":Number.isFinite(precip)&&precip>=50?"Rain likely":cloud>=85?"Overcast":"",daily:d.daily};
  updatePhotographyLightStatus();
  $("weatherTime").textContent="Updated "+now.time.slice(11,16)+" · Open-Meteo";
  }catch(e){$("photoStatus").textContent="Unavailable";$("photoStatus").removeAttribute("data-grade");$("photoSunrise").textContent="—";$("photoSunset").textContent="—";$("weather").innerHTML='<div class="muted">Weather forecast unavailable.</div>';$("photoAdvice").textContent="Unable to load weather and visibility information."; $("weatherTime").textContent=e.message;}
