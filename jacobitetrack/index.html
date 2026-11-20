@@ -796,6 +796,7 @@ function scheduledTimetableMarkers(now=Date.now()){
    const train={
     id:"Scheduled "+(index+1),direction:service.from==="Mallaig"?"out":"back",
     positionQuality:"timetable_only",scheduled:true,locationVerified:false,
+    serviceDepartureAt:first.at,
     positionLabel:"Expected at "+first.station+" · departs "+service.stops[0][1]+" (not confirmed live)",
     quality:"Published timetable pre-departure estimate; train presence not confirmed",
     position:{fromAt:new Date(first.at-15*60000).toISOString(),
@@ -811,6 +812,7 @@ function scheduledTimetableMarkers(now=Date.now()){
    const direction=service.from==="Mallaig"?"out":"back";
    const train={
     id:"Scheduled "+(index+1),direction,positionQuality:"timetable_only",
+    serviceDepartureAt:first?.at??null,
     scheduled:true,locationVerified:false,
     positionLabel:"Timetable position estimate: "+a.station+"–"+b.station+" (not live)",
     quality:"Published timetable projection only; train movement not confirmed",
@@ -882,6 +884,10 @@ function visibleTrainMarkers(){
   });
   if(candidates.length){
    const best=candidates[0];
+   // A forecast delay may be reported by a different station board of
+   // this same working than the board providing the best movement anchor.
+   const delayReport=g.records.filter(t=>Number.isFinite(t.delayMinutes))
+    .sort((a,b)=>Date.parse(b.observedAt||"")-Date.parse(a.observedAt||""))[0];
    const bestProgress=positionProgress(best);
    const ambiguous=candidates.some(t=>
     t.positionQuality===best.positionQuality&&
@@ -889,7 +895,11 @@ function visibleTrainMarkers(){
    // Conflicting schedule-only views cannot establish a trustworthy
    // movement. Let the published timetable render an "expected" icon.
    if(!(ambiguous&&best.positionQuality==="scheduled_estimate")){
-    active.push({train:{...best,id:g.id,positionLabel:
+    active.push({train:{...best,id:g.id,
+      delayMinutes:delayReport?.delayMinutes??null,
+      delayBasis:delayReport?.delayBasis||null,
+      delayStation:delayReport?.delayStation||null,
+      positionLabel:
       (best.positionLabel||"Estimated train position")+" · station-board estimate"},
       progress:bestProgress});
    }
@@ -1031,6 +1041,15 @@ function visibleTrainMarkers(){
   const fp=fallback.train.position;
   const first=Date.parse(fp.fromAt),last=Date.parse(fp.toAt);
   const overlaps=distinct.some(({train})=>{
+   // A delayed LDB working supersedes its on-time timetable projection.
+   // Match same-direction trains whose starting report follows the planned
+   // departure by up to 90 minutes; do not fabricate two physical trains.
+   const dep=fallback.train.serviceDepartureAt;
+   const boardFrom=Date.parse(train.position?.fromAt||"");
+   if(train.positionQuality!=="timetable_only"&&
+      train.direction===fallback.train.direction&&
+      Number.isFinite(dep)&&Number.isFinite(boardFrom)&&
+      boardFrom>=dep-10*60000&&boardFrom-dep<=90*60000)return true;
    const p=train.position||{};
    const start=Date.parse(p.fromAt),end=Date.parse(p.toAt);
    if(!Number.isFinite(start)||!Number.isFinite(end))return false;
