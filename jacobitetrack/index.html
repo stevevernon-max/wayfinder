@@ -613,14 +613,14 @@ main>.planned-works-status{margin:0 0 10px}
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span></button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
 <section id="trackerTile" aria-label="Railway train tracker">
 <span id="feedBadge" hidden aria-live="polite">Checking</span>
-<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Seven evenly spaced railway stations from Mallaig to Fort William" role="img">
-<line class="bed" x1="13" y1="83" x2="887" y2="83"/><line class="track" x1="13" y1="83" x2="887" y2="83"/>
+<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Railway stations from Mallaig to Fort William positioned approximately by route distance" role="img">
+<line class="track" x1="13" y1="83" x2="887" y2="83"/>
 <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="9" y="45" text-anchor="start">Mallaig</text>
-<circle class="node" cx="173" cy="83" r="12"/><text class="station-label" x="173" y="132" text-anchor="middle">Morar</text>
-<circle class="node" cx="311" cy="83" r="12"/><text class="station-label" x="311" y="45" text-anchor="middle">Arisaig</text>
-<circle class="node" cx="450" cy="83" r="12"/><text class="station-label" x="450" y="132" text-anchor="middle">Lochailort</text>
-<circle class="node" cx="588" cy="83" r="12"/><text class="station-label" x="588" y="45" text-anchor="middle">Glenfinnan</text>
-<circle class="node" cx="726" cy="83" r="12"/><text class="station-label" x="726" y="132" text-anchor="middle">Corpach</text>
+<circle class="node" cx="93" cy="83" r="12"/><text class="station-label" x="93" y="132" text-anchor="middle">Morar</text>
+<circle class="node" cx="190" cy="83" r="12"/><text class="station-label" x="190" y="45" text-anchor="middle">Arisaig</text>
+<circle class="node" cx="383" cy="83" r="12"/><text class="station-label" x="383" y="132" text-anchor="middle">Lochailort</text>
+<circle class="node" cx="595" cy="83" r="12"/><text class="station-label" x="595" y="45" text-anchor="middle">Glenfinnan</text>
+<circle class="node" cx="807" cy="83" r="12"/><text class="station-label" x="807" y="132" text-anchor="middle">Corpach</text>
 <circle class="node" cx="865" cy="83" r="12"/><text class="station-label" x="892" y="45" text-anchor="end">Fort William</text>
 <g id="trains"></g>
 </svg></div>
@@ -657,10 +657,10 @@ main>.planned-works-status{margin:0 0 10px}
 </div></header><main>
 <section class="tile" id="geoTile">
 <div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with roads, lochs, railway and estimated train position markers; drag or pinch to navigate"></div>
-<div class="geo-map-overlay"><span class="geo-load-status" id="geoStatus">Loading map</span>
-<div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view">Reset</button><button type="button" id="geoFullscreen" aria-label="Expand map to full screen" aria-pressed="false">⛶</button></div></div>
-<div class="geo-map-bottom"><span><i class="geo-line"></i> Railway</span><span><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#60c1fb;border:2px solid #f1f9ff"></i> Reported</span><span><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#f0b84a;border:2px solid #fff4d4"></i> Estimated</span><span>Drag · Pinch to zoom</span></div>
-<p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
+<div class="geo-map-overlay"><span class="geo-load-status" id="geoStatus" hidden aria-live="polite">Loading map</span>
+<div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view" title="Reset map view">⌖</button><button type="button" id="geoFullscreen" aria-label="Expand map to full screen" aria-pressed="false">⛶</button></div></div>
+
+<p class="geo-note" id="geoNote">© OpenStreetMap contributors</p>
 </section>
 <div class="cols single-viewpoint weather-first"><section class="tile"><div class="eyebrow">GLENFINNAN</div><div class="photo-header"><div class="heading">Photography conditions</div><span id="photoStatus" class="photo-rating-pill" role="status">Checking</span></div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="photo-light-row"><span>☀ Sunrise <b id="photoSunrise">—</b></span><span>☾ Sunset <b id="photoSunset">—</b></span><span id="photoAdvice">Checking conditions</span></div><div class="small" id="weatherTime"></div></section></div>
 <section class="tile" id="timetableTile" aria-labelledby="timetableHeading">
@@ -719,8 +719,8 @@ const timingStations=[
  ["Glenfinnan",450],["Locheilside",554],["Loch Eil Outward Bound",657],["Corpach",761],["Fort William",865]
 ];
 const schematicStations=[
- ["Mallaig",35],["Morar",173],["Arisaig",311],["Lochailort",450],
- ["Glenfinnan",588],["Corpach",726],["Fort William",865]
+ ["Mallaig",35],["Morar",93],["Arisaig",190],["Lochailort",383],
+ ["Glenfinnan",595],["Corpach",807],["Fort William",865]
 ];
 function displayRailX(rawX){
  if(!Number.isFinite(rawX))return null;
@@ -1905,7 +1905,7 @@ function appendMapTiles(svg,view){
    failed++;
    if(failed===total&&loaded===0){
     $("geoStatus").textContent="Map offline";
-    $("geoNote").textContent="Map imagery could not load. Check your connection. Station positions remain visible.";
+    $("geoNote").textContent="© OpenStreetMap contributors";
    }
   });
   group.appendChild(image);
@@ -1936,17 +1936,6 @@ function makeMap(view){
  // No straight-line connections between station coordinates.
  for(const way of geoMapFeatures.rail){appendMapPath(railShadow,way,view.bounds,"#08170f",17);appendMapPath(rail,way,view.bounds,"#42ef92",10)}
  svg.appendChild(railShadow);svg.appendChild(rail);
- for(const station of geoStations){
-  if(station.lat>view.bounds.north||station.lat<view.bounds.south||station.lon<view.bounds.west||station.lon>view.bounds.east)continue;
-  const [x,y]=geoPoint(station.lat,station.lon,view.bounds);
-  svg.appendChild(geoSVG("circle",{cx:x,cy:y,r:8,fill:"#173149",stroke:"#d7e2ec","stroke-width":2.5}));
-  const label=geoSVG("text",{x:x+10,y:y-12,fill:"#f2f5ff","font-size":18,"font-weight":"700",stroke:"#0a1525","stroke-width":3,"paint-order":"stroke"});label.textContent=station.name;svg.appendChild(label);
- }
- for(const label of mapLabels){
-  if(label.lat>view.bounds.north||label.lat<view.bounds.south||label.lon<view.bounds.west||label.lon>view.bounds.east)continue;
-  const [x,y]=geoPoint(label.lat,label.lon,view.bounds);
-  const node=geoSVG("text",{x,y,fill:"#7197bd","font-size":15,"font-style":"italic","text-anchor":"middle"});node.textContent=label.name;svg.appendChild(node);
- }
  for(const site of Object.values(siteData)){
   if(site.lat>view.bounds.north||site.lat<view.bounds.south||site.lon<view.bounds.west||site.lon>view.bounds.east)continue;
   const [x,y]=geoPoint(site.lat,site.lon,view.bounds);
@@ -2040,9 +2029,8 @@ async function loadGeoRailway(){
  if(w.status==="fulfilled"){const lakes=extractShapes(w.value,"water");if(lakes.length)geoMapFeatures.water=lakes;geoMapFeatures.coast=extractShapes(w.value,"coast")}
  renderGeoMaps();cacheGeo();
  const hasRail=geoMapFeatures.rail.length>0,hasWater=geoMapFeatures.water.length>0;
- if(hasRail&&hasWater){$("geoStatus").textContent="OSM detail loaded";$("geoNote").textContent="Mapped railway and loch boundaries from OpenStreetMap, including multipolygon shoreline segments. The diagram uses geographic coordinates, with photo pins as approximate areas. No API key required. © OpenStreetMap contributors."}
- else if(hasRail||hasWater){$("geoStatus").textContent="Partial geography";$("geoNote").textContent="Some OpenStreetMap geometry is temporarily unavailable. Showing "+(hasRail?"railway":"loch outlines")+" from available or cached geographic data. Try refreshing later."}
- else {$("geoStatus").textContent="Geometry unavailable";$("geoNote").textContent="Detailed railway geometry is temporarily unavailable. No invented railway path is drawn; roads and lochs remain available from OpenStreetMap tiles."}
+ if(hasRail&&hasWater){$("geoStatus").textContent="OSM detail loaded";$("geoNote").textContent="© OpenStreetMap contributors"}
+ else if(hasRail||hasWater){$("geoStatus").textContent="Partial geography";$("geoNote").textContent="© OpenStreetMap contributors";$("geoNote").textContent="© OpenStreetMap contributors"; roads and lochs remain available from OpenStreetMap tiles."}
 }
 /* Geographic map interaction: preserve real OSM geometry, change viewport only. */
 function geoZoom(factor,nx=.5,ny=.5){
