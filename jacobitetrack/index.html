@@ -748,6 +748,7 @@ const siteData={
  fortWilliam:{name:"Fort William station",lat:56.8201,lon:-5.1061,walk:null,note:"Jacobite starting station. Platform photography rules may apply.",parking:"Fort William station",parkingLat:56.8201,parkingLon:-5.1061}
 };
 let services=[],source=null,feedUpdated=null,feedError=null,weatherData=null,notificationAllowed=false;
+let renderedTrainMarkers=[]; // Last exact selection drawn in Tile 1
 let scheduledCrossings=[],plannedWorksFeed={status:"unavailable",items:[]};
 let lastAlerts=new Set();
 function safe(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -1217,7 +1218,7 @@ function renderPlannedWorks(){
 function updateViaductCountdown(markers){
  // A malformed or missing live feed must never stop the published timetable timer.
  let liveNext=null;
- try{liveNext=getViaductApproaching(markers||visibleTrainMarkers())[0]||null;}catch(error){console.warn("Viaduct live ETA unavailable",error)}
+ try{liveNext=getViaductApproaching(markers||renderedTrainMarkers)[0]||null;}catch(error){console.warn("Viaduct live ETA unavailable",error)}
  const now=Date.now();
  const feedNext=scheduledCrossings.filter(c=>Number.isFinite(Date.parse(c.at))&&Date.parse(c.at)-(c.direction==="mallaig"&&c.basis==="published_schedule_station_offset"?60000:0)>now).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))[0];
  // A station-board crossing and a slightly different PDF crossing can be
@@ -1361,6 +1362,7 @@ function renderViaductApproach(markers=visibleTrainMarkers()){
 
 function render(){
  const markers=visibleTrainMarkers();
+ renderedTrainMarkers=markers;
  updateActiveTrainsPill(markers);
  $("trains").innerHTML=markers.map(({train:t})=>'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+schematicTrainX(t)+',83)"><circle class="train-halo" r="15" style="animation:none"><animate attributeName="r" values="17;35" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".7;0" dur="1.4s" repeatCount="indefinite"/></circle><circle class="train-body" r="13" style="animation:none"><animate attributeName="r" values="14;19;14" dur="1.4s" repeatCount="indefinite"/></circle><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Rail report")+'</title></g>').join("");
  updateGeoTrainMarkers();
