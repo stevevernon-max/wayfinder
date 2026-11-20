@@ -188,12 +188,12 @@
     tick();
   }
   function placeType(title,facility){
-    if(facility==='charger')return {icon:'⚡',label:'Charging'};
+    if(facility==='charger' || /\b(charg(?:er|ing)|supercharger|bp pulse|tesla)\b/i.test(title))return {icon:'⚡',label:'Charging'};
     if(facility==='toilet' || /\b(toilets?|restrooms?)\b/i.test(title))return {icon:'🚻',label:'Toilets'};
-    if(/\b(car parks?|parking|park and ride)\b/i.test(title))return {icon:'🅿️',label:'Parking'};
-    if(/\b(mcdonald|restaurant|cafe|café|burger|food)\b/i.test(title))return {icon:'🍔',label:'Food'};
-    if(/\b(morrisons|aldi|tesco|lidl|m&s|shop|supermarket)\b/i.test(title))return {icon:'🛒',label:'Shop'};
-    if(/\b(falls?|waterfall|glen|viewpoint|trail|beach|castle|loch)\b/i.test(title))return {icon:'🥾',label:'Sight'};
+    if(facility==='parking' || /\b(car parks?|parking|park and ride)\b/i.test(title))return {icon:'🅿️',label:'Parking'};
+    if(/\b(mcdonald'?s?|restaurant|cafe|café|burger|food|kfc|greggs|pub|inn)\b/i.test(title))return {icon:'🍔',label:'Food'};
+    if(/\b(morrisons|aldi|tesco|lidl|m&s|shop|supermarket|sainsbury'?s?|asda|co-op)\b/i.test(title))return {icon:'🛒',label:'Shop'};
+    if(/\b(falls?|waterfall|glen|viewpoint|trail|beach|castle|loch|museum|walk|visitor cent(?:re|er)|gardens?)\b/i.test(title))return {icon:'🥾',label:'Sight'};
     return {icon:'📍',label:'Stop'};
   }
   function timeOnDay(value,stamp){
@@ -221,19 +221,7 @@
     }
     return badges.join('');
   }
-  function renderTripStats(){
-    const route=currentRoute();
-    let metres=route?.distanceMetres;
-    if(!Number.isFinite(metres) && route?.paths?.length){
-      metres=route.paths.reduce((sum,path)=>sum+path.slice(1).reduce((leg,p,i)=>leg+metresBetween(path[i],p),0),0);
-    }
-    const drive=state.stops.reduce((sum,stop)=>sum+n(stop.drive),n(state.destinationDrive));
-    $('timeline-stats').textContent=(Number.isFinite(metres)?Math.round(metres/100)/10+' km · ':'')
-      +duration(drive)+' drive · '+duration(total()-drive)+' stops · '+state.stops.length+(state.stops.length===1?' stop':' stops');
-    $('timeline-stats').hidden=!state.destination.trim();
-  }
   function renderTimeline(){
-    renderTripStats();
     if(!state.destination.trim()){ timelineEvents=[]; $('timeline').innerHTML='<div class="empty">Add a destination to see your plan.</div>'; return; }
     const start=departureTracking.targetArrival && departureTracking.signature===JSON.stringify(routeNames()) ? departureTracking.targetArrival-total()*60000 : departure().getTime();
     let time=start;
@@ -271,9 +259,9 @@
         :event.range?'<time><small>Arr</small> '+timeText(event.forecastTime)+'</time><time class="stop-end-time"><small>Dep</small> '+timeText(event.time)+'</time>'
         :'<small>'+(loop?'Arrive back':'Arrive')+'</small><time>'+timeText(event.time)+'</time>';
       const delayReason=route?.reasons[event.location-1]||'Reason unavailable';
-      const significantDelay=event.delay>5;
-      const roadworks=event.delay>0 && delayReason.includes('Roadworks');
-      const delayText=event.delay>0?'+'+event.delay+(event.delay===1?' minute':' minutes'):'';
+      const significantDelay=event.delay>=5;
+      const roadworks=event.delay>=5 && delayReason.includes('Roadworks');
+      const delayText=event.delay>=5?'+'+event.delay+(event.delay===1?' minute':' minutes'):'';
       const delay=roadworks
         ? '<span class="timeline-pill roadworks-pill'+(significantDelay?' warning-pill':'')+'" title="'+esc(delayReason)+'">Roadworks · '+delayText+'</span>'
         : delayText?' <span class="inline-delay'+(significantDelay?' warning-delay':'')+'" title="'+esc(delayReason)+'">'+delayText+'</span>':'';
@@ -281,19 +269,19 @@
         /\b(public toilets?|restrooms?)\b/i.test(event.title)?'toilet':
         /\b(charging station|ev charger|supercharger|bp pulse)\b/i.test(event.title)?'charger':
         /\b(car parks?|parking|park and ride|park & ride)\b/i.test(event.title)?'parking':'');
-      const facilityLabel={charger:'Charging',parking:'Parking',toilet:'Toilets'}[facility];
+      const facilityLabel={charger:'Charging',toilet:'Toilets'}[facility];
       const type=placeType(event.title,facility);
       const details=(event.note?'<small>'+esc(event.note)+'</small>':'')
         +(facilityLabel?'<span class="timeline-pill facility-pill">'+facilityLabel+'</span>':'')
-        +(roadworks?delay:'')+(event.location>0?timingBadges(event)+'<button type="button" class="stop-times-button" data-stop-times="'+event.location+'">Times</button>':'');
+        +(roadworks?delay:'')+(event.location>0?timingBadges(event):'');
       const endpoint=event.location===0?'S':event.location===names.length-1?'E':'';
-      const marker=endpoint==='S'?'⌂':endpoint==='E'?'🏁':type.icon;
-      const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(endpoint==='S'?'Start':endpoint==='E'?'Destination':type.label)+'">'+marker+'</span>':'')
+      const marker=endpoint==='S'?'':/^home$/i.test(event.title)?'⌂':type.icon;
+      const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(endpoint==='S'?'Start':type.label)+'">'+marker+'</span>':'')
         +(event.location<events.length-1?'<span class="timeline-segments" aria-hidden="true">'+'<i></i>'+'</span>':'')+'</span>';
       return '<div class="event" style="--leg-height:'+driveHeight+'px;--stay-height:'+stayHeight+'px"><div class="event-times">'+times+'</div>'+track+'<div>'
         +'<div class="event-heading"><b'+(significantDelay?' class="roadworks-location"':'')+'>'+esc(event.title)+(roadworks?'':delay)+'</b>'+rain+'</div>'
         +(details?'<div class="event-details">'+details+'</div>':'')
-+(next?'<div class="leg-drive"><span aria-hidden="true">🚗</span> '+Math.round(driveMinutes)+' min</div>':'')+'</div></div>';
++(next?'<div class="leg-drive">'+Math.round(driveMinutes)+' min drive</div>':'')+'</div></div>';
     }).join('');
     drawProgress();
   }
@@ -720,26 +708,6 @@
   }
   $('start-journey').addEventListener('click',changeDepartureStatus);
   $('departure-action').addEventListener('click',changeDepartureStatus);
-  let editingStopTimes;
-  $('timeline').addEventListener('click',event=>{
-    const button=event.target.closest('[data-stop-times]');
-    if(!button)return;
-    editingStopTimes=Number(button.dataset.stopTimes)-1;
-    const stop=state.stops[editingStopTimes];
-    $('stop-times-title').textContent=stop?.name || state.destination;
-    $('stop-closes').value=stop?.closes || (!stop?state.destinationCloses:'') || '';
-    $('stop-arrival-by').value=stop?.arrivalBy || (!stop?state.destinationArrivalBy:'') || '';
-    $('stop-times-dialog').showModal();
-  });
-  $('stop-times-save').addEventListener('click',()=>{
-    const closes=$('stop-closes').value,arrivalBy=$('stop-arrival-by').value;
-    const stop=state.stops[editingStopTimes];
-    if(stop)Object.assign(stop,{closes,arrivalBy});
-    else Object.assign(state,{destinationCloses:closes,destinationArrivalBy:arrivalBy});
-    persist();
-    renderTimeline();
-  });
-
   for(const field of ['start','destination']){
     $(field).addEventListener('input', event=>{
       state[field]=event.target.value;

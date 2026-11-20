@@ -502,3 +502,7 @@ body.journey-active #leave-time { font-size: 38px; }
 #timeline .neutral-pill { color: var(--muted); background: #283039; }
 .stop-times-button { color: var(--blue); border: 0; background: transparent; font: inherit; font-size: 11px; padding: 3px 4px; min-height: 28px; cursor: pointer; }
 #start-journey { min-height: 32px; padding: 3px 9px; font-size: 11px; }
+
+#saved-trips-panel { display: block; margin-top: 12px; }
+#saved-trips-panel > summary { min-height: 44px; padding: 12px 0; color: var(--ink); cursor: pointer; }
+#saved-trips-panel[open] > summary { margin-bottom: 5px; }
