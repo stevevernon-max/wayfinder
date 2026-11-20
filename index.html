@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Wayfinder">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="./road-mark-180.png">
-  <link rel="stylesheet" href="styles.css?v=85">
+  <link rel="stylesheet" href="styles.css?v=86">
   <title>Wayfinder · Journey planner</title>
 </head>
 <body>
@@ -32,12 +32,15 @@
         </div>
       </div>
       <div id="live-journey" hidden>
-        <div class="live-journey-main"><div class="journey-next"><strong id="live-stop">Waiting for live progress</strong><span class="trip-badge" id="parked-badge" hidden>Parked</span><span class="stop-navigation"><button type="button" class="text-btn" id="previous-stop" hidden>← Previous stop</button><button type="button" class="text-btn" id="advance-stop" hidden>At stop</button></span></div><div><small id="live-eta-label">ETA</small> <strong id="live-eta">—</strong></div></div>
+        <div class="live-journey-main"><div class="journey-next"><strong id="live-stop">Waiting for live progress</strong><span class="trip-badge" id="parked-badge" hidden>Parked</span><span class="stop-navigation"><button type="button" class="text-btn" id="previous-stop" hidden>← Previous stop</button><button type="button" class="text-btn" id="advance-stop" hidden>At stop</button></span></div><div class="live-eta-block"><small id="live-eta-label">ETA</small> <strong id="live-eta">—</strong></div></div>
       </div>
       <div class="journey-clock"><strong id="countdown">—</strong><small id="count-label">SET OFF IN</small><div class="margin-row"><small id="margin-label" hidden></small><strong id="live-margin" hidden>—</strong></div></div>
       <button type="button" class="text-btn" id="departure-action" hidden>Still at start</button>
       <div id="parked-info" class="parked-info" hidden aria-live="polite"><div class="departure-timer"><small id="departure-timer-label">TIME UNTIL DEPARTURE</small><strong id="stop-remaining" role="timer">—</strong></div><div class="trip-schedule">You planned to leave by <strong id="parked-leave-by">—</strong></div>
-        <div class="parked-stats"><div><small>Car</small><strong id="car-distance">—</strong><span id="car-distance-detail"></span></div><div><small>Walk back</small><strong id="walk-duration">—</strong><span id="return-by"></span></div></div><strong id="car-warning" hidden></strong></div>
+        <div class="parked-stats"><div><small>Car</small><strong id="car-distance">—</strong><span id="car-distance-detail"></span></div><div><small>Walk back</small><strong id="walk-duration">—</strong><span id="return-by"></span></div></div>
+        <div id="parked-return" hidden><progress id="parked-return-progress" max="100" value="0" aria-label="Return to parked car progress"></progress><small id="parked-return-detail"></small></div>
+        <div id="predicted-departure" hidden><span>Predicted departure </span><strong id="predicted-departure-time"></strong><small id="predicted-departure-note"></small></div>
+        <strong id="car-warning" hidden></strong></div>
     </section>
     <section id="journey-panel">
     <header class="section-head timeline-heading"><h2>Timeline</h2><div class="timeline-tools"><span id="gps-status" role="status"></span><span id="gps-reading" role="status"></span></div></header>
@@ -80,6 +83,6 @@
     <div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" id="settings-save" value="save">Save settings</button></div>
   </form></dialog>
   <script src="tomtom-config.js?v=35" defer></script>
-  <script src="app.js?v=85" defer></script>
+  <script src="app.js?v=86" defer></script>
 </body>
 </html>

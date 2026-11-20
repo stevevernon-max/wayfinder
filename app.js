@@ -164,6 +164,7 @@
     delete tracking.manualStop;
     parkedDepartureSample=undefined;
     walkingEstimate=null;
+    delete tracking.lastProgress;
   }
   const weather=new Map();
   const total=()=>state.stops.reduce((a,s)=>a+n(s.drive)+n(s.stay),0)+n(state.destinationDrive);
@@ -250,8 +251,8 @@
       const next=events[index+1];
       const driveMinutes=next?Math.max(0,(next.forecastTime-event.time)/60000):0;
       const stayMinutes=Math.max(0,(event.time-event.forecastTime)/60000);
-      const driveHeight=next?24:0;
-      const stayHeight=0;
+      const driveHeight=next?Math.max(8,driveMinutes*1.3):0;
+      const stayHeight=stayMinutes*.6;
       const coord=route?.coords[event.location] || selectedPlaces.get(names[event.location]);
       const hourly=weather.get(coord);
       const hour=Math.ceil(event.forecastTime/3600000)*3600;
@@ -447,6 +448,32 @@
     })();
   }
 
+  function parkedReturn(stop,position,now){
+    if(!stop?.parkedAt || !position || position.coords.accuracy>30 || now-position.timestamp>30000)return null;
+    const distance=metresBetween(position.coords,stop.parkedAt);
+    const farthest=Math.max(Number(stop.farthestMetres)||0,Math.ceil(distance/5)*5);
+    if(stop.returnSampleAt!==position.timestamp){
+      const last=stop.returnDistance;
+      if(Number.isFinite(last)){
+        if(distance<last-15 || farthest-distance>Math.max(30,position.coords.accuracy*2))stop.returning=true;
+        if(distance>last+30)stop.returning=false;
+      }
+      stop.returnDistance=distance;
+      stop.returnSampleAt=position.timestamp;
+      stop.farthestMetres=farthest;
+      state.journeyTracking=departureTracking;
+      persist();
+    }
+    const routed=recentWalkingRoute(stop,position.coords,now);
+    const milliseconds=distance<=50?0:routed?walkingEstimate.seconds*1000:distance*1.25/1.2*1000;
+    return {distance,progress:distance<=50?100:farthest?Math.max(0,Math.min(100,(1-distance/farthest)*100)):0,
+      milliseconds,returning:Boolean(stop.returning),routed};
+  }
+  function predictParkedDeparture(stop,walk,now){
+    if(!walk)return null;
+    const ready=now+walk.milliseconds+(walk.returning || walk.distance>50?120000:0);
+    return walk.returning?ready:Math.max(stop.arrivedAt+n(state.stops[stop.index]?.stay)*60000,ready);
+  }
   function drawProgress(){
     const rows=$('timeline').querySelectorAll('.event');
     const now=Date.now();
@@ -456,11 +483,15 @@
     const previous=departureTracking.liveLeg||0;
     let best;
     let liveEta=null;
+    let predictedDeparture=null;
+    let returnWalk=null;
     arrivalMargin=null;
     const manualStop=departureTracking.manualStop;
     const atStop=tracking && manualStop?.signature===route.signature && state.stops[manualStop.index];
     if(tracking && fresh && !atStop){
-      const candidates=route.paths.map((points,i)=>{
+      const paths=route.coords.slice(0,-1).map((coordinate,i)=>route.paths?.[i]?.length>=2
+        ? route.paths[i] : [walkBackPoint(coordinate),walkBackPoint(route.coords[i+1])]);
+      const candidates=paths.map((points,i)=>{
         const match=roadProgress(points,gpsFix.coords);
         return match && {i,...match};
       }).filter(match=>match && (departureTracking.manualRewind?match.i===previous:match.i>=previous)).sort((a,b)=>a.distance-b.distance);
@@ -495,20 +526,32 @@
       const target=departureTracking.targetArrival||timelineEvents.at(-1).time;
       const downstream=Math.max(0,timelineEvents.at(-1).time-stop.time);
       const plannedLeave=target-downstream;
-      // Use actual stop arrival and full stay, plus the time to return to the car.
+      returnWalk=parkedReturn(manualStop,gpsFix,now);
       const parked=manualStop.parkedAt, freshFix=fresh && parked;
       const straight=freshFix?metresBetween(gpsFix.coords,parked):null;
       const routed=freshFix && recentWalkingRoute(manualStop,gpsFix.coords,now);
       const walkingMs=straight===null?0:straight<=50?0
         :routed?walkingEstimate.seconds*1000:straight*1.25/1.2*1000;
+      predictedDeparture=predictParkedDeparture(manualStop,returnWalk,now);
       const minimumStay=n(state.stops[manualStop.index]?.stay)*60000;
-      const earliestLeave=Math.max(manualStop.arrivedAt+minimumStay,now+walkingMs);
+      const earliestLeave=predictedDeparture ?? Math.max(manualStop.arrivedAt+minimumStay,now+walkingMs);
       liveEta=earliestLeave+downstream;
       arrivalMargin=Math.round((target-liveEta)/60000);
       $('gps-status').textContent=manualStop.automatic?'Stop detected by GPS':'Stop marked manually';
     }
+    if(best){
+      const saved=departureTracking.lastProgress;
+      if(!saved || saved.i!==best.i || Math.round(saved.progress*1000)!==Math.round(best.progress*1000)){
+        departureTracking.lastProgress={i:best.i,progress:best.progress,signature:route.signature};
+        state.journeyTracking=departureTracking;
+        persist();
+      }
+    }else if(tracking && !fresh && !atStop && departureTracking.lastProgress?.signature===route.signature
+      && departureTracking.lastProgress.i===previous){
+      best=departureTracking.lastProgress;
+    }
     if(liveEta===null){
-      best=undefined;
+      if(!tracking || atStop)best=undefined;
       if(gpsFix)$('gps-status').textContent=departureTracking.arrivedAt && departureTracking.signature===route?.signature
         ? 'Destination reached.'
         : !route ? 'Route changed. Tap Get travel times to refresh the ETA.'
@@ -517,7 +560,7 @@
         : departureTracking.origin ? 'GPS ready. Waiting for driving movement.' : 'Waiting for an accurate GPS reading near Start.';
     }
     const signed=arrivalMargin===null?'—':(arrivalMargin>=0?'+':'−')+Math.abs(arrivalMargin)+' min';
-    $('live-margin').textContent=signed;
+    $('live-margin').textContent=arrivalMargin===null?'—':Math.abs(arrivalMargin)+' min';
     const stayIndex=atStop ? manualStop.index+1 : tracking && fresh ? currentStayIndex(route.coords,best?.i ?? previous,gpsFix.coords) : -1;
     const activeStopIndex=stayIndex>=0?stayIndex:tracking?(best?.i ?? previous)+1:-1;
     const activeStop=timelineEvents[activeStopIndex];
@@ -532,6 +575,19 @@
     const info=$('parked-info');
     if(atStop && leaveBy!==null){
       const remaining=leaveBy-now;
+      const returnPanel=$('parked-return');
+      returnPanel.hidden=!returnWalk || returnWalk.distance<=50;
+      if(!returnPanel.hidden){
+        $('parked-return-progress').value=Math.round(returnWalk.progress);
+        $('parked-return-detail').textContent=Math.round(returnWalk.progress)+'% back to car';
+      }
+      $('predicted-departure').hidden=predictedDeparture===null;
+      if(predictedDeparture!==null){
+        $('predicted-departure-time').textContent=new Date(predictedDeparture).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+        $('predicted-departure-note').textContent=returnWalk.returning
+          ? 'Based on your walk back, plus 2 min to get ready'
+          : 'Based on your planned stay and walk back';
+      }
       const straight=manualStop.parkedAt && fresh?metresBetween(gpsFix.coords,manualStop.parkedAt):null;
       if(straight!==null && straight>50)updateWalkingEstimate(gpsFix,manualStop.parkedAt,manualStop);
       const routed=straight!==null && recentWalkingRoute(manualStop,gpsFix.coords,now);
@@ -558,6 +614,8 @@
       $('car-warning').hidden=!warning;
     }else{
       info.hidden=true;
+      $('parked-return').hidden=true;
+      $('predicted-departure').hidden=true;
     }
     $('parked-badge').hidden=info.hidden;
     const shownTime=leaveBy ?? liveEta;
@@ -566,7 +624,10 @@
     const arrived=departureTracking.signature===route?.signature && Boolean(departureTracking.arrivedAt);
     const waitingToDepart=Boolean(route && !departureTracking.leftAt && !departureTracking.arrivedAt);
 
+    const lastVisited=arrived?timelineEvents.length-1:atStop?manualStop.index+1
+      :tracking?Math.max(0,best?.i ?? previous):0;
     rows.forEach((row,i)=>{
+      row.hidden=Boolean(departureTracking.leftAt) && i<lastVisited;
       const isStay=i>0 && i<timelineEvents.length-1 && timelineEvents[i].time>timelineEvents[i].forecastTime;
       const stayCompleted=isStay && (arrived || (tracking && i!==stayIndex &&
         (stayIndex>=0 ? i<stayIndex : i<=Math.max(previous,best?.i ?? previous))));
@@ -629,6 +690,7 @@
     drawProgress();
     const underway=Boolean(departureTracking.leftAt);
     const arrived=departureTracking.arrivedAt;
+    $('journey-status').dataset.phase=arrived?'arrived':underway?(departureTracking.manualStop?'parked':'driving'):'planned';
     $('planned-status').hidden=underway;
     $('live-journey').hidden=!underway;
     const route=currentRoute();
@@ -1526,6 +1588,7 @@
     delete tracking.arrivedAt;
     delete tracking.completedMargin;
     tracking.manualRewind=true;
+    delete tracking.lastProgress;
     parkedDepartureSample=undefined;
     walkingEstimate=null;
     liveEstimate=null;

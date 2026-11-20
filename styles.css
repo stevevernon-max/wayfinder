@@ -528,3 +528,20 @@ body.journey-active #leave-time { font-size: 38px; }
 #previous-stop { min-height: 36px; padding: 5px 9px; border: 1px solid #5b9e88; border-radius: 8px; color: #91dfba; font-size: 11px; white-space: nowrap; }
 #journey-status .journey-next:has(#previous-stop:not([hidden])) { display: flex; flex-wrap: wrap; }
 #journey-status .journey-next:has(#previous-stop:not([hidden])) #live-stop { flex: 1 1 160px; }
+
+#journey-status[data-phase="driving"] .journey-clock { grid-column: 1; grid-row: 2; justify-self: start; }
+#journey-status[data-phase="driving"] .live-eta-block { grid-column: 2; grid-row: 2; justify-self: end; text-align: right; }
+#journey-status[data-phase="driving"] .margin-row { flex-wrap: wrap; gap: 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  #journey-status[data-phase="driving"] #live-margin[data-tone="late"] { animation: margin-pulse 1.6s ease-in-out infinite; }
+}
+@keyframes margin-pulse { 50% { opacity: .55; } }
+#timeline .event:not(:last-child) { min-height: calc(60px + var(--leg-height) + var(--stay-height)); }
+#timeline .timeline-segments { top: calc(23px + var(--stay-height)); }
+#parked-return-progress { appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 9px; margin: 5px 0; border: 0; border-radius: 999px; background: #39454e; color: #77dbb4; }
+#parked-return-progress::-webkit-progress-bar { border-radius: 999px; background: #39454e; }
+#parked-return-progress::-webkit-progress-value { border-radius: 999px; background: #77dbb4; }
+#parked-return-progress::-moz-progress-bar { border-radius: 999px; background: #77dbb4; }
+#predicted-departure { font-size: 13px; }
+#predicted-departure-time { font-size: 21px; color: #91dfba; }
+#predicted-departure-note { display: block; color: var(--muted); font-size: 11px; }
