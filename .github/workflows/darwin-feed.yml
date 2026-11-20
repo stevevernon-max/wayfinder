@@ -6,6 +6,7 @@ on:
     paths:
       - .github/workflows/darwin-feed.yml
       - jacobitetrack/scripts/darwin_feed.py
+      - jacobitetrack/index.html
       - jacobitetrack/tests/**
   schedule:
     # Avoid the busy top of the hour; GitHub may still delay scheduled runs.
