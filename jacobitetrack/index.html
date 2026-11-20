@@ -590,6 +590,22 @@ main>.planned-works-status{margin:0 0 10px}
  .app-header #activeTrainsPill,.app-header .gps-accuracy-pill{min-height:28px;padding:5px 7px;font-size:clamp(9px,2.5vw,11px)}
  .app-header #trackerTile{padding-top:2px}
 }
+
+/* Unified close-up + countdown tile; crossing clock shares the large-type row. */
+.app-header .header-main{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:5px;margin:0 0 4px!important;min-height:30px}
+.app-header .header-brand{flex:0 1 auto;align-self:center!important;min-width:0}
+.app-header .header-brand>strong{font-size:clamp(16px,4.6vw,23px)!important;white-space:nowrap}
+.app-header .header-pills{width:auto!important;flex:0 1 auto;margin:0 0 0 auto!important;align-self:center!important;display:flex;flex-wrap:nowrap!important;justify-content:flex-end;gap:4px}
+.app-header #activeTrainsPill,.app-header .gps-accuracy-pill{font-size:clamp(9px,2.3vw,12px);padding:5px 6px;min-height:29px}
+.app-header #viaductCombinedTile{border-top:1px solid #2e4757;margin-top:3px;padding:8px 2px 3px;background:transparent}
+.app-header .viaduct-combined-heading{font-size:12px;color:#c9e8f0;font-weight:800;padding:0 4px 2px}
+.app-header .viaduct-hero-line{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:8px;padding:0 4px}
+.app-header #viaductCombinedTile #proximityTile{display:flex!important;align-items:center;min-width:0;min-height:0!important;padding:2px 0!important;margin:0!important;border:0!important;box-shadow:none!important;background:transparent!important;border-radius:0!important;overflow:visible}
+.app-header #viaductCombinedTile #viaductRemaining{display:block!important;line-height:1.06;text-align:left;font-size:clamp(27px,7.4vw,50px)!important;white-space:nowrap;letter-spacing:-.9px;flex:0 1 auto}
+.app-header #viaductCombinedTile .viaduct-next-clock{font-size:clamp(27px,7.4vw,50px);font-weight:800;line-height:1.06;text-align:right;white-space:nowrap;letter-spacing:-.9px;color:#8fcfff;font-variant-numeric:tabular-nums}
+.app-header #viaductCombinedTile #viaductTrackTile{border:0!important;padding:2px 0 0!important;background:transparent!important;margin:0!important}
+.app-header #viaductCombinedTile #viaductTrackTile .rail-scroll{margin:0}
+@media(max-width:390px){.app-header .header-brand>strong{font-size:16px!important}.app-header #activeTrainsPill,.app-header .gps-accuracy-pill{font-size:9px;padding:4px 5px}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span></button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -608,8 +624,16 @@ main>.planned-works-status{margin:0 0 10px}
 </svg></div>
 <div class="muted" id="trackStatus" hidden></div>
 </section>
-<section id="viaductTrackTile" aria-label="Close-up train tracker Lochailort to Corpach">
- <div class="focus-title"><span>Viaduct approach</span></div>
+<section id="viaductCombinedTile" aria-label="Glenfinnan Viaduct approach and next crossing">
+ <div class="viaduct-combined-heading">Viaduct approach</div>
+ <div class="viaduct-hero-line">
+  <section id="proximityTile" aria-label="Next train viaduct countdown">
+   <span id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</span>
+   <span id="viaductTileNote" hidden></span><span id="nearestTrain" hidden>—</span>
+  </section>
+  <div id="viaductTileCountdown" class="viaduct-next-clock">Checking</div>
+ </div>
+ <section id="viaductTrackTile" aria-label="Close-up train tracker Lochailort to Corpach">
  <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 175" role="img" aria-label="Enlarged Lochailort to Corpach railway with marked Glenfinnan Viaduct and estimated trains">
  <line class="bed" x1="35" y1="83" x2="865" y2="83"/><line class="track" x1="35" y1="83" x2="865" y2="83"/>
  <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="6" y="45" text-anchor="start">Lochailort</text>
@@ -624,16 +648,8 @@ main>.planned-works-status{margin:0 0 10px}
  <g id="viaductTrains"></g>
  </svg></div>
  
-</section>
-<section id="proximityTile" aria-label="Glenfinnan Viaduct next train">
-<div class="viaduct-top"><div class="viaduct-icon" aria-hidden="true"><svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
- <path d="M7 33H65" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
- <rect x="18" y="19" width="32" height="13" rx="2" stroke="currentColor" stroke-width="3"/>
- <rect x="26" y="23" width="12" height="5" rx="1" fill="currentColor"/>
- <path d="M49 26H57V33" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
- <path d="M10 63V50C10 42 21 42 21 50V63M21 63V50C21 42 32 42 32 50V63M32 63V50C32 42 43 42 43 50V63M43 63V50C43 42 54 42 54 50V63M54 63V50C54 42 65 42 65 50V63" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
- </svg></div><div class="viaduct-details"><div class="viaduct-time-row"><strong id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</strong></div><div class="viaduct-subtitle"><span id="viaductTileCountdown">Awaiting railway prediction</span></div><div id="viaductTileNote" class="viaduct-source" hidden></div></div></div>
-<span id="nearestTrain" hidden>—</span>
+
+ </section>
 </section>
 </div></header><main>
 <section class="tile" id="geoTile">
@@ -1162,7 +1178,7 @@ function updateViaductCountdown(){
  const when=crossingLocal===nowLocal?"Today":dateOf(Date.now()+86400000)===crossingLocal?"Tomorrow"
   :new Date(trainAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"});
  const inPositionDay=dateOf(inPositionAt)===crossingLocal?"":dateOf(inPositionAt)===nowLocal?"Today ":""+new Date(inPositionAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"})+" ";
- time.textContent="Next viaduct crossing · "+when+" "+fmt(trainAt);
+ time.textContent=when+" "+fmt(trainAt);
  // Keep Tile 2 focused on the countdown and crossing time.
  // Timetable predictions remain estimates internally, without a warning/error label.
  note.hidden=true;
