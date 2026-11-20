@@ -598,7 +598,11 @@ main>.planned-works-status{margin:0 0 10px}
 .app-header .header-pills{width:auto!important;flex:0 1 auto;margin:0 0 0 auto!important;align-self:center!important;display:flex;flex-wrap:nowrap!important;justify-content:flex-end;gap:4px}
 .app-header #activeTrainsPill,.app-header .gps-accuracy-pill{font-size:clamp(9px,2.3vw,12px);padding:5px 6px;min-height:29px}
 .app-header #viaductCombinedTile{border-top:1px solid #2e4757;margin-top:3px;padding:8px 2px 3px;background:transparent}
-.app-header .viaduct-combined-heading{font-size:12px;color:#c9e8f0;font-weight:800;padding:0 4px 2px}
+.app-header .viaduct-combined-heading{display:flex;align-items:center;gap:10px;color:#afc8dc;font-size:11px;font-weight:800;letter-spacing:1.7px;text-transform:uppercase;line-height:1.35;padding:0 4px 9px;white-space:nowrap}
+.app-header .viaduct-combined-heading::before,.app-header .viaduct-combined-heading::after{content:"";height:1px;background:linear-gradient(90deg,transparent,#416077);flex:1;min-width:10px}
+.app-header .viaduct-combined-heading::after{background:linear-gradient(90deg,#416077,transparent)}
+.app-header .viaduct-combined-heading span{flex:0 0 auto}
+@media(max-width:390px){.app-header .viaduct-combined-heading{font-size:10px;letter-spacing:1.2px;gap:7px}}
 .app-header .viaduct-hero-line{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:8px;padding:0 4px}
 .app-header #viaductCombinedTile #proximityTile{display:flex!important;align-items:center;min-width:0;min-height:0!important;padding:2px 0!important;margin:0!important;border:0!important;box-shadow:none!important;background:transparent!important;border-radius:0!important;overflow:visible}
 .app-header #viaductCombinedTile #viaductRemaining{display:block!important;line-height:1.06;text-align:left;font-size:clamp(27px,7.4vw,50px)!important;white-space:nowrap;letter-spacing:-.9px;flex:0 1 auto}
@@ -628,7 +632,7 @@ main>.planned-works-status{margin:0 0 10px}
 <div class="muted" id="trackStatus" hidden></div>
 </section>
 <section id="viaductCombinedTile" aria-label="Glenfinnan Viaduct approach and next crossing">
- <div class="viaduct-combined-heading">Viaduct approach</div>
+ <div class="viaduct-combined-heading"><span>Glenfinnan Viaduct</span></div>
  <div class="viaduct-hero-line">
   <section id="proximityTile" aria-label="Next train viaduct countdown">
    <span id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</span>
@@ -1192,12 +1196,24 @@ function updateViaductCountdown(){
  // over the static timetable so a small delay does not hide the real train.
  // Prioritise train times currently reported by station arrival/departure boards.
  // If no further board-based crossing remains, use the PDF timetable.
- const boardFresh=Number.isFinite(Date.parse(feedUpdated||""))&&Date.parse(feedUpdated)<=now+60000;
- const boardCandidates=boardFresh?[
-  Number.isFinite(liveNext?.remaining)?{at:now+liveNext.remaining*60000,type:"boards"}:null,
-  Number.isFinite(feedMinutes)&&feedMinutes>0?{at:adjustedCrossingAt(feedNext),type:"boards"}:null
- ].filter(x=>x&&Number.isFinite(x.at)&&x.at>now).sort((a,b)=>a.at-b.at):[];
- const chosen=boardCandidates[0]||
+ const boardAge=now-Date.parse(feedUpdated||"");
+ const boardFresh=Number.isFinite(boardAge)&&boardAge>=-60000&&boardAge<15*60000;
+ const liveCandidate=boardFresh&&Number.isFinite(liveNext?.remaining)&&liveNext.remaining>0?
+  {at:now+liveNext.remaining*60000,type:"reported_station_times"}:null;
+ const scheduleCandidate=boardFresh&&Number.isFinite(feedMinutes)&&feedMinutes>0?
+  {at:adjustedCrossingAt(feedNext),type:"schedule"}:null;
+ // Do not let an on-time crossing supplied by the schedule win against a
+ // later reported station forecast for the same delayed train. Both values
+ // may be present in the feed. A distinct crossing beyond 90 min is not
+ // considered the same service.
+ const sameDirection=!feedNext||!liveNext?.direction||
+  (feedNext.direction==="fort_william"&&liveNext.direction==="out")||
+  (feedNext.direction==="mallaig"&&liveNext.direction==="back");
+ const sameWorking=liveCandidate&&scheduleCandidate&&sameDirection&&
+  Math.abs(liveCandidate.at-scheduleCandidate.at)<=90*60000;
+ const boards=liveCandidate&&(sameWorking||!scheduleCandidate)?liveCandidate:
+  [liveCandidate,scheduleCandidate].filter(Boolean).sort((a,b)=>a.at-b.at)[0]||null;
+ const chosen=boards||
   (pdfNext&&Number.isFinite(pdfCrossingAt(pdfNext))&&pdfCrossingAt(pdfNext)>now?{at:pdfCrossingAt(pdfNext),type:"timetable"}:null);
  // Keep both wall-clock labels anchored to the same crossing timestamp.
  const trainAt=chosen?.at;
