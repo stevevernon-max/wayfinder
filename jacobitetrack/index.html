@@ -1457,28 +1457,53 @@ $("disableAlertsBtn").addEventListener("click",async()=>{
 $("viewpoint").addEventListener("change",render);
 $("alertLead").addEventListener("change",render);
 
-async function refreshNow(){
- const btn=$("forceSyncBtn");
- if(btn.disabled)return;
- btn.disabled=true;btn.setAttribute("aria-busy","true");
- btn.innerHTML='<span aria-hidden="true">↻</span> Syncing';
+// Manual refreshes are limited per device to once every five minutes.
+// Foreground auto-sync and periodic feed checks continue independently.
+const MANUAL_SYNC_COOLDOWN_MS=5*60000;
+const MANUAL_SYNC_KEY="jacobitetrack-manual-sync-v1";
+let refreshInFlight=false,manualSyncTime=0;
+try{manualSyncTime=Number(localStorage.getItem(MANUAL_SYNC_KEY))||0}catch{}
+function manualSyncRemaining(){
+ return Math.max(0,MANUAL_SYNC_COOLDOWN_MS-(Date.now()-manualSyncTime));
+}
+function updateRefreshButton(){
+ const btn=$("forceSyncBtn");if(!btn)return;
+ const remaining=manualSyncRemaining(),blocked=remaining>0;
+ btn.disabled=blocked||refreshInFlight;
+ if(refreshInFlight){
+  btn.setAttribute("aria-busy","true");
+  btn.innerHTML='<span aria-hidden="true">↻</span> Syncing';
+ }else{
+  btn.removeAttribute("aria-busy");
+  if(blocked){
+   const mins=Math.floor(remaining/60000),secs=Math.ceil(remaining%60000/1000);
+   btn.innerHTML='<span aria-hidden="true">↻</span> '+mins+':'+String(secs).padStart(2,"0");
+   btn.title="Manual refresh available in "+mins+" min "+secs+" sec. Automatic synchronisation continues.";
+  }else{
+   btn.innerHTML='<span aria-hidden="true">↻</span> Refresh';
+   btn.title="Manually sync the latest available railway data";
+  }
+ }
+}
+async function refreshNow({manual=false}={}){
+ if(refreshInFlight)return;
+ if(manual&&manualSyncRemaining()>0){updateRefreshButton();return}
+ if(manual){
+  manualSyncTime=Date.now();
+  try{localStorage.setItem(MANUAL_SYNC_KEY,String(manualSyncTime))}catch{}
+ }
+ refreshInFlight=true;updateRefreshButton();
  try{
   await Promise.allSettled([load(),loadTimetable(),fetchWeather()]);
   render();
   if(typeof renderGeoMaps==="function")renderGeoMaps();
-  const updated=Number.isFinite(Date.parse(feedUpdated||""))?Date.parse(feedUpdated):null;
-  const stale=!updated||Date.now()-updated>15*60000;
-  btn.title=stale?"App refreshed; railway source has not published new data":"App synced with the latest available railway feed";
-  btn.innerHTML='<span aria-hidden="true">↻</span> '+(stale?"Feed delayed":"Updated");
- }catch(error){
-  btn.title="Refresh failed: "+error.message;
-  btn.innerHTML='<span aria-hidden="true">↻</span> Retry';
  }finally{
-  btn.disabled=false;btn.removeAttribute("aria-busy");
-  // Use the normal caption after the next tap; data never appears newer than its source.
+  refreshInFlight=false;updateRefreshButton();
  }
 }
-$("forceSyncBtn").addEventListener("click",refreshNow);
+$("forceSyncBtn").addEventListener("click",()=>refreshNow({manual:true}));
+updateRefreshButton();
+setInterval(updateRefreshButton,1000);
 
 // iOS Home Screen apps commonly resume a suspended page without running
 // its startup code. The 60-second interval may be paused while backgrounded.
