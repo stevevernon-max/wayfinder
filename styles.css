@@ -484,3 +484,5 @@ body.journey-active #leave-time { font-size: 38px; }
 #route-editor > summary { padding: 12px 140px 8px 0; min-height: 44px; }
 #route-editor > .route-actions-top { position: absolute; right: 10px; top: 6px; margin: 0; }
 #route-editor > .endpoint-row:first-of-type { margin-top: 0; }
+
+.route-card .stop-row, .route-card .stop-head { grid-template-columns: 44px minmax(0,1fr) 46px 44px; }
