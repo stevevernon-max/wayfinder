@@ -1371,7 +1371,7 @@ async function refreshNow(){
   if(typeof renderGeoMaps==="function")renderGeoMaps();
   const updated=Number.isFinite(Date.parse(feedUpdated||""))?Date.parse(feedUpdated):null;
   const stale=!updated||Date.now()-updated>15*60000;
-  btn.title=stale?"Refreshed app; railway source has not published a recent update":"Train data refreshed from latest published railway feed";
+  btn.title=stale?"App refreshed; railway source has not published new data":"App synced with the latest available railway feed";
   btn.innerHTML='<span aria-hidden="true">↻</span> '+(stale?"Feed delayed":"Updated");
  }catch(error){
   btn.title="Refresh failed: "+error.message;
@@ -1383,6 +1383,21 @@ async function refreshNow(){
 }
 $("forceSyncBtn").addEventListener("click",refreshNow);
 
+// iOS Home Screen apps commonly resume a suspended page without running
+// its startup code. The 60-second interval may be paused while backgrounded.
+let lastForegroundSyncAt=Date.now(),foregroundSyncPending=false;
+async function syncOnReturn(){
+ if(document.visibilityState==="hidden"||!navigator.onLine||foregroundSyncPending)return;
+ const now=Date.now();
+ if(now-lastForegroundSyncAt<12000)return; // pageshow/focus/visibility often coincide
+ lastForegroundSyncAt=now;
+ foregroundSyncPending=true;
+ try{await refreshNow()}finally{foregroundSyncPending=false}
+}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")syncOnReturn()});
+window.addEventListener("pageshow",event=>{if(event.persisted)syncOnReturn()});
+window.addEventListener("focus",syncOnReturn);
+window.addEventListener("online",()=>{lastForegroundSyncAt=0;syncOnReturn()});
 load();loadTimetable();fetchWeather();setupPush();setInterval(load,60000);setInterval(fetchWeather,600000);setInterval(updatePhotographyLightStatus,60000);setInterval(()=>{render();updateGeoTrainMarkers()},15000);
 /* GPS stays entirely in the device browser; only its nearest position on this
    simplified station-based railway alignment is displayed. Nothing is uploaded. */
