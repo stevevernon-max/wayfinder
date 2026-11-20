@@ -64,6 +64,7 @@
     };
     const startDistance=distanceTo(route.coords[0]);
     if(departureTracking.leftAt){
+      if(departureTracking.manualRewind)return;
       if(!departureTracking.arrivedAt && distanceTo(route.coords.at(-1))+fix.accuracy<=120){
         departureTracking.arrivedAt=position.timestamp;
         delete departureTracking.manualStop;
@@ -108,6 +109,7 @@
     const coord=position?.coords && position.coords.accuracy<=65
       ? {latitude:position.coords.latitude,longitude:position.coords.longitude}
       : null;
+    delete departureTracking.manualRewind;
     departureTracking.manualStop={signature:route.signature,index,arrivedAt:position?.timestamp||Date.now(),
       parkedAt:coord,automatic};
     departureTracking.liveLeg=index;
@@ -137,6 +139,10 @@
     const point=route.coords[stop.index+1]?.split(',').map(Number);
     const parked=stop.parkedAt || (point && {latitude:point[0],longitude:point[1]});
     if(!parked)return;
+    if(tracking.manualRewind){
+      if(metresBetween(fix,parked)>50)return;
+      delete tracking.manualRewind;
+    }
     const away=metresBetween(fix,parked)-fix.accuracy;
     if(away<100)return;
     // A distant fix also recovers a stop if the app missed the drive while suspended.
@@ -153,6 +159,7 @@
   }
 
   function leaveTrackedStop(tracking,stop){
+    delete tracking.manualRewind;
     tracking.liveLeg=Math.max(tracking.liveLeg||0,stop.index+1);
     delete tracking.manualStop;
     parkedDepartureSample=undefined;
@@ -456,7 +463,7 @@
       const candidates=route.paths.map((points,i)=>{
         const match=roadProgress(points,gpsFix.coords);
         return match && {i,...match};
-      }).filter(match=>match && match.i>=previous).sort((a,b)=>a.distance-b.distance);
+      }).filter(match=>match && (departureTracking.manualRewind?match.i===previous:match.i>=previous)).sort((a,b)=>a.distance-b.distance);
       const closest=candidates[0];
       const current=candidates.find(match=>match.i===previous);
       best=current && closest && current.distance<=closest.distance+Math.max(25,gpsFix.coords.accuracy)
@@ -628,6 +635,8 @@
     const atStop=route && departureTracking.manualStop?.signature===route.signature;
     $('advance-stop').hidden=!underway || Boolean(arrived) || !route || (!atStop && (departureTracking.liveLeg||0)>=state.stops.length);
     $('advance-stop').textContent=atStop?'Leave stop':'At stop';
+    $('previous-stop').hidden=!underway || !route || (!departureTracking.manualStop && !(departureTracking.liveLeg>0)
+      && !departureTracking.progressHistory?.some(step=>step.signature===route.signature));
     $('departure-action').hidden=!underway || Boolean(arrived || departureTracking.manualStop || departureTracking.liveLeg);
     $('start-journey').hidden=underway || !route;
     $('live-margin').hidden=!underway;
@@ -1500,11 +1509,41 @@
     startLocation();
     void calcRoute();
   };
+  $('previous-stop').onclick=()=>{
+    const tracking=departureTracking,route=currentRoute();
+    if(!tracking.leftAt || !route)return;
+    const history=(tracking.progressHistory||[]).filter(step=>step.signature===route.signature);
+    let previous=history.pop();
+    if(!previous){
+      const leg=tracking.liveLeg||0;
+      if(!tracking.manualStop && leg<=0)return;
+      previous={liveLeg:tracking.manualStop?leg:Math.max(0,leg-1),manualStop:null};
+    }
+    tracking.progressHistory=history;
+    tracking.liveLeg=Math.max(0,Math.min(previous.liveLeg,state.stops.length));
+    if(previous.manualStop)tracking.manualStop=previous.manualStop;
+    else delete tracking.manualStop;
+    delete tracking.arrivedAt;
+    delete tracking.completedMargin;
+    tracking.manualRewind=true;
+    parkedDepartureSample=undefined;
+    walkingEstimate=null;
+    liveEstimate=null;
+    state.journeyTracking=tracking;
+    persist();
+    tick();
+  };
   $('advance-stop').onclick=()=>{
     const tracking=departureTracking;
     const route=currentRoute();
     if(!tracking.leftAt || tracking.arrivedAt || !route)return;
     const manual=tracking.manualStop;
+    if(!manual && (tracking.liveLeg||0)>=state.stops.length)return;
+    tracking.progressHistory=(tracking.progressHistory||[]).filter(step=>step.signature===route.signature);
+    tracking.progressHistory.push({signature:route.signature,liveLeg:tracking.liveLeg||0,
+      manualStop:manual?{...manual}:null});
+    tracking.progressHistory=tracking.progressHistory.slice(-80);
+    delete tracking.manualRewind;
     if(manual?.signature===route.signature){
       leaveTrackedStop(tracking,manual);
     }else{

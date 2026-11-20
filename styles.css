@@ -523,3 +523,8 @@ body.journey-active #leave-time { font-size: 38px; }
   0%,100% { border-color: #ff817a; box-shadow: inset 0 0 18px #ff817a12,0 0 0 #ff817a00; }
   50% { border-color: #ffaaa4; box-shadow: inset 0 0 40px #ff817a40,0 0 15px #ff817a50; }
 }
+
+.stop-navigation { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; justify-content: flex-end; }
+#previous-stop { min-height: 36px; padding: 5px 9px; border: 1px solid #5b9e88; border-radius: 8px; color: #91dfba; font-size: 11px; white-space: nowrap; }
+#journey-status .journey-next:has(#previous-stop:not([hidden])) { display: flex; flex-wrap: wrap; }
+#journey-status .journey-next:has(#previous-stop:not([hidden])) #live-stop { flex: 1 1 160px; }
