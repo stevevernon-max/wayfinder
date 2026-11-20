@@ -546,6 +546,35 @@ main>.planned-works-status{margin:0 0 10px}
 @keyframes trackerGreenPulse{0%,100%{background:#132d25;box-shadow:inset 0 0 0 1px #2c845d}50%{background:#20593c;box-shadow:inset 0 0 0 2px #70f1ab}}
 .app-header #trackerTile.crossing-two-minutes{animation:trackerGreenPulse 1s ease-in-out infinite;border-radius:10px}
 @media(prefers-reduced-motion:reduce){.app-header #trackerTile.crossing-two-minutes{animation:none;background:#20593c}}
+
+/* Force service details to occupy a dedicated full-width row, not a skinny Calls cell. */
+#timetableTile .timetable{width:100%;table-layout:fixed}
+#timetableTile .timetable th:nth-child(1){width:19%}
+#timetableTile .timetable th:nth-child(2){width:44%}
+#timetableTile .timetable th:nth-child(3){width:21%}
+#timetableTile .timetable th:nth-child(4){width:16%}
+#timetableTile .timetable td:nth-child(2){min-width:0;overflow-wrap:anywhere;white-space:normal}
+#timetableTile .timetable tr.calls-expanded[hidden]{display:none!important}
+#timetableTile .timetable .calls-expanded td{padding:3px 0 10px!important;max-width:0;overflow:hidden}
+#timetableTile .calls-ticker{width:100%;max-width:100%;overflow-x:auto;background:#071a29;border:1px solid #2d546a;border-radius:8px;scrollbar-width:thin;overscroll-behavior-x:contain}
+#timetableTile .ticker-loop{display:flex;align-items:center;width:max-content;min-width:100%;animation:station-ticker 28s linear infinite}
+#timetableTile .ticker-copy{display:flex;align-items:center;flex:0 0 auto;gap:15px;padding:11px 22px 11px 14px;white-space:nowrap}
+#timetableTile .ticker-call{display:inline-flex;align-items:baseline;gap:6px;flex:0 0 auto;font:650 12px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfe9f8}
+#timetableTile .ticker-call time{font:800 14px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:#87dcfa}
+#timetableTile .ticker-call small{font-size:9px;color:#e0b778}
+#timetableTile .ticker-separator{color:#4b8796;font-size:9px}
+#timetableTile .calls-ticker:hover .ticker-loop,#timetableTile .calls-ticker:focus .ticker-loop,#timetableTile .calls-ticker:focus-within .ticker-loop{animation-play-state:paused}
+@keyframes station-ticker{to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){#timetableTile .ticker-loop{animation:none}#timetableTile .ticker-copy[aria-hidden="true"]{display:none}}
+/* Give the countdown its own row-free, fixed right-hand label. */
+.app-header #proximityTile .viaduct-time-row{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;width:100%;min-width:0}
+.app-header #proximityTile .viaduct-main-time{flex:0 0 auto;font-size:clamp(27px,7vw,48px)}
+.app-header #viaductCountdownUnit{display:block;flex:1 1 auto;min-width:0;max-width:145px;font-size:clamp(10px,2.5vw,12px);line-height:1.25;align-self:center}
+/* The refresh control is a uniform icon-only pill; cooldown appears on hover/title. */
+.app-header .force-sync-btn{width:34px;min-width:34px;max-width:34px;height:34px;padding:0!important;display:inline-grid;place-items:center;font-size:23px!important;line-height:1}
+.app-header .force-sync-btn span{display:inline-block;font-size:23px;line-height:1}
+.app-header .force-sync-btn[aria-busy="true"] span{animation:sync-spin 900ms linear infinite}
+#viaductTrackTile .focus-title{justify-content:flex-start}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span></button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -1359,14 +1388,18 @@ function renderTimetable(){
  status.textContent=upcoming.length?"Next "+upcoming.length+" departures · UK local time · tap Calls to expand":"No forthcoming services in the published timetable.";
  table.hidden=!upcoming.length;
  // Rebuild once per minute so expired departures disappear while the app runs.
- rows.innerHTML=upcoming.map(({train,date},index)=>{
+ const expandedKeys=new Set([...rows.querySelectorAll('.calls-button[aria-expanded="true"]')].map(b=>b.dataset.service));
+ rows.innerHTML=upcoming.map(({train,date,at},index)=>{
   const day=formatUK.format(new Date(date+"T12:00:00Z"));
-  const detail=train.stops.map(([station,time,request])=>
-   '<span class="calls-stop"><span>'+safe(station)+'</span><time>'+safe(time)+'</time>'+(request?'<small>Request stop</small>':'')+'</span>').join("");
+  const id=date+"-"+train.stops[0][1]+"-"+index,expanded=expandedKeys.has(id);
+  const items=train.stops.map(([station,time,request])=>
+   '<span class="ticker-call"><strong>'+safe(station)+'</strong><time>'+safe(time)+'</time>'+(request?'<small>Request</small>':'')+'</span>').join('<span class="ticker-separator" aria-hidden="true">◆</span>');
+  const ticker='<div class="calls-ticker" role="region" aria-label="Scrolling departure-board station calls" tabindex="0">'+
+   '<div class="ticker-loop"><div class="ticker-copy">'+items+'</div><div class="ticker-copy" aria-hidden="true">'+items+'</div></div></div>';
   return '<tr class="service-main"><td>'+safe(train.stops[0][1])+'<span class="service-date">'+safe(day)+'</span></td>'+
    '<td>'+safe(train.from)+' → '+safe(train.to)+'</td><td>'+safe(train.viaduct)+'</td>'+
-   '<td><button class="calls-button" type="button" aria-expanded="false" aria-controls="calls-'+index+'">Calls ▾</button></td></tr>'+
-   '<tr class="calls-expanded" id="calls-'+index+'" hidden><td colspan="4"><div class="calls-strip" aria-label="Station calls, swipe horizontally">'+detail+'</div></td></tr>';
+   '<td><button class="calls-button" data-service="'+safe(id)+'" type="button" aria-expanded="'+expanded+'" aria-controls="calls-'+index+'">Calls '+(expanded?'▴':'▾')+'</button></td></tr>'+
+   '<tr class="calls-expanded" id="calls-'+index+'"'+(expanded?'':' hidden')+'><td colspan="4">'+ticker+'</td></tr>';
  }).join("");
  rows.querySelectorAll(".calls-button").forEach(button=>button.addEventListener("click",()=>{
   const detail=$(button.getAttribute("aria-controls"));
