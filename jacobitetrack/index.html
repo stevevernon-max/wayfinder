@@ -645,6 +645,16 @@ main>.planned-works-status{margin:0 0 10px}
  .app-header #viaductCombinedTile .viaduct-combined-heading{font-size:clamp(11px,3vw,14px)!important}
  .app-header #viaductCombinedTile .viaduct-next-clock{font-size:clamp(10px,2.7vw,12px)!important}
 }
+
+/* Glenfinnan viaduct hero + zoomed approach; scoped strictly to Tile 2. */
+.app-header #viaductTrackTile{border:0!important;padding:8px 0 2px!important;margin:0!important;background:transparent!important;min-width:0}
+.app-header #viaductTrackTile .rail-scroll{margin:0;overflow:hidden;width:100%}
+.app-header #viaductTrackTile .viaduct-hero-rail{display:block;width:100%;height:auto;max-width:100%}
+.app-header #viaductTrackTile .hero-km{font-size:17px;fill:#a0b7c9;font-weight:650;letter-spacing:.1px}
+.app-header #viaductTrackTile .focus-viaduct-label{font-size:18px;fill:#9de8c8;font-weight:800;letter-spacing:.3px}
+.app-header #viaductTrackTile .focus-train-reported .train-body{fill:#f0b84a;stroke:#ffe39c;stroke-width:2}
+.app-header #viaductTrackTile .focus-train-estimate .train-body{fill:#66bde8;stroke:#c9eeff;stroke-width:2}
+@media(max-width:440px){.app-header #viaductTrackTile .hero-km{font-size:18px}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span></button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -684,23 +694,29 @@ main>.planned-works-status{margin:0 0 10px}
    <div id="viaductTileCountdown" class="viaduct-next-clock">Checking next crossing</div>
   </div>
  </div>
- <section id="viaductTrackTile" aria-label="Close-up train tracker Lochailort to Corpach">
- <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 175" role="img" aria-label="Enlarged Lochailort to Corpach railway with marked Glenfinnan Viaduct and estimated trains">
- <line class="bed" x1="35" y1="83" x2="865" y2="83"/><line class="track" x1="35" y1="83" x2="865" y2="83"/>
- <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="6" y="45" text-anchor="start">Lochailort</text>
- <circle class="node" cx="243" cy="83" r="12"/><text class="station-label" x="243" y="132" text-anchor="middle">Glenfinnan</text>
- <circle class="node" cx="865" cy="83" r="12"/><text class="station-label" x="894" y="45" text-anchor="end">Corpach</text>
- <g id="viaductMarker" transform="translate(303,83)">
-  <circle r="19" fill="#225239" stroke="#a3efbf" stroke-width="2.5"/>
-  <path d="M -13 6 V -3 Q -9 -13 -5 -3 V 6 M -5 6 V -3 Q -1 -13 3 -3 V 6 M 3 6 V -3 Q 7 -13 11 -3 V 6 M -15 -5 H 14" fill="none" stroke="#dcffe6" stroke-width="2.3" stroke-linecap="round"/>
-  <title>Glenfinnan Viaduct · approximate point one to two minutes east of Glenfinnan station</title>
- </g>
- <text x="303" y="132" text-anchor="middle" class="focus-viaduct-label">Viaduct</text>
- <g id="viaductTrains"></g>
- </svg></div>
- 
-
- </section>
+ <section id="viaductTrackTile" aria-label="Zoomed train approach to Glenfinnan Viaduct">
+ <div class="rail-scroll">
+  <svg class="rail-svg viaduct-hero-rail" viewBox="0 0 900 222" role="img" aria-label="Estimated train movements approximately five kilometres west and east of Glenfinnan Viaduct">
+   <defs>
+    <linearGradient id="viaductTrailGrad" x1="0" x2="1"><stop offset="0%" stop-color="#28c7bb" stop-opacity="0"/><stop offset="100%" stop-color="#71f5d1" stop-opacity=".85"/></linearGradient>
+   </defs>
+   <text class="hero-km" x="28" y="35" text-anchor="start">≈5 km west</text>
+   <text class="hero-km" x="872" y="35" text-anchor="end">≈5 km east</text>
+   <line class="bed" x1="28" y1="90" x2="872" y2="90"/>
+   <line class="track" x1="28" y1="90" x2="872" y2="90"/>
+   <g id="viaductMarker" aria-label="Glenfinnan Viaduct centre">
+    <path d="M 332 111 L 332 173 Q 355 131 378 173 Q 401 131 424 173 Q 447 131 470 173 Q 493 131 516 173 Q 539 131 562 173 L 562 111" fill="none" stroke="#6ff1c0" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M 320 105 H 574" fill="none" stroke="#b0ffdd" stroke-width="10" stroke-linecap="round"/>
+    <path d="M 332 185 H 562" fill="none" stroke="#227d67" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="450" cy="90" r="15" fill="#225239" stroke="#a3efbf" stroke-width="2.5"/>
+    <path d="M 438 96 V 88 Q 442 77 446 88 V 96 M 446 96 V 88 Q 450 77 454 88 V 96 M 454 96 V 88 Q 458 77 462 88 V 96 M 437 86 H 464" fill="none" stroke="#dcffe6" stroke-width="2" stroke-linecap="round"/>
+    <title>Glenfinnan Viaduct, centre of approximate 10 km window</title>
+   </g>
+   <text class="focus-viaduct-label" x="450" y="210" text-anchor="middle">GLENFINNAN VIADUCT</text>
+   <g id="viaductTrains"></g>
+  </svg>
+ </div>
+</section>
 </section>
 </div></header><main>
 <section class="tile" id="geoTile">
@@ -1320,41 +1336,52 @@ function updateActiveTrainsPill(markers=visibleTrainMarkers()){
  gpsPill.classList.toggle("gps-poor",accurate&&gpsAccuracyMetres>100);
  gpsPill.title=accurate?"Estimated horizontal location accuracy: ±"+Math.round(gpsAccuracyMetres)+" metres":"Waiting for GPS accuracy";
 }
-function renderViaductApproach(markers=visibleTrainMarkers()){
+// A focused, distance-proportional schematic spanning roughly 5 km
+// either side of Glenfinnan Viaduct. This is an illustrative alignment,
+// not a survey of the actual railway curvature.
+function focusRailX(raw,westRaw,viaductRaw,eastRaw){
+ if(!Number.isFinite(raw)||!Number.isFinite(westRaw)||!Number.isFinite(eastRaw))return null;
+ if(raw<westRaw||raw>eastRaw)return null;
+ if(raw<=viaductRaw)return 28+422*(raw-westRaw)/(viaductRaw-westRaw);
+ return 450+422*(raw-viaductRaw)/(eastRaw-viaductRaw);
+}
+function renderViaductApproach(markers=renderedTrainMarkers){
  const group=$("viaductTrains");if(!group)return;
- // We preserve station-to-station timing anchors, rather than stretching
- // unrelated sections of the railway to manufacture an accurate GPS position.
  const rawOf=name=>timingStations.find(([label])=>label.toLowerCase()===String(name||"").toLowerCase())?.[1];
- const west=rawOf("Lochailort"),east=rawOf("Corpach");
+ const glen=rawOf("Glenfinnan"),locheilside=rawOf("Locheilside");
+ if(!Number.isFinite(glen)||!Number.isFinite(locheilside)){group.replaceChildren();return}
+ // Approximate 5 km spans using neighbouring station chainages, with the
+ // crossing slightly east of Glenfinnan station.
+ const viaductRaw=glen+(locheilside-glen)*.14;
+ const westRaw=viaductRaw-48,eastRaw=viaductRaw+48;
  const visible=[];
  for(const {train} of markers){
   const p=train.position||{},from=rawOf(p.fromStation),to=rawOf(p.toStation);
-  if(!Number.isFinite(from))continue;
+  if(!Number.isFinite(from)||!Number.isFinite(to))continue;
   let raw=from;
-  const start=Date.parse(p.fromAt),finish=Date.parse(p.toAt);
-  if(Number.isFinite(to)&&Number.isFinite(start)&&Number.isFinite(finish)&&finish>start){
+  const start=Date.parse(p.fromAt||""),finish=Date.parse(p.toAt||"");
+  if(Number.isFinite(start)&&Number.isFinite(finish)&&finish>start){
    const now=Math.max(start,Math.min(finish,Date.now()));
-   const glen=rawOf("Glenfinnan"),viaductRaw=west+(303-35)/830*(east-west);
    const prediction=viaductCrossingForMarker(train,Date.now());
-   // Share the same crossing timestamp as the countdown; no separate
-   // calibration that can leave the marker at the viaduct too early.
-   if(prediction&&p.fromStation==="Glenfinnan"&&to>glen&&prediction.at>start&&prediction.at<finish){
+   // Calibrate the approach only for the segment directly crossing the
+   // viaduct. Use the same crossing timestamp as the countdown.
+   if(prediction&&prediction.at>start&&prediction.at<finish&&
+      (p.fromStation==="Glenfinnan"||p.toStation==="Glenfinnan")){
     raw=now<=prediction.at?from+(viaductRaw-from)*(now-start)/(prediction.at-start)
      :viaductRaw+(to-viaductRaw)*(now-prediction.at)/(finish-prediction.at);
-   }else if(prediction&&p.toStation==="Glenfinnan"&&from>glen&&prediction.at>start&&prediction.at<finish){
-    raw=now<=prediction.at?from+(viaductRaw-from)*(now-start)/(prediction.at-start)
-     :viaductRaw+(to-viaductRaw)*(now-prediction.at)/(finish-prediction.at);
-   }else raw=from+(to-from)*(now-start)/(finish-start);
+   }else{
+    raw=from+(to-from)*(now-start)/(finish-start);
+   }
   }
-  if(raw<west||raw>east)continue;
-  const x=35+(raw-west)/(east-west)*830;
+  const x=focusRailX(raw,westRaw,viaductRaw,eastRaw);
+  if(!Number.isFinite(x))continue;
   const g=document.createElementNS("http://www.w3.org/2000/svg","g");
-  g.setAttribute("transform","translate("+x.toFixed(1)+",83)");
+  g.setAttribute("transform","translate("+x.toFixed(1)+",90)");
   g.setAttribute("class",train.positionQuality==="timetable_only"?"focus-train-estimate":"focus-train-reported");
   const direction=to>from?"→":to<from?"←":train.direction==="back"?"→":"←";
   g.innerHTML='<circle class="train-halo" r="15"><animate attributeName="r" values="14;34" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".65;0" dur="1.4s" repeatCount="indefinite"/></circle><circle class="train-body" r="14"><animate attributeName="r" values="13;17;13" dur="1.4s" repeatCount="indefinite"/></circle><text class="train-arrow" y="1">'+direction+'</text>';
   const title=document.createElementNS("http://www.w3.org/2000/svg","title");
-  title.textContent=train.positionLabel||"Estimated train position";
+  title.textContent=(train.positionLabel||"Estimated train position")+" · zoomed viaduct approach (approximate)";
   g.appendChild(title);visible.push(g);
  }
  group.replaceChildren(...visible);
