@@ -244,7 +244,7 @@
       return '<div class="event" style="--leg-height:'+driveHeight+'px;--stay-height:'+stayHeight+'px"><div class="event-times">'+times+'</div>'+track+'<div>'
         +'<div class="event-heading"><b'+(significantDelay?' class="roadworks-location"':'')+'>'+esc(event.title)+(roadworks?'':delay)+'</b>'+rain+'</div>'
         +(details?'<div class="event-details">'+details+'</div>':'')
-        +(next?'<div class="leg-drive">'+Math.round(driveMinutes)+' min drive</div>':'')+'</div></div>';
++'</div></div>';
     }).join('');
     drawProgress();
   }

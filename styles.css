@@ -454,3 +454,31 @@ body.journey-active #leave-time { font-size: 38px; }
 #timeline .timeline-segments i { display: block; height: 100%; width: 3px; border-radius: 2px; background: linear-gradient(to bottom,var(--timeline-progress) var(--line-progress,0%),#3c454b var(--line-progress,0%)); }
 #timeline .timeline-segments .current { animation: none; box-shadow: none; }
 .leg-drive { color: var(--muted); font-size: 11px; margin-top: 10px; margin-bottom: 6px; }
+
+/* Larger live leg indicator and tighter spacing. */
+.shell { padding-top: calc(env(safe-area-inset-top) + 2px); }
+#journey-status { margin-top: 0; }
+.timeline-heading { margin-top: 6px; margin-bottom: 5px; }
+#timeline { padding-top: 8px; }
+#timeline .event:not(:last-child) { min-height: 70px; }
+#timeline .timeline-segments { left: 4px; width: 9px; }
+#timeline .timeline-segments i { position: relative; width: 9px; border-radius: 5px; }
+#timeline .timeline-segments i.current::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: clamp(0px,var(--line-progress,0%),calc(100% - 2px));
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--card);
+  border-radius: 50%;
+  background: var(--timeline-progress);
+  transform: translate(-50%,-50%);
+  box-shadow: 0 0 8px var(--timeline-progress);
+}
+#timeline .event .track[data-progress]::before { display: none; }
+#timeline .event .facility-track[data-progress] .facility-marker { visibility: visible; }
+@media (prefers-reduced-motion: no-preference) {
+  #timeline .timeline-segments i.current { animation: live-leg-pulse 1.5s ease-in-out infinite; }
+}
+@keyframes live-leg-pulse { 50% { opacity: .6; box-shadow: 0 0 6px var(--timeline-progress); } }
