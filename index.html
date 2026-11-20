@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="Wayfinder">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="./road-mark-180.png">
-  <link rel="stylesheet" href="styles.css?v=81">
+  <link rel="stylesheet" href="styles.css?v=82">
   <title>Wayfinder · Journey planner</title>
 </head>
 <body>
@@ -41,6 +41,7 @@
     </section>
     <section id="journey-panel">
     <header class="section-head timeline-heading"><h2>Timeline</h2><div class="timeline-tools"><span id="gps-status" role="status"></span><span id="gps-reading" role="status"></span></div></header>
+    <p class="timeline-stats" id="timeline-stats" hidden></p>
     <section class="card timeline" id="timeline" aria-label="Timeline"></section>
     </section>
     <section class="section-head route-heading"><h2>Route</h2><small><span id="total-time">—</span> total · <span id="drive-time">—</span> drive · <span id="stay-time">—</span> stay</small></section>
@@ -56,6 +57,15 @@
     <section class="section-head"><h2>Saved trips</h2></section><section class="card saved"><div class="save-row"><input id="trip-name" placeholder="Name this trip" aria-label="Trip name"><button class="primary" id="save-trip">Save</button></div><div id="saved"></div><div><button type="button" class="text-btn" id="import-trips">Import trips</button> <button type="button" class="text-btn" id="export-trips">Export trips</button><input type="file" id="trip-file" accept=".json,application/json" hidden><p class="status" role="status" id="trip-transfer-status"></p></div></section>
     <footer><button class="text-btn" id="settings-open">Settings</button> Plans and settings are stored locally on this device. <button class="text-btn" id="clear-plan">Clear plan</button></footer>
   </main>
+  <dialog id="stop-times-dialog" aria-labelledby="stop-times-title">
+    <form method="dialog" class="settings-form">
+      <h2 id="stop-times-title">Stop times</h2>
+      <p class="small-note">Enter times for the planned arrival date. Leave blank when unknown.</p>
+      <label class="field">Closing time<input type="time" id="stop-closes"></label>
+      <label class="field">Latest arrival (optional)<input type="time" id="stop-arrival-by"></label>
+      <div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" id="stop-times-save" value="save">Save</button></div>
+    </form>
+  </dialog>
   <dialog id="ev-dialog" aria-labelledby="ev-title">
     <div class="settings-form">
       <header class="dialog-head"><h2 id="ev-title">EV chargers</h2><form method="dialog"><button class="icon-btn" aria-label="Close">×</button></form></header>
@@ -80,6 +90,6 @@
     <div class="dialog-actions"><button class="secondary" value="cancel">Cancel</button><button class="primary" id="settings-save" value="save">Save settings</button></div>
   </form></dialog>
   <script src="tomtom-config.js?v=35" defer></script>
-  <script src="app.js?v=81" defer></script>
+  <script src="app.js?v=82" defer></script>
 </body>
 </html>

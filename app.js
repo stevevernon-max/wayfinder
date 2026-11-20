@@ -187,7 +187,53 @@
     persist();
     tick();
   }
+  function placeType(title,facility){
+    if(facility==='charger')return {icon:'⚡',label:'Charging'};
+    if(facility==='toilet' || /\b(toilets?|restrooms?)\b/i.test(title))return {icon:'🚻',label:'Toilets'};
+    if(/\b(car parks?|parking|park and ride)\b/i.test(title))return {icon:'🅿️',label:'Parking'};
+    if(/\b(mcdonald|restaurant|cafe|café|burger|food)\b/i.test(title))return {icon:'🍔',label:'Food'};
+    if(/\b(morrisons|aldi|tesco|lidl|m&s|shop|supermarket)\b/i.test(title))return {icon:'🛒',label:'Shop'};
+    if(/\b(falls?|waterfall|glen|viewpoint|trail|beach|castle|loch)\b/i.test(title))return {icon:'🥾',label:'Sight'};
+    return {icon:'📍',label:'Stop'};
+  }
+  function timeOnDay(value,stamp){
+    if(!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value||''))return null;
+    const date=new Date(stamp),[hours,minutes]=value.split(':').map(Number);
+    date.setHours(hours,minutes,0,0);
+    return date.getTime();
+  }
+  function timingBadges(event){
+    const place=event.range?state.stops[event.location-1]:state;
+    const closing=event.range?place.closes:state.destinationCloses;
+    const deadline=event.range?place.arrivalBy:state.destinationArrivalBy;
+    const badges=[];
+    const closes=timeOnDay(closing,event.forecastTime);
+    if(closes!==null){
+      const slack=Math.round((closes-event.time)/60000);
+      badges.push('<span class="timeline-pill '+(slack<=5?'warning-pill':'neutral-pill')+'">Closes '+esc(closing)
+        +(slack<0?' · visit ends '+Math.abs(slack)+' min after closing':slack<=5?' · '+slack+' min spare':'')+'</span>');
+    }
+    const due=timeOnDay(deadline,event.forecastTime);
+    if(due!==null){
+      const slack=Math.round((due-event.forecastTime)/60000);
+      badges.push('<span class="timeline-pill '+(slack<=5?'warning-pill':'neutral-pill')+'">'
+        +(slack<0?Math.abs(slack)+' min past arrival deadline':slack+' min arrival buffer')+'</span>');
+    }
+    return badges.join('');
+  }
+  function renderTripStats(){
+    const route=currentRoute();
+    let metres=route?.distanceMetres;
+    if(!Number.isFinite(metres) && route?.paths?.length){
+      metres=route.paths.reduce((sum,path)=>sum+path.slice(1).reduce((leg,p,i)=>leg+metresBetween(path[i],p),0),0);
+    }
+    const drive=state.stops.reduce((sum,stop)=>sum+n(stop.drive),n(state.destinationDrive));
+    $('timeline-stats').textContent=(Number.isFinite(metres)?Math.round(metres/100)/10+' km · ':'')
+      +duration(drive)+' drive · '+duration(total()-drive)+' stops · '+state.stops.length+(state.stops.length===1?' stop':' stops');
+    $('timeline-stats').hidden=!state.destination.trim();
+  }
   function renderTimeline(){
+    renderTripStats();
     if(!state.destination.trim()){ timelineEvents=[]; $('timeline').innerHTML='<div class="empty">Add a destination to see your plan.</div>'; return; }
     const start=departureTracking.targetArrival && departureTracking.signature===JSON.stringify(routeNames()) ? departureTracking.targetArrival-total()*60000 : departure().getTime();
     let time=start;
@@ -220,8 +266,10 @@
         const date=new Date(stamp);
         return clock(date.getHours()*60+date.getMinutes());
       };
-      const times='<time>'+timeText(event.forecastTime)+'</time>'
-        +(event.range?'<time class="stop-end-time" aria-label="Leave '+timeText(event.time)+'">'+timeText(event.time)+'</time>':'');
+      const loop=names[0]===names.at(-1) || (route?.coords?.length && metresBetween(walkBackPoint(route.coords[0]),walkBackPoint(route.coords.at(-1)))<=100);
+      const times=event.location===0?'<small>Leave</small><time>'+timeText(event.time)+'</time>'
+        :event.range?'<time><small>Arr</small> '+timeText(event.forecastTime)+'</time><time class="stop-end-time"><small>Dep</small> '+timeText(event.time)+'</time>'
+        :'<small>'+(loop?'Arrive back':'Arrive')+'</small><time>'+timeText(event.time)+'</time>';
       const delayReason=route?.reasons[event.location-1]||'Reason unavailable';
       const significantDelay=event.delay>5;
       const roadworks=event.delay>0 && delayReason.includes('Roadworks');
@@ -234,17 +282,18 @@
         /\b(charging station|ev charger|supercharger|bp pulse)\b/i.test(event.title)?'charger':
         /\b(car parks?|parking|park and ride|park & ride)\b/i.test(event.title)?'parking':'');
       const facilityLabel={charger:'Charging',parking:'Parking',toilet:'Toilets'}[facility];
+      const type=placeType(event.title,facility);
       const details=(event.note?'<small>'+esc(event.note)+'</small>':'')
         +(facilityLabel?'<span class="timeline-pill facility-pill">'+facilityLabel+'</span>':'')
-        +(roadworks?delay:'');
+        +(roadworks?delay:'')+(event.location>0?timingBadges(event)+'<button type="button" class="stop-times-button" data-stop-times="'+event.location+'">Times</button>':'');
       const endpoint=event.location===0?'S':event.location===names.length-1?'E':'';
-      const marker=endpoint || (facility==='toilet' ? $('toilet-lookup').innerHTML : facility==='charger' ? '⚡' : '');
-      const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(endpoint==='S'?'Start':endpoint==='E'?'End':facility==='toilet'?'Public toilet':'EV charger')+'">'+marker+'</span>':'')
+      const marker=endpoint==='S'?'⌂':endpoint==='E'?'🏁':type.icon;
+      const track='<span class="track'+(marker?' facility-track':'')+'">'+(marker?'<span class="facility-marker" role="img" aria-label="'+(endpoint==='S'?'Start':endpoint==='E'?'Destination':type.label)+'">'+marker+'</span>':'')
         +(event.location<events.length-1?'<span class="timeline-segments" aria-hidden="true">'+'<i></i>'+'</span>':'')+'</span>';
       return '<div class="event" style="--leg-height:'+driveHeight+'px;--stay-height:'+stayHeight+'px"><div class="event-times">'+times+'</div>'+track+'<div>'
         +'<div class="event-heading"><b'+(significantDelay?' class="roadworks-location"':'')+'>'+esc(event.title)+(roadworks?'':delay)+'</b>'+rain+'</div>'
         +(details?'<div class="event-details">'+details+'</div>':'')
-+'</div></div>';
++(next?'<div class="leg-drive"><span aria-hidden="true">🚗</span> '+Math.round(driveMinutes)+' min</div>':'')+'</div></div>';
     }).join('');
     drawProgress();
   }
@@ -526,6 +575,7 @@
       const isStay=i>0 && i<timelineEvents.length-1 && timelineEvents[i].time>timelineEvents[i].forecastTime;
       const stayCompleted=isStay && (arrived || (tracking && i!==stayIndex &&
         (stayIndex>=0 ? i<stayIndex : i<=Math.max(previous,best?.i ?? previous))));
+      row.classList.toggle('stop-completed',Boolean(arrived || (tracking && (stayIndex>=0 ? i<stayIndex : i<activeStopIndex))));
       row.classList.toggle('stop-active',Boolean(activeStop) && i===activeStopIndex);
       row.classList.toggle('stay-current',isStay && i===stayIndex);
       row.classList.toggle('stay-complete',Boolean(stayCompleted));
@@ -670,10 +720,30 @@
   }
   $('start-journey').addEventListener('click',changeDepartureStatus);
   $('departure-action').addEventListener('click',changeDepartureStatus);
+  let editingStopTimes;
+  $('timeline').addEventListener('click',event=>{
+    const button=event.target.closest('[data-stop-times]');
+    if(!button)return;
+    editingStopTimes=Number(button.dataset.stopTimes)-1;
+    const stop=state.stops[editingStopTimes];
+    $('stop-times-title').textContent=stop?.name || state.destination;
+    $('stop-closes').value=stop?.closes || (!stop?state.destinationCloses:'') || '';
+    $('stop-arrival-by').value=stop?.arrivalBy || (!stop?state.destinationArrivalBy:'') || '';
+    $('stop-times-dialog').showModal();
+  });
+  $('stop-times-save').addEventListener('click',()=>{
+    const closes=$('stop-closes').value,arrivalBy=$('stop-arrival-by').value;
+    const stop=state.stops[editingStopTimes];
+    if(stop)Object.assign(stop,{closes,arrivalBy});
+    else Object.assign(state,{destinationCloses:closes,destinationArrivalBy:arrivalBy});
+    persist();
+    renderTimeline();
+  });
 
   for(const field of ['start','destination']){
     $(field).addEventListener('input', event=>{
       state[field]=event.target.value;
+      if(field==='destination'){state.destinationCloses='';state.destinationArrivalBy='';}
       updatePlan();
     });
   }
@@ -697,7 +767,9 @@
     const row=event.target.closest('[data-i]');
     const field=event.target.dataset.field;
     if(!row || !field)return;
-    state.stops[Number(row.dataset.i)][field]=event.target.value;
+    const stop=state.stops[Number(row.dataset.i)];
+    stop[field]=event.target.value;
+    if(field==='name'){delete stop.closes;delete stop.arrivalBy;}
     updatePlan();
   });
 
@@ -805,7 +877,7 @@
     moveStop(from,from+(event.key==='ArrowUp'?-1:1));
   });
   $('add-stop').onclick=()=>{state.stops.push({name:'',drive:'',stay:20});render();$('stops').lastElementChild?.querySelector('[data-field=name]')?.focus()};
-  $('clear-plan').onclick=()=>{if(!confirm('Clear this journey? Saved trips will stay.'))return;departureTracking=newJourneyTracking();state={...state,journeyTracking:departureTracking,start:state.homeAddress?'Home':'',destination:'',destinationDrive:'',stops:[]};render();status('Journey cleared.')};
+  $('clear-plan').onclick=()=>{if(!confirm('Clear this journey? Saved trips will stay.'))return;departureTracking=newJourneyTracking();state={...state,journeyTracking:departureTracking,start:state.homeAddress?'Home':'',destination:'',destinationDrive:'',destinationCloses:'',destinationArrivalBy:'',stops:[]};render();status('Journey cleared.')};
   function readImportedTrip(trip){
     const text=value=>typeof value==='string' && value.length<=2000;
     const time=value=>value==='' || ((typeof value==='number' || typeof value==='string') && Number.isFinite(Number(value)) && Number(value)>=0 && Number(value)<=525600);
@@ -818,10 +890,10 @@
       if(!stop || !text(stop.name) || !time(stop.drive??'') || !time(stop.stay??'')){
         throw Error('This file contains an invalid stop.');
       }
-      const {name,drive='',stay='',facility}=stop;
-      return {name,drive,stay,...(['charger','toilet'].includes(facility)?{facility}:{})};
+      const {name,drive='',stay='',facility,closes,arrivalBy}=stop;
+      return {name,drive,stay,...(['charger','toilet'].includes(facility)?{facility}:{}),...(closes?{closes}:{}),...(arrivalBy?{arrivalBy}:{})};
     });
-    return {name:trip.name.trim(),start:trip.start,destination:trip.destination,arrive:trip.arrive,stops,destinationDrive:trip.destinationDrive??''};
+    return {name:trip.name.trim(),start:trip.start,destination:trip.destination,arrive:trip.arrive,stops,destinationDrive:trip.destinationDrive??'',destinationCloses:trip.destinationCloses||'',destinationArrivalBy:trip.destinationArrivalBy||''};
   }
   const transferStatus=message=>{$('trip-transfer-status').textContent=message};
   $('export-trips').onclick=()=>{
@@ -866,8 +938,8 @@
       transferStatus(error instanceof SyntaxError?'Choose a Wayfinder trips export file.':error.message);
     }
   };
-  $('save-trip').onclick=()=>{if(!state.destination.trim()){status('Add a destination before saving this trip.');return}const name=$('trip-name').value.trim()||`${loc(state.destination)} trip`;trips=trips.filter(t=>t.name!==name.trim());trips.push({name:name.trim(),start:state.start,destination:state.destination,arrive:state.arrive,stops:state.stops.map(s=>({...s})),destinationDrive:state.destinationDrive||''});try{localStorage.setItem(TRIPS,JSON.stringify(trips))}catch{status('Could not save this trip in browser storage.');return}$('trip-name').value='';renderTrips();status(`Saved “${name.trim()}”.`)};
-  $('saved').onclick=e=>{const del=e.target.dataset.delete,load=e.target.closest('[data-load]')?.dataset.load;if(del!==undefined){trips.splice(+del,1);localStorage.setItem(TRIPS,JSON.stringify(trips));renderTrips();return}if(load===undefined)return;const t=trips[+load];Object.assign(state,{...t,stops:t.stops.map(stop=>({...stop}))});render();void calcRoute()};
+  $('save-trip').onclick=()=>{if(!state.destination.trim()){status('Add a destination before saving this trip.');return}const name=$('trip-name').value.trim()||`${loc(state.destination)} trip`;trips=trips.filter(t=>t.name!==name.trim());trips.push({name:name.trim(),start:state.start,destination:state.destination,arrive:state.arrive,stops:state.stops.map(s=>({...s})),destinationDrive:state.destinationDrive||'',destinationCloses:state.destinationCloses||'',destinationArrivalBy:state.destinationArrivalBy||''});try{localStorage.setItem(TRIPS,JSON.stringify(trips))}catch{status('Could not save this trip in browser storage.');return}$('trip-name').value='';renderTrips();status(`Saved “${name.trim()}”.`)};
+  $('saved').onclick=e=>{const del=e.target.dataset.delete,load=e.target.closest('[data-load]')?.dataset.load;if(del!==undefined){trips.splice(+del,1);localStorage.setItem(TRIPS,JSON.stringify(trips));renderTrips();return}if(load===undefined)return;const t=trips[+load];Object.assign(state,{...t,destinationCloses:t.destinationCloses||'',destinationArrivalBy:t.destinationArrivalBy||'',stops:t.stops.map(stop=>({...stop}))});render();void calcRoute()};
   const dialog=$('settings'); $('settings-open').onclick=()=>openSettings();
   function openSettings(){ $('tomtom-key').value=localStorage.getItem('wayfinder.tomtom-key')||''; $('keep-location').checked=Boolean(state.liveLocation); $('home-address').value=state.homeAddress||'';$('provider').value=state.provider||'manual';$('adapter-url').value=state.adapterUrl||'';dialog.showModal() }
   $('settings-save').onclick=()=>{localStorage.setItem('wayfinder.tomtom-key',$('tomtom-key').value.trim());if($('keep-location').checked){startLocation()}else{stopLocation()}state.adapterUrl=$('adapter-url').value.trim();persist();render();status('Settings saved on this device.');};
@@ -977,7 +1049,7 @@
       const minutes=leg=>Math.max(0,Math.round(leg.summary.travelTimeInSeconds/60));
       state.stops.forEach((stop,index)=>{stop.drive=minutes(legs[index]);});
       state.destinationDrive=minutes(legs.at(-1));
-      routeData={signature,coords,reasons:trafficReasons(route),paths:legs.map(leg=>leg.points),delays:legs.map(leg=>Math.ceil(Math.max(0,leg.summary.trafficDelayInSeconds||0)/60))};
+      routeData={signature,coords,distanceMetres:legs.reduce((sum,leg)=>sum+(leg.summary.lengthInMeters||0),0),reasons:trafficReasons(route),paths:legs.map(leg=>leg.points),delays:legs.map(leg=>Math.ceil(Math.max(0,leg.summary.trafficDelayInSeconds||0)/60))};
       state.cachedRoute=routeData;
       if(gpsFix)trackDeparture(gpsFix);
       state.journeyTracking=departureTracking;

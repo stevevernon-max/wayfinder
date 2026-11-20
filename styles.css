@@ -486,3 +486,19 @@ body.journey-active #leave-time { font-size: 38px; }
 #route-editor > .endpoint-row:first-of-type { margin-top: 0; }
 
 .route-card .stop-row, .route-card .stop-head { grid-template-columns: 44px minmax(0,1fr) 46px 44px; }
+
+.timeline-stats { margin: 0 3px 7px; font-size: 11px; line-height: 1.5; color: var(--muted); }
+#timeline .event { padding-bottom: 5px; }
+#timeline .event:not(:last-child) { min-height: 68px; }
+#timeline .event-times > small { font-size: 10px; margin: 0; }
+#timeline .event-times time small { display: inline; font-size: 9px; font-weight: 500; }
+#timeline .event.stop-completed { opacity: .45; }
+#timeline .event.stop-active .event-heading b { color: #91dfba; }
+#timeline[data-tone="late"] .event.stop-active .event-heading b { color: #ffb477; }
+#timeline .leg-drive { position: relative; margin: 5px 0 4px; font-size: 11px; color: var(--muted); }
+#timeline .leg-drive::before { content: ""; position: absolute; width: 8px; top: 50%; left: -12px; border-top: 1px solid var(--line); }
+#timeline .roadworks-pill, #timeline .warning-pill, #timeline .warning-delay { background: #40321b; color: #ffd17d; }
+#timeline .inline-delay { display: inline-block; padding: 2px 7px; border-radius: 999px; background: #40321b; color: #ffd17d; font-size: 11px; }
+#timeline .neutral-pill { color: var(--muted); background: #283039; }
+.stop-times-button { color: var(--blue); border: 0; background: transparent; font: inherit; font-size: 11px; padding: 3px 4px; min-height: 28px; cursor: pointer; }
+#start-journey { min-height: 32px; padding: 3px 9px; font-size: 11px; }
