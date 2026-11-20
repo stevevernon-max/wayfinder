@@ -2030,7 +2030,8 @@ async function loadGeoRailway(){
  renderGeoMaps();cacheGeo();
  const hasRail=geoMapFeatures.rail.length>0,hasWater=geoMapFeatures.water.length>0;
  if(hasRail&&hasWater){$("geoStatus").textContent="OSM detail loaded";$("geoNote").textContent="© OpenStreetMap contributors"}
- else if(hasRail||hasWater){$("geoStatus").textContent="Partial geography";$("geoNote").textContent="© OpenStreetMap contributors";$("geoNote").textContent="© OpenStreetMap contributors"; roads and lochs remain available from OpenStreetMap tiles."}
+ else if(hasRail||hasWater){$("geoStatus").textContent="Partial geography";$("geoNote").textContent="© OpenStreetMap contributors"}
+ else {$("geoStatus").textContent="Map base layer available";$("geoNote").textContent="© OpenStreetMap contributors"}
 }
 /* Geographic map interaction: preserve real OSM geometry, change viewport only. */
 function geoZoom(factor,nx=.5,ny=.5){
