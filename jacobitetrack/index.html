@@ -660,7 +660,7 @@ main>.planned-works-status{margin:0 0 10px}
 <div class="geo-map-overlay"><span class="geo-load-status" id="geoStatus" hidden aria-live="polite">Loading map</span>
 <div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view" title="Reset map view">⌖</button><button type="button" id="geoFullscreen" aria-label="Expand map to full screen" aria-pressed="false">⛶</button></div></div>
 
-<p class="geo-note" id="geoNote">© OpenStreetMap contributors</p>
+<p class="geo-note" id="geoNote">© OpenStreetMap contributors · © CARTO</p>
 </section>
 <div class="cols single-viewpoint weather-first"><section class="tile"><div class="eyebrow">GLENFINNAN</div><div class="photo-header"><div class="heading">Photography conditions</div><span id="photoStatus" class="photo-rating-pill" role="status">Checking</span></div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="photo-light-row"><span>☀ Sunrise <b id="photoSunrise">—</b></span><span>☾ Sunset <b id="photoSunset">—</b></span><span id="photoAdvice">Checking conditions</span></div><div class="small" id="weatherTime"></div></section></div>
 <section class="tile" id="timetableTile" aria-labelledby="timetableHeading">
@@ -1895,7 +1895,7 @@ function appendMapTiles(svg,view){
   const image=geoSVG("image",{
    x:450+(tx-centerX)*tilePixels,y:f.height/2+(ty-centerY)*tilePixels,
    width:tilePixels+.6,height:tilePixels+.6,preserveAspectRatio:"none",
-   href:"https://tile.openstreetmap.org/"+z+"/"+tx+"/"+ty+".png"
+   href:"https://basemaps.cartocdn.com/dark_nolabels/"+z+"/"+tx+"/"+ty+".png"
   });
   image.addEventListener("load",()=>{
    loaded++;
@@ -1905,7 +1905,7 @@ function appendMapTiles(svg,view){
    failed++;
    if(failed===total&&loaded===0){
     $("geoStatus").textContent="Map offline";
-    $("geoNote").textContent="© OpenStreetMap contributors";
+    $("geoNote").textContent="© OpenStreetMap contributors · © CARTO";
    }
   });
   group.appendChild(image);
@@ -2029,9 +2029,9 @@ async function loadGeoRailway(){
  if(w.status==="fulfilled"){const lakes=extractShapes(w.value,"water");if(lakes.length)geoMapFeatures.water=lakes;geoMapFeatures.coast=extractShapes(w.value,"coast")}
  renderGeoMaps();cacheGeo();
  const hasRail=geoMapFeatures.rail.length>0,hasWater=geoMapFeatures.water.length>0;
- if(hasRail&&hasWater){$("geoStatus").textContent="OSM detail loaded";$("geoNote").textContent="© OpenStreetMap contributors"}
- else if(hasRail||hasWater){$("geoStatus").textContent="Partial geography";$("geoNote").textContent="© OpenStreetMap contributors"}
- else {$("geoStatus").textContent="Map base layer available";$("geoNote").textContent="© OpenStreetMap contributors"}
+ if(hasRail&&hasWater){$("geoStatus").textContent="OSM detail loaded";$("geoNote").textContent="© OpenStreetMap contributors · © CARTO"}
+ else if(hasRail||hasWater){$("geoStatus").textContent="Partial geography";$("geoNote").textContent="© OpenStreetMap contributors · © CARTO"}
+ else {$("geoStatus").textContent="Map base layer available";$("geoNote").textContent="© OpenStreetMap contributors · © CARTO"}
 }
 /* Geographic map interaction: preserve real OSM geometry, change viewport only. */
 function geoZoom(factor,nx=.5,ny=.5){
