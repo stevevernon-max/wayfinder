@@ -861,6 +861,37 @@ function visibleTrainMarkers(){
    ?[{at:p.at,arrivalAt:g.points.filter(q=>q.at<p.at&&q.station==="Mallaig").at(-1)?.at??null}]:[];
  }));
  for(const g of tracks){
+  // Each LDB board is only a partial view. Combining all boards' station
+  // times can place one physical train simultaneously on different legs.
+  // Prefer a single in-progress interval with a recent actual/forecast
+  // report, and never splice contradictory board intervals together.
+  const candidates=g.records.filter(t=>{
+   const p=t.position||{},start=Date.parse(p.fromAt),end=Date.parse(p.toAt);
+   return !t.cancelled&&Number.isFinite(start)&&Number.isFinite(end)&&end>start&&
+    start<=now+60000&&end>now&&end-start<=45*60000&&
+    Number.isFinite(positionProgress(t));
+  }).sort((a,b)=>{
+   const rank=t=>({actual_plus_forecast_estimate:6,darwin_estimate:5,
+    forecast_station_only:4,scheduled_estimate:2})[t.positionQuality]||1;
+   return rank(b)-rank(a)||
+    Date.parse(b.observedAt||"")-Date.parse(a.observedAt||"")||
+    Date.parse(a.position.fromAt)-Date.parse(b.position.fromAt);
+  });
+  if(candidates.length){
+   const best=candidates[0];
+   const bestProgress=positionProgress(best);
+   const ambiguous=candidates.some(t=>
+    t.positionQuality===best.positionQuality&&
+    Math.abs(positionProgress(t)-bestProgress)>12);
+   // Conflicting schedule-only views cannot establish a trustworthy
+   // movement. Let the published timetable render an "expected" icon.
+   if(!(ambiguous&&best.positionQuality==="scheduled_estimate")){
+    active.push({train:{...best,id:g.id,positionLabel:
+      (best.positionLabel||"Estimated train position")+" · station-board estimate"},
+      progress:bestProgress});
+   }
+   continue;
+  }
   const points=g.points;
   const lower=points.filter(p=>p.at<=now).at(-1);
   const upper=points.find(p=>p.at>now);
