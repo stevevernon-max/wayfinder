@@ -612,6 +612,20 @@ main>.planned-works-status{margin:0 0 10px}
 @media(max-width:390px){.app-header .header-brand>strong{font-size:16px!important}.app-header #activeTrainsPill,.app-header .gps-accuracy-pill{font-size:9px;padding:4px 5px}}
 .app-header .train-delay-summary{font-size:10px;line-height:1.2;color:#849db0;text-align:right;margin:0 4px 2px}
 .app-header .train-delay-summary.is-delayed{color:#ffcc78;font-weight:750}
+
+/* Restore the train-and-viaduct logo and constrain mobile heading/countdown. */
+.app-header #viaductCombinedTile{min-width:0;max-width:100%;overflow:hidden}
+.app-header .viaduct-combined-heading{display:flex;align-items:center;justify-content:center;min-width:0;gap:9px;padding:0 6px 8px;color:#d4e6f5;font-size:clamp(11px,3vw,14px);font-weight:800;letter-spacing:.7px;text-transform:uppercase;line-height:1.2}
+.app-header .viaduct-combined-heading::before,.app-header .viaduct-combined-heading::after{display:none}
+.app-header .viaduct-combined-heading .viaduct-icon{display:grid;place-items:center;flex:0 0 26px;width:26px;height:26px;min-width:26px;border-radius:6px;background:#21364a;color:#a8e9cf}
+.app-header .viaduct-combined-heading .viaduct-icon svg{width:23px;height:23px;display:block}
+.app-header .viaduct-combined-heading>span{min-width:0;white-space:normal;text-align:left}
+.app-header .viaduct-hero-line{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:5px;min-width:0;max-width:100%;padding:0 4px;align-items:start}
+.app-header #viaductCombinedTile #proximityTile{min-width:0;max-width:100%}
+.app-header #viaductCombinedTile #viaductRemaining,.app-header #viaductCombinedTile .viaduct-next-clock{font-size:clamp(17px,5.2vw,33px)!important;line-height:1.22;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;letter-spacing:-.6px}
+.app-header #viaductCombinedTile #viaductRemaining{text-align:left}
+.app-header #viaductCombinedTile .viaduct-next-clock{text-align:right}
+@media(max-width:390px){.app-header .viaduct-combined-heading{font-size:11px;letter-spacing:.35px;gap:7px}.app-header .viaduct-hero-line{gap:3px}.app-header #viaductCombinedTile #viaductRemaining,.app-header #viaductCombinedTile .viaduct-next-clock{font-size:clamp(16px,5vw,22px)!important}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span></button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -632,7 +646,13 @@ main>.planned-works-status{margin:0 0 10px}
 <div class="muted" id="trackStatus" hidden></div>
 </section>
 <section id="viaductCombinedTile" aria-label="Glenfinnan Viaduct approach and next crossing">
- <div class="viaduct-combined-heading"><span>Glenfinnan Viaduct</span></div>
+ <div class="viaduct-combined-heading"><div class="viaduct-icon" aria-hidden="true"><svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+ <path d="M7 33H65" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+ <rect x="18" y="19" width="32" height="13" rx="2" stroke="currentColor" stroke-width="3"/>
+ <rect x="26" y="23" width="12" height="5" rx="1" fill="currentColor"/>
+ <path d="M49 26H57V33" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+ <path d="M10 63V50C10 42 21 42 21 50V63M21 63V50C21 42 32 42 32 50V63M32 63V50C32 42 43 42 43 50V63M43 63V50C43 42 54 42 54 50V63M54 63V50C54 42 65 42 65 50V63" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>
+ </svg></div><span>Glenfinnan Viaduct</span></div>
  <div class="viaduct-hero-line">
   <section id="proximityTile" aria-label="Next train viaduct countdown">
    <span id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</span>
@@ -661,10 +681,10 @@ main>.planned-works-status{margin:0 0 10px}
 </div></header><main>
 <section class="tile" id="geoTile">
 <div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with roads, lochs, railway and estimated train position markers; drag or pinch to navigate"></div>
-<div class="geo-map-overlay"><span class="geo-load-status" id="geoStatus" hidden aria-live="polite">Loading map</span>
-<div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view" title="Reset map view">⌖</button><button type="button" id="geoFullscreen" aria-label="Expand map to full screen" aria-pressed="false">⛶</button></div></div>
-
-<p class="geo-note" id="geoNote">© OpenStreetMap contributors · © CARTO</p>
+<div class="geo-map-overlay"><span class="geo-load-status" id="geoStatus">Loading map</span>
+<div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view">Reset</button><button type="button" id="geoFullscreen" aria-label="Expand map to full screen" aria-pressed="false">⛶</button></div></div>
+<div class="geo-map-bottom"><span><i class="geo-line"></i> Railway</span><span><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#60c1fb;border:2px solid #f1f9ff"></i> Reported</span><span><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#f0b84a;border:2px solid #fff4d4"></i> Estimated</span><span>Drag · Pinch to zoom</span></div>
+<p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
 </section>
 <div class="cols single-viewpoint weather-first"><section class="tile"><div class="eyebrow">GLENFINNAN</div><div class="photo-header"><div class="heading">Photography conditions</div><span id="photoStatus" class="photo-rating-pill" role="status">Checking</span></div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="photo-light-row"><span>☀ Sunrise <b id="photoSunrise">—</b></span><span>☾ Sunset <b id="photoSunset">—</b></span><span id="photoAdvice">Checking conditions</span></div><div class="small" id="weatherTime"></div></section></div>
 <section class="tile" id="timetableTile" aria-labelledby="timetableHeading">
@@ -1793,7 +1813,38 @@ function approximateTrainGeoPoint(train){
  const ratio=Math.max(0,Math.min(1,(Date.now()-Date.parse(p.fromAt))/(Date.parse(p.toAt)-Date.parse(p.fromAt))));
  return {lat:from.lat+(to.lat-from.lat)*ratio,lon:from.lon+(to.lon-from.lon)*ratio,atStation:false};
 }
+function mapAutoBounds(){
+ const points=[{lat:56.8733,lon:-5.4317}]; // Glenfinnan Viaduct
+ for(const {train} of visibleTrainMarkers()){
+  const p=approximateTrainGeoPoint(train);
+  if(p&&Number.isFinite(p.lat)&&Number.isFinite(p.lon))points.push(p);
+ }
+ if(geoLocation&&Number.isFinite(geoLocation.lat)&&Number.isFinite(geoLocation.lon))points.push(geoLocation);
+ if(points.length===1)return {...defaultGeoBounds};
+ const lats=points.map(p=>p.lat),lons=points.map(p=>p.lon);
+ const latSpan=Math.max(.045,Math.max(...lats)-Math.min(...lats));
+ const lonSpan=Math.max(.10,Math.max(...lons)-Math.min(...lons));
+ const centreLat=(Math.max(...lats)+Math.min(...lats))/2;
+ const centreLon=(Math.max(...lons)+Math.min(...lons))/2;
+ // Keep both the user and all inferred trains visible when practical.
+ const height=geoCanvasHeight(),latForWidth=lonSpan*(height/900)*.57;
+ const dy=Math.max(latSpan*1.45,latForWidth*1.32,.06),dx=Math.max(lonSpan*1.4,dy/(height/900)/.57,.13);
+ return {north:centreLat+dy/2,south:centreLat-dy/2,west:centreLon-dx/2,east:centreLon+dx/2};
+}
+function followMapIfNeeded(force=false){
+ if(mapUserInteracted||mapFollowRunning)return false;
+ if(!force&&Date.now()-lastMapFollowAt<30000)return false;
+ lastMapFollowAt=Date.now();
+ const target=mapAutoBounds(),current=geoViews[0].bounds;
+ const change=Math.max(...Object.keys(target).map(k=>Math.abs(current[k]-target[k])));
+ if(change<.006)return false;
+ geoViews[0].bounds=target;
+ mapFollowRunning=true;
+ try{renderGeoMaps()}finally{mapFollowRunning=false}
+ return true;
+}
 function updateGeoTrainMarkers(){
+ if(followMapIfNeeded())return;
  const svg=$("mapOverview")?.querySelector("svg");if(!svg)return;
  let group=svg.querySelector(".train-map-markers");
  if(!group){group=geoSVG("g",{class:"train-map-markers"});svg.appendChild(group)}
@@ -1860,6 +1911,9 @@ startGps();
  * Geo data is fetched from OpenStreetMap Overpass. No map tile provider or SDK. */
 const defaultGeoBounds={north:57.025,south:56.8,west:-5.94,east:-5.04};
 const geoViews=[{id:"mapOverview",bounds:{...defaultGeoBounds},label:"Overview"}];
+let mapUserInteracted=false,lastMapFollowAt=0,mapFollowRunning=false;
+function updateMapReset(){const b=$("geoReset");if(b)b.hidden=!mapUserInteracted}
+
 const geoStations=[
  {name:"Mallaig",lat:57.0052,lon:-5.8290},{name:"Morar",lat:56.9685,lon:-5.8212},
  {name:"Arisaig",lat:56.9136,lon:-5.8406},{name:"Lochailort",lat:56.8812,lon:-5.6633},
@@ -1911,7 +1965,7 @@ function appendMapTiles(svg,view){
   const image=geoSVG("image",{
    x:450+(tx-centerX)*tilePixels,y:f.height/2+(ty-centerY)*tilePixels,
    width:tilePixels+.6,height:tilePixels+.6,preserveAspectRatio:"none",
-   href:"https://basemaps.cartocdn.com/dark_nolabels/"+z+"/"+tx+"/"+ty+".png"
+   href:"https://tile.openstreetmap.org/"+z+"/"+tx+"/"+ty+".png"
   });
   image.addEventListener("load",()=>{
    loaded++;
@@ -1921,7 +1975,7 @@ function appendMapTiles(svg,view){
    failed++;
    if(failed===total&&loaded===0){
     $("geoStatus").textContent="Map offline";
-    $("geoNote").textContent="© OpenStreetMap contributors · © CARTO";
+    $("geoNote").textContent="Map imagery could not load. Check your connection. Station positions remain visible.";
    }
   });
   group.appendChild(image);
@@ -1952,6 +2006,17 @@ function makeMap(view){
  // No straight-line connections between station coordinates.
  for(const way of geoMapFeatures.rail){appendMapPath(railShadow,way,view.bounds,"#08170f",17);appendMapPath(rail,way,view.bounds,"#42ef92",10)}
  svg.appendChild(railShadow);svg.appendChild(rail);
+ for(const station of geoStations){
+  if(station.lat>view.bounds.north||station.lat<view.bounds.south||station.lon<view.bounds.west||station.lon>view.bounds.east)continue;
+  const [x,y]=geoPoint(station.lat,station.lon,view.bounds);
+  svg.appendChild(geoSVG("circle",{cx:x,cy:y,r:8,fill:"#173149",stroke:"#d7e2ec","stroke-width":2.5}));
+  const label=geoSVG("text",{x:x+10,y:y-12,fill:"#f2f5ff","font-size":18,"font-weight":"700",stroke:"#0a1525","stroke-width":3,"paint-order":"stroke"});label.textContent=station.name;svg.appendChild(label);
+ }
+ for(const label of mapLabels){
+  if(label.lat>view.bounds.north||label.lat<view.bounds.south||label.lon<view.bounds.west||label.lon>view.bounds.east)continue;
+  const [x,y]=geoPoint(label.lat,label.lon,view.bounds);
+  const node=geoSVG("text",{x,y,fill:"#7197bd","font-size":15,"font-style":"italic","text-anchor":"middle"});node.textContent=label.name;svg.appendChild(node);
+ }
  for(const site of Object.values(siteData)){
   if(site.lat>view.bounds.north||site.lat<view.bounds.south||site.lon<view.bounds.west||site.lon>view.bounds.east)continue;
   const [x,y]=geoPoint(site.lat,site.lon,view.bounds);
@@ -1978,7 +2043,7 @@ function updateGeoLocation(lat,lon){
  geoLocation={lat,lon};
  const moved=previous?Math.hypot((lat-previous.lat)*111195,(lon-previous.lon)*111195*Math.cos(lat*Math.PI/180)):Infinity;
  // Frequent GPS watches must not continually destroy and reload in-flight map tiles.
- if(!previous||moved>80||now-lastGeoGpsRender>30000){lastGeoGpsRender=now;renderGeoMaps()}
+ if(!previous||moved>80||now-lastGeoGpsRender>30000){lastGeoGpsRender=now;if(!followMapIfNeeded(true))renderGeoMaps()}
 }
 
 async function overpassGeometry(query){
@@ -2045,12 +2110,13 @@ async function loadGeoRailway(){
  if(w.status==="fulfilled"){const lakes=extractShapes(w.value,"water");if(lakes.length)geoMapFeatures.water=lakes;geoMapFeatures.coast=extractShapes(w.value,"coast")}
  renderGeoMaps();cacheGeo();
  const hasRail=geoMapFeatures.rail.length>0,hasWater=geoMapFeatures.water.length>0;
- if(hasRail&&hasWater){$("geoStatus").textContent="OSM detail loaded";$("geoNote").textContent="© OpenStreetMap contributors · © CARTO"}
- else if(hasRail||hasWater){$("geoStatus").textContent="Partial geography";$("geoNote").textContent="© OpenStreetMap contributors · © CARTO"}
- else {$("geoStatus").textContent="Map base layer available";$("geoNote").textContent="© OpenStreetMap contributors · © CARTO"}
+ if(hasRail&&hasWater){$("geoStatus").textContent="OSM detail loaded";$("geoNote").textContent="Mapped railway and loch boundaries from OpenStreetMap, including multipolygon shoreline segments. The diagram uses geographic coordinates, with photo pins as approximate areas. No API key required. © OpenStreetMap contributors."}
+ else if(hasRail||hasWater){$("geoStatus").textContent="Partial geography";$("geoNote").textContent="Some OpenStreetMap geometry is temporarily unavailable. Showing "+(hasRail?"railway":"loch outlines")+" from available or cached geographic data. Try refreshing later."}
+ else {$("geoStatus").textContent="Geometry unavailable";$("geoNote").textContent="Detailed railway geometry is temporarily unavailable. No invented railway path is drawn; roads and lochs remain available from OpenStreetMap tiles."}
 }
 /* Geographic map interaction: preserve real OSM geometry, change viewport only. */
 function geoZoom(factor,nx=.5,ny=.5){
+ mapUserInteracted=true;updateMapReset();
  const b=geoViews[0].bounds,dx=b.east-b.west,dy=b.north-b.south;
  const nextX=Math.max(.004,Math.min(3.0,dx*factor)),nextY=Math.max(.001,Math.min(1.0,dy*factor));
  const lon=b.west+dx*nx,lat=b.north-dy*ny;
@@ -2058,6 +2124,8 @@ function geoZoom(factor,nx=.5,ny=.5){
  renderGeoMaps();
 }
 function geoPan(dx,dy){
+ if(!dx&&!dy)return;
+ mapUserInteracted=true;updateMapReset();
  const b=geoViews[0].bounds,lonShift=dx/900*(b.east-b.west),latShift=dy/geoCanvasHeight()*(b.north-b.south);
  geoViews[0].bounds={west:b.west-lonShift,east:b.east-lonShift,north:b.north+latShift,south:b.south+latShift};
  renderGeoMaps();
@@ -2076,7 +2144,7 @@ function initGeoInteraction(){
  const el=$("mapOverview");const active=new Map();let previous=null;
  $("geoZoomIn").addEventListener("click",()=>geoZoom(.65));
  $("geoZoomOut").addEventListener("click",()=>geoZoom(1.55));
- $("geoReset").addEventListener("click",()=>{geoViews[0].bounds={...defaultGeoBounds};renderGeoMaps()});
+ $("geoReset").addEventListener("click",()=>{mapUserInteracted=false;lastMapFollowAt=0;geoViews[0].bounds={...defaultGeoBounds};followMapIfNeeded(true);renderGeoMaps()});
  $("geoFullscreen").addEventListener("click",()=>setGeoFullscreen(!$("geoTile").classList.contains("geo-fullscreen")));
  window.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("geoTile").classList.contains("geo-fullscreen"))setGeoFullscreen(false)});
  el.addEventListener("wheel",event=>{event.preventDefault();const r=el.getBoundingClientRect();geoZoom(event.deltaY>0?1.35:.74,Math.max(0,Math.min(1,(event.clientX-r.left)/r.width)),Math.max(0,Math.min(1,(event.clientY-r.top)/r.height)))},{passive:false});
@@ -2101,6 +2169,6 @@ function initGeoInteraction(){
  el.addEventListener("keydown",e=>{if(e.key==="+"||e.key==="="){e.preventDefault();geoZoom(.7)}else if(e.key==="-"){e.preventDefault();geoZoom(1.4)}});
 }
 initGeoInteraction();
-renderGeoMaps();loadGeoRailway();
+updateMapReset();renderGeoMaps();loadGeoRailway();
 
 </script></body></html>
