@@ -1151,8 +1151,22 @@ function renderViaductApproach(){
   if(!Number.isFinite(from))continue;
   let raw=from;
   const start=Date.parse(p.fromAt),finish=Date.parse(p.toAt);
-  if(Number.isFinite(to)&&Number.isFinite(start)&&Number.isFinite(finish)&&finish>start)
-   raw=from+(to-from)*Math.max(0,Math.min(1,(Date.now()-start)/(finish-start)));
+  if(Number.isFinite(to)&&Number.isFinite(start)&&Number.isFinite(finish)&&finish>start){
+   const now=Math.max(start,Math.min(finish,Date.now()));
+   const glen=rawOf("Glenfinnan"),viaductRaw=west+(303-35)/830*(east-west);
+   // Make the directional blip reach the fixed viaduct marker at the
+   // same calibrated station-based crossing time used by the countdown:
+   // +1 minute toward Fort William, -2 minutes toward Mallaig.
+   if(p.fromStation==="Glenfinnan"&&to>glen&&finish>start+60000){
+    const crossingAt=start+60000;
+    raw=now<=crossingAt?from+(viaductRaw-from)*(now-start)/(crossingAt-start)
+     :viaductRaw+(to-viaductRaw)*(now-crossingAt)/(finish-crossingAt);
+   }else if(p.toStation==="Glenfinnan"&&from>glen&&finish>start+2*60000){
+    const crossingAt=finish-2*60000;
+    raw=now<=crossingAt?from+(viaductRaw-from)*(now-start)/(crossingAt-start)
+     :viaductRaw+(to-viaductRaw)*(now-crossingAt)/(finish-crossingAt);
+   }else raw=from+(to-from)*(now-start)/(finish-start);
+  }
   if(raw<west||raw>east)continue;
   const x=35+(raw-west)/(east-west)*830;
   const g=document.createElementNS("http://www.w3.org/2000/svg","g");
