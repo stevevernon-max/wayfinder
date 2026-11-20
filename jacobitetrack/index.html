@@ -673,6 +673,24 @@ function scheduledTimetableMarkers(now=Date.now()){
    .filter(x=>Array.isArray(x)&&recognised.has(String(x[0]).toLowerCase()))
    .map(x=>({station:x[0],at:localAt(x[1])}))
    .filter(x=>Number.isFinite(x.at));
+  // A train can be present at a terminus before its first scheduled
+  // departure. Display a stationary timetable expectation during the
+  // 15-minute pre-departure window, not a fabricated live observation.
+  const first=stops[0];
+  if(first&&(first.station==="Mallaig"||first.station==="Fort William")&&
+     now>=first.at-15*60000&&now<first.at){
+   const train={
+    id:"Scheduled "+(index+1),direction:service.from==="Mallaig"?"out":"back",
+    positionQuality:"timetable_only",scheduled:true,locationVerified:false,
+    positionLabel:"Expected at "+first.station+" · departs "+service.stops[0][1]+" (not confirmed live)",
+    quality:"Published timetable pre-departure estimate; train presence not confirmed",
+    position:{fromAt:new Date(first.at-15*60000).toISOString(),
+     toAt:new Date(first.at).toISOString(),
+     fromStation:first.station,toStation:first.station,basis:"published_timetable"}
+   };
+   markers.push({train,progress:positionProgress(train)});
+   continue;
+  }
   for(let i=0;i<stops.length-1;i++){
    const a=stops[i],b=stops[i+1];
    if(b.at<=a.at||now<a.at||now>=b.at)continue;
