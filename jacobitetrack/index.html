@@ -859,10 +859,25 @@ function visibleTrainMarkers(){
     train.position?.fromStation==="Mallaig";
   });
  });
- // Published timetable gives a clearly marked expectation only when
- // current station-board data is unavailable; never describe it as a live train.
- const age=feedUpdated?Date.now()-Date.parse(feedUpdated):Infinity;
- if(!distinct.length&&age>15*60000)return scheduledTimetableMarkers(now);
+ // Boards may already omit a train approaching its final stop even
+ // while they report a different upcoming service. Fill only the missing
+ // current journey(s) using the published timetable, visibly as "expected".
+ // Never label a timetable-derived marker as a confirmed train movement.
+ const projected=scheduledTimetableMarkers(now);
+ for(const fallback of projected){
+  const fp=fallback.train.position;
+  const first=Date.parse(fp.fromAt),last=Date.parse(fp.toAt);
+  const overlaps=distinct.some(({train})=>{
+   const p=train.position||{};
+   const start=Date.parse(p.fromAt),end=Date.parse(p.toAt);
+   if(!Number.isFinite(start)||!Number.isFinite(end))return false;
+   // An active board interval on the same piece of line takes priority.
+   const boardStations=[p.fromStation,p.toStation].map(x=>String(x||"").toLowerCase());
+   const projectedStations=[fp.fromStation,fp.toStation].map(x=>String(x||"").toLowerCase());
+   return first<end&&last>start&&boardStations.some(x=>projectedStations.includes(x));
+  });
+  if(!overlaps)distinct.push(fallback);
+ }
  return distinct;
 }
 function etaAt(t,id){
@@ -1038,9 +1053,10 @@ function updateViaductCountdown(){
 setInterval(updateViaductCountdown,1000);
 function updateActiveTrainsPill(){
  const markers=visibleTrainMarkers(),count=markers.length,pill=$("activeTrainsPill");
- const estimated=count>0&&markers.every(item=>item.train.positionQuality==="timetable_only");
- pill.textContent=estimated?count+" "+(count===1?"train":"trains")+" expected":count+" "+(count===1?"train":"trains")+" on track";
- pill.title=estimated?"Timetable-projected positions; actual train movement is unconfirmed":"Positions are inferred from railway timing reports, not GPS";
+ const expected=markers.filter(item=>item.train.positionQuality==="timetable_only").length;
+ const reported=count-expected;
+ pill.textContent=expected?(reported?reported+" on track · "+expected+" expected":expected+" "+(expected===1?"train":"trains")+" expected"):count+" "+(count===1?"train":"trains")+" on track";
+ pill.title=expected?"Expected markers use the published timetable; actual movement is unconfirmed. Other positions come from station-board timings.":"Positions are inferred from station-board times, not GPS";
  pill.classList.toggle("has-trains",count>0);
  const gpsPill=$("gpsAccuracyPill");
  const accurate=Number.isFinite(gpsAccuracyMetres)&&gpsAccuracyMetres>=0;
