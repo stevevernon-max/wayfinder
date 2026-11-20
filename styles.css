@@ -456,10 +456,6 @@ body.journey-active #leave-time { font-size: 38px; }
 .leg-drive { color: var(--muted); font-size: 11px; margin-top: 10px; margin-bottom: 6px; }
 
 /* Larger live leg indicator and tighter spacing. */
-.shell { padding-top: calc(env(safe-area-inset-top) + 2px); }
-#journey-status { margin-top: 0; }
-.timeline-heading { margin-top: 6px; margin-bottom: 5px; }
-#timeline { padding-top: 8px; }
 #timeline .event:not(:last-child) { min-height: 70px; }
 #timeline .timeline-segments { left: 4px; width: 9px; }
 #timeline .timeline-segments i { position: relative; width: 9px; border-radius: 5px; }
@@ -482,3 +478,9 @@ body.journey-active #leave-time { font-size: 38px; }
   #timeline .timeline-segments i.current { animation: live-leg-pulse 1.5s ease-in-out infinite; }
 }
 @keyframes live-leg-pulse { 50% { opacity: .6; box-shadow: 0 0 6px var(--timeline-progress); } }
+
+/* Share the Route header row with its travel-time action. */
+#route-editor { position: relative; padding-top: 0; }
+#route-editor > summary { padding: 12px 140px 8px 0; min-height: 44px; }
+#route-editor > .route-actions-top { position: absolute; right: 10px; top: 6px; margin: 0; }
+#route-editor > .endpoint-row:first-of-type { margin-top: 0; }
