@@ -1128,6 +1128,22 @@ function renderPlannedWorks(){
   alert.append(row);
  }
 }
+// Foreground-only vibration where supported, never push permission.
+const crossingVibrations=new Set();
+function maybeVibrateForCrossing(at,minutes){
+ if(document.visibilityState!=="visible"||typeof navigator.vibrate!=="function")return;
+ if(!Number.isFinite(minutes)||minutes<0||minutes>15||!Number.isFinite(at))return;
+ const key=Math.round(at/60000);
+ for(const threshold of [15,2]){
+  if(minutes>threshold)continue;
+  const eventKey=key+"-"+threshold;
+  if(crossingVibrations.has(eventKey))continue;
+  crossingVibrations.add(eventKey);
+  try{navigator.vibrate(threshold===2?[130,90,130]:[100])}catch{}
+ }
+ if(crossingVibrations.size>40)crossingVibrations.clear();
+}
+
 function updateViaductCountdown(){
  // A malformed or missing live feed must never stop the published timetable timer.
  let liveNext=null;
@@ -1179,7 +1195,7 @@ function updateViaductCountdown(){
  const label=$("viaductRemaining"),time=$("viaductTileCountdown"),note=$("viaductTileNote");
  if(!Number.isFinite(minutes)||minutes<0){
   label.textContent="—";
-  time.textContent="No crossing available in the current railway data or published timetable";
+  time.textContent="No crossing predicted";
   note.textContent=publishedTimetable&&new Date().toISOString().slice(0,10)>publishedTimetable.validThrough?"Published timetable has expired; update required.":"No upcoming published crossing within the valid timetable dates.";
   note.hidden=false;
   return;
@@ -1196,7 +1212,8 @@ function updateViaductCountdown(){
  const when=crossingLocal===nowLocal?"Today":dateOf(Date.now()+86400000)===crossingLocal?"Tomorrow"
   :new Date(trainAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"});
  const inPositionDay=dateOf(inPositionAt)===crossingLocal?"":dateOf(inPositionAt)===nowLocal?"Today ":""+new Date(inPositionAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"})+" ";
- time.textContent="Next viaduct crossing · "+when+" "+fmt(trainAt);
+ time.textContent=when+" "+fmt(trainAt);
+ maybeVibrateForCrossing(trainAt,minutes);
  // Keep Tile 2 focused on the countdown and crossing time.
  // Timetable predictions remain estimates internally, without a warning/error label.
  note.hidden=true;
