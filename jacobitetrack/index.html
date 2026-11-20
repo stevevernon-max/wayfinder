@@ -666,7 +666,7 @@ function scheduledTimetableMarkers(now=Date.now()){
   const [hour,minute]=time.split(":").map(Number);
   return Date.parse(date+"T00:00:00Z")+(hour*60+minute-offsetMinutes)*60000;
  };
- const recognised=new Set(schematicStations.map(([name])=>name.toLowerCase()));
+ const recognised=new Set(timingStations.map(([name])=>name.toLowerCase()));
  const markers=[];
  for(const [index,service] of (data.patterns[key]||[]).entries()){
   const stops=(service.stops||[])
@@ -859,11 +859,10 @@ function visibleTrainMarkers(){
     train.position?.fromStation==="Mallaig";
   });
  });
- // If the feed is stale, retain a labelled scheduled projection rather
- // than incorrectly asserting that no trains are running.
- // Do not project train locations from the PDF: station boards are the
- // only source for trains on the track. The PDF is for the next crossing only.
- if(!distinct.length)return [];
+ // Published timetable gives a clearly marked expectation only when
+ // current station-board data is unavailable; never describe it as a live train.
+ const age=feedUpdated?Date.now()-Date.parse(feedUpdated):Infinity;
+ if(!distinct.length&&age>15*60000)return scheduledTimetableMarkers(now);
  return distinct;
 }
 function etaAt(t,id){
@@ -1040,7 +1039,7 @@ setInterval(updateViaductCountdown,1000);
 function updateActiveTrainsPill(){
  const markers=visibleTrainMarkers(),count=markers.length,pill=$("activeTrainsPill");
  const estimated=count>0&&markers.every(item=>item.train.positionQuality==="timetable_only");
- pill.textContent=count+" "+(count===1?"train":"trains")+" on track";
+ pill.textContent=estimated?count+" "+(count===1?"train":"trains")+" expected":count+" "+(count===1?"train":"trains")+" on track";
  pill.title=estimated?"Timetable-projected positions; actual train movement is unconfirmed":"Positions are inferred from railway timing reports, not GPS";
  pill.classList.toggle("has-trains",count>0);
  const gpsPill=$("gpsAccuracyPill");
@@ -1086,6 +1085,31 @@ function showDirections(key){
  $("photoAdvice").textContent=v.name+": "+text;
  $("photoAdvice").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
+// Assess actual light at Glenfinnan against today's local sunrise and sunset.
+// Refresh this status every minute, even between weather API updates.
+function updatePhotographyLightStatus(){
+ if(!weatherData?.daily)return;
+ const uk=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{
+  timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"
+ }).formatToParts(new Date()).map(({type,value})=>[type,value]));
+ const date=uk.year+"-"+uk.month+"-"+uk.day;
+ const index=(weatherData.daily.time||[]).indexOf(date);
+ const rise=weatherData.daily.sunrise?.[index],set=weatherData.daily.sunset?.[index];
+ const currentMinutes=Number(uk.hour)*60+Number(uk.minute);
+ const timeOf=value=>value&&/T\d{2}:\d{2}$/.test(value)?Number(value.slice(-5,-3))*60+Number(value.slice(-2)):null;
+ const first=timeOf(rise),last=timeOf(set);
+ const dark=first!==null&&last!==null&&(currentMinutes<first||currentMinutes>=last);
+ const pill=$("photoStatus"),advice=$("photoAdvice");
+ pill.textContent=dark?"After dark":weatherData.daylightRating;
+ pill.dataset.grade=dark?"poor":weatherData.daylightRating.toLowerCase();
+ const summary=[dark?"After dark":null,weatherData.summary].filter(Boolean).join(" · ");
+ advice.textContent=summary;advice.hidden=!summary;
+ if(index>=0){
+  $("photoSunrise").textContent=rise?rise.slice(-5):"—";
+  $("photoSunset").textContent=set?set.slice(-5):"—";
+ }
+}
+
 async function fetchWeather(){
  try{
  const u="https://api.open-meteo.com/v1/forecast?latitude=56.8733&longitude=-5.4317&current=temperature_2m,cloud_cover,visibility,precipitation,weather_code&hourly=precipitation_probability,cloud_cover,visibility,wind_speed_10m,temperature_2m&daily=sunrise,sunset&forecast_days=7&timezone=Europe%2FLondon";
@@ -1098,18 +1122,15 @@ async function fetchWeather(){
  const rise=d.daily?.sunrise?.[0],set=d.daily?.sunset?.[0];
  $("photoSunrise").textContent=rise?rise.slice(-5):"—";
  $("photoSunset").textContent=set?set.slice(-5):"—";
- // Rating based on observable forecast fields, not assumptions about sun direction.
  let score=100;
  if(!Number.isFinite(vis))score-=10;
  else if(vis<2000)score-=45;else if(vis<5000)score-=27;else if(vis<12000)score-=12;
  if(!Number.isFinite(precip))score-=8;
  else if(precip>=70)score-=40;else if(precip>=40)score-=25;else if(precip>=20)score-=12;
  if(cloud>=90)score-=16;else if(cloud>=70)score-=8;
- const grade=score>=85?"Excellent":score>=68?"Good":score>=45?"Fair":"Poor";
- const status=$("photoStatus");status.textContent=grade;status.dataset.grade=grade.toLowerCase();
- const summary=Number.isFinite(vis)&&vis<5000?"Low visibility":Number.isFinite(precip)&&precip>=50?"Rain likely":cloud>=85?"Overcast":"";
- $("photoAdvice").textContent=summary;
- $("photoAdvice").hidden=!summary;
+ const daylightRating=score>=85?"Excellent":score>=68?"Good":score>=45?"Fair":"Poor";
+ weatherData={daylightRating,summary:Number.isFinite(vis)&&vis<5000?"Low visibility":Number.isFinite(precip)&&precip>=50?"Rain likely":cloud>=85?"Overcast":"",daily:d.daily};
+ updatePhotographyLightStatus();
  $("weatherTime").textContent="Updated "+now.time.slice(11,16)+" · Open-Meteo";
  }catch(e){$("photoStatus").textContent="Unavailable";$("photoStatus").removeAttribute("data-grade");$("photoSunrise").textContent="—";$("photoSunset").textContent="—";$("weather").innerHTML='<div class="muted">Weather forecast unavailable.</div>';$("photoAdvice").textContent="Unable to load weather and visibility information."; $("weatherTime").textContent=e.message;}
 }
@@ -1230,7 +1251,7 @@ async function load(){
  renderPlannedWorks();
  source=String(d.source||"Railway feed");feedUpdated=d.updated;
  const positioned=visibleTrainMarkers().length;
- $("feedBadge").textContent=feedAge>15*60000?"Station boards delayed":"Station boards";$("trackStatus").textContent=services.length?positioned+" train(s) estimated from station times. "+(feedAge>15*60000?"Board refresh delayed · ":"")+"Updated "+new Date(d.updated).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})+" · Estimates, not GPS.":"No current movement estimate from station boards.";
+ $("feedBadge").textContent=feedAge>15*60000?"Station boards delayed":"Station boards";$("trackStatus").textContent=feedAge>15*60000?"Station boards delayed. Any expected trains come from the published timetable, not live reports.":services.length?positioned+" train(s) estimated from station times. Updated "+new Date(d.updated).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})+" · Estimates, not GPS.":"No current movement estimate from station boards.";
  render();
  }catch(e){services=[];scheduledCrossings=[];plannedWorksFeed={status:"unavailable",items:[]};renderPlannedWorks();source=null;feedUpdated=null;$("feedBadge").textContent="Unavailable";$("trackStatus").textContent="Station board data unavailable; train positions cannot be estimated.";render();}
 }
@@ -1296,7 +1317,7 @@ $("disableAlertsBtn").addEventListener("click",async()=>{
 });
 $("viewpoint").addEventListener("change",render);
 $("alertLead").addEventListener("change",render);
-load();loadTimetable();fetchWeather();setupPush();setInterval(load,60000);setInterval(fetchWeather,600000);setInterval(()=>{render();updateGeoTrainMarkers()},15000);
+load();loadTimetable();fetchWeather();setupPush();setInterval(load,60000);setInterval(fetchWeather,600000);setInterval(updatePhotographyLightStatus,60000);setInterval(()=>{render();updateGeoTrainMarkers()},15000);
 /* GPS stays entirely in the device browser; only its nearest position on this
    simplified station-based railway alignment is displayed. Nothing is uploaded. */
 const railFixes=[
