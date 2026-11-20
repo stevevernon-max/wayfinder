@@ -1295,32 +1295,54 @@ function nextPublishedViaductCrossing(now=Date.now()){
 
 
 function renderTimetable(){
- const ukDate=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"});
- const parts=Object.fromEntries(ukDate.formatToParts(new Date()).map(({type,value})=>[type,value]));
- const today=new Date(Date.UTC(Number(parts.year),Number(parts.month)-1,Number(parts.day)));
- const dayISO=today.toISOString().slice(0,10);
- const tomorrow=new Date(today.getTime()+86400000);
- const tomorrowISO=tomorrow.toISOString().slice(0,10);
- const cacheKey=dayISO+"|"+(publishedTimetable?.validFrom||"")+"|"+(publishedTimetable?.validThrough||"");
- if(cacheKey===renderedTimetableDate)return;
- renderedTimetableDate=cacheKey;
  const data=publishedTimetable;
- const dateLabel=date=>new Date(date+"T00:00:00Z").toLocaleDateString("en-GB",{timeZone:"UTC",weekday:"long",day:"numeric",month:"long"});
- const patternFor=day=>{const dow=day.getUTCDay();return dow===0?"sunday":dow===6?"saturday":dow===5?"friday":"weekday"};
- function fill(date,day,headingId,statusId,tableId,rowsId,isToday){
-  const status=$(statusId),table=$(tableId),rows=$(rowsId);
-  $(headingId).textContent=(isToday?"Today's":"Tomorrow's")+" West Highland timetable · "+dateLabel(date);
-  const trains=date>=data.validFrom&&date<=data.validThrough?data.patterns?.[patternFor(day)]:null;
-  table.hidden=!Array.isArray(trains);rows.replaceChildren();
-  if(!Array.isArray(trains)){status.textContent="No published timetable for this date.";return}
-  status.textContent=trains.length+" scheduled services · Times UK local · Tap Calls for stops";
-  rows.innerHTML=trains.map(train=>{
-   const detail=train.stops.map(([station,time,request])=>'<span><span>'+safe(station)+(request?' (request stop)':'')+'</span><time>'+safe(time)+'</time></span>').join("");
-   return '<tr><td>'+safe(train.stops[0][1])+'</td><td>'+safe(train.from)+' → '+safe(train.to)+'</td><td>'+safe(train.viaduct)+'</td><td><details><summary>Calls</summary><div class="stop-list">'+detail+'</div></details></td></tr>';
-  }).join("");
+ const heading=$("timetableHeading"),status=$("timetableStatus"),table=$("timetableTable"),rows=$("timetableRows");
+ const london=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"});
+ const parts=Object.fromEntries(london.formatToParts(new Date()).map(({type,value})=>[type,value]));
+ const start=Date.UTC(+parts.year,+parts.month-1,+parts.day);
+ const now=Date.now(),services=[];
+ const formatUK=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short",day:"numeric",month:"short"});
+ for(let offset=0;offset<15&&services.length<20;offset++){
+  const day=new Date(start+offset*86400000),date=day.toISOString().slice(0,10);
+  if(date<data.validFrom||date>data.validThrough)continue;
+  const dow=day.getUTCDay(),pattern=dow===0?"sunday":dow===6?"saturday":dow===5?"friday":"weekday";
+  const tzparts=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",timeZoneName:"shortOffset"})
+   .formatToParts(new Date(day.getTime()+12*3600000));
+  const tz=tzparts.find(p=>p.type==="timeZoneName")?.value||"GMT";
+  const match=tz.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+  const shift=match?(match[1]==="-"?-1:1)*(+match[2]*60+ +(match[3]||0)):0;
+  for(const train of data.patterns[pattern]||[]){
+   if(!Array.isArray(train.stops)||!train.stops.length)continue;
+   const depart=train.stops[0][1];
+   if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(depart))continue;
+   const [hours,mins]=depart.split(":").map(Number);
+   const at=day.getTime()+(hours*60+mins-shift)*60000;
+   if(at<now)continue;
+   services.push({train,at,date});
+  }
  }
- fill(dayISO,today,"todayTimetableHeading","todayTimetableStatus","todayTimetableTable","todayTimetableRows",true);
- fill(tomorrowISO,tomorrow,"timetableHeading","timetableStatus","timetableTable","timetableRows",false);
+ services.sort((a,b)=>a.at-b.at);
+ const upcoming=services.slice(0,10);
+ heading.textContent="Next 10 scheduled services";
+ status.textContent=upcoming.length?"Next "+upcoming.length+" departures · UK local time · tap Calls to expand":"No forthcoming services in the published timetable.";
+ table.hidden=!upcoming.length;
+ // Rebuild once per minute so expired departures disappear while the app runs.
+ rows.innerHTML=upcoming.map(({train,date},index)=>{
+  const day=formatUK.format(new Date(date+"T12:00:00Z"));
+  const detail=train.stops.map(([station,time,request])=>
+   '<span class="calls-stop"><span>'+safe(station)+'</span><time>'+safe(time)+'</time>'+(request?'<small>Request stop</small>':'')+'</span>').join("");
+  return '<tr class="service-main"><td>'+safe(train.stops[0][1])+'<span class="service-date">'+safe(day)+'</span></td>'+
+   '<td>'+safe(train.from)+' → '+safe(train.to)+'</td><td>'+safe(train.viaduct)+'</td>'+
+   '<td><button class="calls-button" type="button" aria-expanded="false" aria-controls="calls-'+index+'">Calls ▾</button></td></tr>'+
+   '<tr class="calls-expanded" id="calls-'+index+'" hidden><td colspan="4"><div class="calls-strip" aria-label="Station calls, swipe horizontally">'+detail+'</div></td></tr>';
+ }).join("");
+ rows.querySelectorAll(".calls-button").forEach(button=>button.addEventListener("click",()=>{
+  const detail=$(button.getAttribute("aria-controls"));
+  const expanded=button.getAttribute("aria-expanded")==="true";
+  button.setAttribute("aria-expanded",String(!expanded));
+  button.textContent=expanded?"Calls ▾":"Calls ▴";
+  detail.hidden=expanded;
+ }));
 }
 
 async function loadTimetable(){
@@ -1342,13 +1364,11 @@ async function loadTimetable(){
   updateViaductCountdown();
   renderTimetable();
   render();
-  setInterval(renderTimetable,60000);
+  if(!window.__jacobiteTimetableRefresh){window.__jacobiteTimetableRefresh=setInterval(renderTimetable,60000)}
  }catch(error){
-  $("timetableStatus").textContent="Using bundled timetable; detailed service times unavailable.";
-  $("todayTimetableStatus").textContent="Using bundled timetable; detailed service times unavailable.";
-  $("todayTimetableTable").hidden=true;
+  $("timetableStatus").textContent="Using bundled published service times; download unavailable.";
+  renderTimetable();
   updateViaductCountdown();
-  $("timetableTable").hidden=true;
   $("timetableSource").replaceChildren();
  }
 }
