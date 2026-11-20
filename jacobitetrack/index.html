@@ -606,6 +606,8 @@ main>.planned-works-status{margin:0 0 10px}
 .app-header #viaductCombinedTile #viaductTrackTile{border:0!important;padding:2px 0 0!important;background:transparent!important;margin:0!important}
 .app-header #viaductCombinedTile #viaductTrackTile .rail-scroll{margin:0}
 @media(max-width:390px){.app-header .header-brand>strong{font-size:16px!important}.app-header #activeTrainsPill,.app-header .gps-accuracy-pill{font-size:9px;padding:4px 5px}}
+.app-header .train-delay-summary{font-size:10px;line-height:1.2;color:#849db0;text-align:right;margin:0 4px 2px}
+.app-header .train-delay-summary.is-delayed{color:#ffcc78;font-weight:750}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span></button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -622,6 +624,7 @@ main>.planned-works-status{margin:0 0 10px}
 <circle class="node" cx="865" cy="83" r="12"/><text class="station-label" x="892" y="45" text-anchor="end">Fort William</text>
 <g id="trains"></g>
 </svg></div>
+<div id="trainDelaySummary" class="train-delay-summary" aria-live="off">Delay information not reported by station boards</div>
 <div class="muted" id="trackStatus" hidden></div>
 </section>
 <section id="viaductCombinedTile" aria-label="Glenfinnan Viaduct approach and next crossing">
@@ -1223,6 +1226,18 @@ function updateActiveTrainsPill(){
  pill.textContent=expected?(reported?reported+" on track · "+expected+" expected":expected+" "+(expected===1?"train":"trains")+" expected"):count+" "+(count===1?"train":"trains")+" on track";
  pill.title=expected?"Expected markers use the published timetable; actual movement is unconfirmed. Other positions come from station-board timings.":"Positions are inferred from station-board times, not GPS";
  pill.classList.toggle("has-trains",count>0);
+ const delayStatus=$("trainDelaySummary");
+ if(delayStatus){
+  const reports=markers.map(({train})=>train).filter(t=>Number.isFinite(t.delayMinutes));
+  const delayed=reports.filter(t=>t.delayMinutes>0);
+  const basis=delayed[0]||reports[0];
+  delayStatus.textContent=delayed.length?
+   "Station-board delay estimate · +"+Math.max(...delayed.map(t=>t.delayMinutes))+" min"+
+    (basis?.delayStation?" at "+basis.delayStation:""):
+   reports.length?"No delay indicated in available station timing comparisons":
+   "Delay information not reported by station boards";
+  delayStatus.classList.toggle("is-delayed",delayed.length>0);
+ }
  const gpsPill=$("gpsAccuracyPill");
  const accurate=Number.isFinite(gpsAccuracyMetres)&&gpsAccuracyMetres>=0;
  $("gpsAccuracyLabel").textContent=accurate?"GPS ±"+Math.round(gpsAccuracyMetres)+"m":userCoords?"GPS finding":"GPS waiting";
