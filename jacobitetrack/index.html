@@ -576,23 +576,6 @@ main>.planned-works-status{margin:0 0 10px}
 .app-header .force-sync-btn[aria-busy="true"] span{animation:sync-spin 900ms linear infinite}
 #viaductTrackTile .focus-title{justify-content:flex-start}
 
-/* Final layout: previous rules set flex-direction:column, so explicitly
-   override direction (not just display) to keep countdown wording at right. */
-.app-header #proximityTile .viaduct-details .viaduct-time-row{
- display:grid!important;grid-template-columns:max-content minmax(0,1fr);
- grid-auto-flow:column;align-items:center;column-gap:9px;
- flex-direction:row!important;flex-wrap:nowrap!important;width:100%;
-}
-.app-header #proximityTile .viaduct-time-row #viaductRemaining{
- grid-column:1;grid-row:1;display:block;white-space:nowrap;
- font-size:clamp(27px,7.1vw,49px);line-height:1.06;
-}
-.app-header #proximityTile .viaduct-time-row #viaductCountdownUnit{
- grid-column:2;grid-row:1;display:block!important;
- margin:0;max-width:none;min-width:0;
- font-size:clamp(10px,2.5vw,13px);line-height:1.25;
- text-align:left;align-self:center;white-space:normal;
-}
 /* Pull GPS, train count and refresh to the very top of compact Tile 1. */
 .app-header .header-shell{padding-top:5px}
 .app-header .header-main{margin:0 0 2px;min-height:0;align-items:flex-start;gap:4px}
