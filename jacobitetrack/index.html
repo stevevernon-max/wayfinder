@@ -575,6 +575,38 @@ main>.planned-works-status{margin:0 0 10px}
 .app-header .force-sync-btn span{display:inline-block;font-size:23px;line-height:1}
 .app-header .force-sync-btn[aria-busy="true"] span{animation:sync-spin 900ms linear infinite}
 #viaductTrackTile .focus-title{justify-content:flex-start}
+
+/* Final layout: previous rules set flex-direction:column, so explicitly
+   override direction (not just display) to keep countdown wording at right. */
+.app-header #proximityTile .viaduct-details .viaduct-time-row{
+ display:grid!important;grid-template-columns:max-content minmax(0,1fr);
+ grid-auto-flow:column;align-items:center;column-gap:9px;
+ flex-direction:row!important;flex-wrap:nowrap!important;width:100%;
+}
+.app-header #proximityTile .viaduct-time-row #viaductRemaining{
+ grid-column:1;grid-row:1;display:block;white-space:nowrap;
+ font-size:clamp(27px,7.1vw,49px);line-height:1.06;
+}
+.app-header #proximityTile .viaduct-time-row #viaductCountdownUnit{
+ grid-column:2;grid-row:1;display:block!important;
+ margin:0;max-width:none;min-width:0;
+ font-size:clamp(10px,2.5vw,13px);line-height:1.25;
+ text-align:left;align-self:center;white-space:normal;
+}
+/* Pull GPS, train count and refresh to the very top of compact Tile 1. */
+.app-header .header-shell{padding-top:5px}
+.app-header .header-main{margin:0 0 2px;min-height:0;align-items:flex-start;gap:4px}
+.app-header .header-pills{align-items:center;gap:4px;margin-top:0}
+.app-header .header-brand>strong{line-height:1.05}
+@media(max-width:560px){
+ .app-header .header-main{display:flex;flex-direction:column-reverse;align-items:stretch;flex-wrap:nowrap!important;gap:0;margin-bottom:1px}
+ .app-header .header-pills{width:100%;margin:0 0 -1px!important;align-self:flex-end;justify-content:flex-end;gap:5px;flex-wrap:nowrap}
+ .app-header .header-brand{align-self:flex-start;margin:0;line-height:1}
+ .app-header .header-brand>strong{font-size:clamp(19px,5vw,23px)}
+ .app-header .force-sync-btn{height:29px;min-height:29px;width:29px;min-width:29px;max-width:29px}
+ .app-header #activeTrainsPill,.app-header .gps-accuracy-pill{min-height:28px;padding:5px 7px;font-size:clamp(9px,2.5vw,11px)}
+ .app-header #trackerTile{padding-top:2px}
+}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span></button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -1385,13 +1417,13 @@ function renderTimetable(){
  services.sort((a,b)=>a.at-b.at);
  const upcoming=services.slice(0,10);
  heading.textContent="Next 10 scheduled services";
- status.textContent=upcoming.length?"Next "+upcoming.length+" departures · UK local time · tap Calls to expand":"No forthcoming services in the published timetable.";
+ status.textContent=upcoming.length?"Next "+upcoming.length+" departures · UK local time · next departure calls shown below":"No forthcoming services in the published timetable.";
  table.hidden=!upcoming.length;
  // Rebuild once per minute so expired departures disappear while the app runs.
  const expandedKeys=new Set([...rows.querySelectorAll('.calls-button[aria-expanded="true"]')].map(b=>b.dataset.service));
  rows.innerHTML=upcoming.map(({train,date,at},index)=>{
   const day=formatUK.format(new Date(date+"T12:00:00Z"));
-  const id=date+"-"+train.stops[0][1]+"-"+index,expanded=expandedKeys.has(id);
+  const id=date+"-"+train.stops[0][1]+"-"+index,expanded=index===0||expandedKeys.has(id);
   const items=train.stops.map(([station,time,request])=>
    '<span class="ticker-call"><strong>'+safe(station)+'</strong><time>'+safe(time)+'</time>'+(request?'<small>Request</small>':'')+'</span>').join('<span class="ticker-separator" aria-hidden="true">◆</span>');
   const ticker='<div class="calls-ticker" role="region" aria-label="Scrolling departure-board station calls" tabindex="0">'+
