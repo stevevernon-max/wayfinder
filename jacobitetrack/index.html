@@ -2007,7 +2007,7 @@ function updatePhotographyLightStatus(){
  const temp=forecast?hourly.temperature_2m?.[i]:current.temperature_2m;
  const day=daily?.time?.indexOf(time.slice(0,10));
  const rise=daily?.sunrise?.[day],set=daily?.sunset?.[day];
- const minuteOfDay=value=>{if(typeof value!=="string"||!/^\\d{2}:\\d{2}$/.test(value.slice(11,16)))return null;const [h,m]=value.slice(11,16).split(":").map(Number);return h*60+m;};
+ const minuteOfDay=value=>{if(typeof value!=="string"||!/^\d{2}:\d{2}$/.test(value.slice(11,16)))return null;const [h,m]=value.slice(11,16).split(":").map(Number);return h*60+m;};
  const atMinute=minuteOfDay(time),riseMinute=minuteOfDay(rise),setMinute=minuteOfDay(set);
  // Sunrise/sunset are local to the viewpoint (Open-Meteo timezone Europe/London).
  // Keep weather-only visibility distinct from usable photographic light.
