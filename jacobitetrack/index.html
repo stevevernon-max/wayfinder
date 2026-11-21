@@ -718,7 +718,7 @@ main>.planned-works-status{margin:0 0 10px}
      <span id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</span>
      <span id="viaductTileNote" hidden></span><span id="nearestTrain" hidden>—</span>
     </section>
-    <div class="viaduct-combined-heading">Glenfinnan Viaduct</div>
+    <div class="viaduct-combined-heading">Next Viaduct Crossing</div>
    </div>
    <div id="viaductTileCountdown" class="viaduct-next-clock">Checking next crossing</div>
   </div>
@@ -726,15 +726,16 @@ main>.planned-works-status{margin:0 0 10px}
  <section id="viaductTrackTile" aria-label="Zoomed train approach to Glenfinnan Viaduct" hidden>
  <div class="rail-scroll">
   <svg class="rail-svg viaduct-hero-rail" viewBox="0 0 600 140" role="img" aria-label="Estimated train position between Lochailort and Locheilside via Glenfinnan Viaduct">
-   <line class="bed" x1="14" y1="59" x2="586" y2="59"/>
-   <line class="track" x1="14" y1="59" x2="586" y2="59"/>
+   <path class="bed" d="M 14 59 H 263 M 337 59 H 586"/>
+   <path class="track" d="M 14 59 H 263 M 337 59 H 586"/>
    <g id="viaductStations"></g>
-   <g id="viaductMarker" transform="translate(75 0)" aria-label="Glenfinnan Viaduct centre">
-    <path d="M 165 76 L 165 104 Q 180 84 195 104 Q 210 84 225 104 Q 240 84 255 104 Q 270 84 285 104 L 285 76" fill="none" stroke="#6ff1c0" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M 155 71 H 295" fill="none" stroke="#b0ffdd" stroke-width="7" stroke-linecap="round"/>
-    <path d="M 165 112 H 285" fill="none" stroke="#227d67" stroke-width="3"/>
-    <circle cx="225" cy="59" r="12" fill="#225239" stroke="#a3efbf" stroke-width="2"/>
-    <path d="M 216 64 V 56 Q 219 48 222 56 V 64 M 222 64 V 56 Q 225 48 228 56 V 64 M 228 64 V 56 Q 231 48 234 56 V 64 M 215 54 H 235" fill="none" stroke="#dcffe6" stroke-width="1.8" stroke-linecap="round"/>
+   <g id="viaductMarker" transform="translate(300 59)" fill="none" stroke="#80b8fa" stroke-linecap="round" aria-label="Glenfinnan Viaduct centre">
+    <path d="M -27 -11 H 27" stroke-width="2.8"/>
+    <path d="M -25 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
+             M -14.4 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
+             M -3.8 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
+             M 6.8 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
+             M 17.4 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16" stroke-width="1.8"/>
     <title>Glenfinnan Viaduct</title>
    </g>
    <g id="viaductTrains"></g>
@@ -1320,8 +1321,9 @@ function updateViaductCountdown(markers){
  // Countdown may span midnight or several days; do not reset at 00:00.
  const total=Math.max(0,Math.ceil(minutes)),days=Math.floor(total/1440);
  const hours=Math.floor(total%1440/60),mins=total%60;
- label.textContent=days?days+"d "+hours+"h "+String(mins).padStart(2,"0")+"m"
-   :hours?hours+"h "+String(mins).padStart(2,"0")+"m":mins+"m";
+ const minuteLabel=(days||hours?String(mins).padStart(2,"0"):String(mins))+(mins===1?" min":" mins");
+ label.textContent=days?days+"d "+hours+"h "+minuteLabel
+   :hours?hours+"h "+minuteLabel:minuteLabel;
  const inPositionAt=trainAt-3*60*1000; // three minutes before the crossing, matching the original display
  const fmt=at=>new Date(at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"});
  const dateOf=at=>new Date(at).toLocaleDateString("en-GB",{year:"numeric",month:"2-digit",day:"2-digit",timeZone:"Europe/London"});
