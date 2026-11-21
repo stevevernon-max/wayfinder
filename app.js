@@ -28,7 +28,14 @@
     {match:/^morrisons(?:\s+fort(?:\s+william)?)?$/i,name:'Morrisons Fort William',address:'An Aird Road, Fort William, PH33 6AN'},
     {match:/^(?:m\s*&\s*s|marks and spencer)(?:\s+fort(?:\s+william)?)?$/i,name:'M&S Fort William',address:'Fort William Retail Park, North Road, Fort William'}
   ];
-  const preferredStore=query=>localStores.find(store=>store.match.test(query));
+  const normalisePlaceQuery=value=>String(value||'').replace(/[’‘]/g,"'").replace(/\s+/g,' ').trim();
+  const preferredStore=query=>localStores.find(store=>store.match.test(normalisePlaceQuery(query)));
+  const placeLabel=place=>{
+    const name=place.poi?.name?.trim() || '';
+    const address=place.address?.freeformAddress?.trim() || '';
+    return name && address && !address.toLowerCase().startsWith(name.toLowerCase())?name+', '+address:name||address;
+  };
+  const resolvedPlaceLabels=new Map(Object.entries(state.placeLabels||{}));
   const mapsUrl=(place,coord)=>'https://maps.apple.com/?'+(coord
     ? 'll='+encodeURIComponent(coord)+'&q='+encodeURIComponent(shortPlace(place))
     : 'q='+encodeURIComponent(place));
@@ -1023,7 +1030,22 @@
     if(address===homeAddress)return homeCoordinate;
     const current=String(address).match(/^Current Location \[(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)\]$/);
     if(current && Math.abs(Number(current[1]))<=90 && Math.abs(Number(current[2]))<=180)return current[1]+','+current[2];
-    if(selectedPlaces.has(address))return selectedPlaces.get(address);const r=await tomTom({query:address});if(!r.ok)throw Error(r.status===401?'TomTom rejected the key. Check its website and product restrictions.':`Place search failed (${r.status})`);const d=await r.json(),p=d.results?.[0]?.position;if(!p)throw Error(`Could not find “${address}”.`);return `${p.lat},${p.lon}`}
+    if(selectedPlaces.has(address))return selectedPlaces.get(address);
+    const r=await tomTom({query:normalisePlaceQuery(address)});
+    if(!r.ok)throw Error(r.status===401?'TomTom rejected the key. Check its website and product restrictions.':`Place search failed (${r.status})`);
+    const place=(await r.json()).results?.[0],p=place?.position;
+    if(!Number.isFinite(p?.lat)||!Number.isFinite(p?.lon))throw Error(`Could not find “${address}”.`);
+    const coord=`${p.lat},${p.lon}`,label=placeLabel(place);
+    selectedPlaces.set(address,coord);
+    if(label){
+      resolvedPlaceLabels.set(address,label);
+      selectedPlaces.set(label,coord);
+    }
+    state.places=Object.fromEntries(selectedPlaces);
+    state.placeLabels=Object.fromEntries(resolvedPlaceLabels);
+    return coord;
+  }
+
   function trafficReasons(route){
     const categories={JAM:'Congestion',ROAD_WORK:'Roadworks',ROAD_CLOSURE:'Road closure'};
     const incidents=(route.sections||[]).filter(section=>section.sectionType==='TRAFFIC'
@@ -1066,7 +1088,7 @@
       status('Add a start address, destination and a place for every stop.');
       return;
     }
-    const signature=JSON.stringify(names);
+    let signature=JSON.stringify(names);
     const button=$('calculate');
     button.disabled=true;
     lastRouteAttempt=Date.now();
@@ -1077,8 +1099,11 @@
     }
     status('Getting current travel times…');
     try{
-      const coords=currentRoute()?.coords || [];
-      if(!coords.length)for(const name of names)coords.push(await geocode(name));
+      const coords=[...(currentRoute()?.coords || [])];
+      for(let index=0;index<names.length;index++){
+        const name=names[index];
+        if(!coords[index] || (!selectedPlaces.has(name) && !resolvedPlaceLabels.has(name)))coords[index]=await geocode(name);
+      }
       const response=await tomTom({coords});
       if(!response.ok)throw Error('TomTom routing failed ('+response.status+').');
       const data=await response.json();
@@ -1086,6 +1111,11 @@
       const legs=route?.legs;
       if(legs?.length!==names.length-1 || legs.some(leg=>!Number.isFinite(leg.summary?.travelTimeInSeconds)))throw Error('TomTom returned an incomplete route.');
       if(request!==routeRequest || signature!==JSON.stringify(routeNames()))return;
+      const labels=names.map(name=>resolvedPlaceLabels.get(name));
+      if(labels[0] && !preferredStore(state.start) && !/^home$/i.test(state.start) && !state.start.startsWith('Current Location ['))state.start=labels[0];
+      state.stops.forEach((stop,index)=>{if(labels[index+1] && !preferredStore(stop.name))stop.name=labels[index+1];});
+      if(labels.at(-1) && !preferredStore(state.destination) && !/^home$/i.test(state.destination))state.destination=labels.at(-1);
+      signature=JSON.stringify(routeNames());
       const previousTotal=currentRoute()?total():null;
       const minutes=leg=>Math.max(0,Math.round(leg.summary.travelTimeInSeconds/60));
       state.stops.forEach((stop,index)=>{stop.drive=minutes(legs[index]);});
@@ -1347,7 +1377,7 @@
   results.setAttribute('aria-label','Place suggestions');
   results.hidden=true;
 
-  let activeInput, lookupTimer, lookupRequest, highlighted=-1, choices=[];
+  let activeInput, lookupTimer, lookupRequest, highlighted=-1, choices=[], selectingPlace=false;
   function closeLookup(){
     clearTimeout(lookupTimer);
     lookupRequest?.abort();
@@ -1361,6 +1391,7 @@
 
   function showResults(message){
     if(message)results.innerHTML='<div class="lookup-message" role="status">'+esc(message)+'</div>';
+    if(!activeInput || !activeInput.isConnected)return;
     activeInput.parentElement.append(results);
     results.hidden=false;
     activeInput.setAttribute('aria-expanded','true');
@@ -1370,25 +1401,30 @@
     const place=choices[index];
     if(!place || !activeInput)return;
     const input=activeInput;
-    const address=place.address?.freeformAddress || '';
-    const name=place.poi?.name;
-    const label=name && address && !address.startsWith(name) ? name+', '+address : name||address;
+    const label=placeLabel(place);
+    if(!label)return;
+    const query=normalisePlaceQuery(input.value);
+    resolvedPlaceLabels.set(query,label);
+    state.placeLabels=Object.fromEntries(resolvedPlaceLabels);
     if(place.position)selectedPlaces.set(label,place.position.lat+','+place.position.lon);
     state.places=Object.fromEntries(selectedPlaces);
     closeLookup();
     input.value=label;
+    selectingPlace=true;
     input.dispatchEvent(new Event('input',{bubbles:true}));
+    input.value=shortPlace(label);
+    input.scrollTop=0;
     input.focus();
+    selectingPlace=false;
     void loadWeather([selectedPlaces.get(label)]);
   }
 
-  document.addEventListener('input',event=>{
-    const input=event.target;
-    if(!input.matches('#start,#destination,[data-field="name"]'))return;
+  function lookupPlace(input){
+    if(selectingPlace || !input.matches('#start,#destination,[data-field="name"]'))return;
     closeLookup();
-    const query=input.value.trim();
+    const query=normalisePlaceQuery(input.value);
     const preferred=preferredStore(query);
-    if((query.length<3 && !preferred) || /^home$/i.test(query) || selectedPlaces.has(query))return;
+    if((query.length<3 && !preferred) || /^home$/i.test(query))return;
     activeInput=input;
     input.setAttribute('role','combobox');
     input.setAttribute('aria-autocomplete','list');
@@ -1426,7 +1462,8 @@
         if(!request.signal.aborted && activeInput===input)showResults('Place lookup unavailable. Check your connection and TomTom Search access.');
       }
     },350);
-  });
+  }
+  document.addEventListener('input',event=>lookupPlace(event.target));
   results.addEventListener('pointerdown',event=>{
     if(event.target.closest('[data-place]'))event.preventDefault();
   });
@@ -1441,10 +1478,18 @@
   }
   document.addEventListener('focusin',event=>{
     const value=placeValue(event.target);
-    if(value!==undefined)event.target.value=value;
+    if(value!==undefined){
+      event.target.value=value;
+      lookupPlace(event.target);
+    }
   });
   document.addEventListener('focusout',event=>{
-    if(event.target===activeInput)closeLookup();
+    if(event.target===activeInput && !results.contains(event.relatedTarget)){
+      const input=activeInput;
+      setTimeout(()=>{
+        if(activeInput===input && document.activeElement!==input && !results.contains(document.activeElement))closeLookup();
+      },150);
+    }
     const value=placeValue(event.target);
     if(value!==undefined){event.target.value=shortPlace(value);if(event.target.matches('textarea'))event.target.scrollTop=0;}
   });

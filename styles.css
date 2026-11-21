@@ -545,3 +545,6 @@ body.journey-active #leave-time { font-size: 38px; }
 #predicted-departure { font-size: 13px; }
 #predicted-departure-time { font-size: 21px; color: #91dfba; }
 #predicted-departure-note { display: block; color: var(--muted); font-size: 11px; }
+
+.place-box:has(.place-results:not([hidden])), .stop-place:has(.place-results:not([hidden])) { flex-wrap: wrap; }
+.place-results button { touch-action: manipulation; }
