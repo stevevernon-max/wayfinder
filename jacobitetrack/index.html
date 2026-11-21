@@ -540,12 +540,12 @@ main>.planned-works-status{margin:0 0 10px}
 #timetableTile .timetable th:nth-child(4){width:16%}
 #timetableTile .timetable td:nth-child(2){min-width:0;overflow-wrap:anywhere;white-space:normal}
 #timetableTile .timetable tr.calls-expanded[hidden]{display:none!important}
-#timetableTile .timetable .calls-expanded td{padding:3px 0 10px!important;overflow:hidden}
+#timetableTile .timetable .calls-expanded td{padding:2px 0 5px!important;overflow:hidden}
 #timetableTile .calls-ticker{width:100%;max-width:100%;overflow-x:auto;background:#071a29;border:1px solid #2d546a;border-radius:8px;scrollbar-width:thin;overscroll-behavior-x:contain}
 #timetableTile .ticker-loop{display:flex;align-items:center;width:max-content;min-width:100%;animation:station-ticker 28s linear infinite}
-#timetableTile .ticker-copy{display:flex;align-items:center;flex:0 0 auto;gap:15px;padding:11px 22px 11px 14px;white-space:nowrap}
-#timetableTile .ticker-call{display:inline-flex;align-items:baseline;gap:6px;flex:0 0 auto;font:650 12px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfe9f8}
-#timetableTile .ticker-call time{font:800 14px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:#87dcfa}
+#timetableTile .ticker-copy{display:flex;align-items:center;flex:0 0 auto;gap:9px;padding:5px 14px 5px 8px;white-space:nowrap}
+#timetableTile .ticker-call{display:inline-flex;align-items:baseline;gap:4px;flex:0 0 auto;font:650 10px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfe9f8}
+#timetableTile .ticker-call time{font:800 12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:#87dcfa}
 #timetableTile .ticker-call small{font-size:9px;color:#e0b778}
 #timetableTile .ticker-separator{color:#4b8796;font-size:9px}
 @keyframes station-ticker{to{transform:translateX(-50%)}}
@@ -707,7 +707,9 @@ main>.planned-works-status{margin:0 0 10px}
 .photo-meta{display:flex;gap:3px 9px;flex-wrap:wrap;margin-top:12px;color:#9aaabd;font-size:11px}
 .photo-meta b{color:#d5dfee}
 #photoAdvice{margin-top:8px}
-#timetableTile .timetable-controls{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#timetableTile>summary{margin:0;cursor:pointer}
+#timetableTile .timetable-controls{display:flex;align-items:center;gap:8px;margin:4px 0 8px}
+#timetableTile .timetable-controls #tickerToggle{margin-left:auto}
 #timetableTile .ticker-control{font:inherit;font-size:11px;color:#bcd9f3;background:#1c2c40;border:1px solid #385373;border-radius:8px;padding:5px 8px;cursor:pointer}
 #timetableTile .calls-ticker{overflow:hidden}
 #timetableTile[data-ticker-paused] .calls-ticker{overflow-x:auto}
@@ -769,13 +771,6 @@ main>.planned-works-status{margin:0 0 10px}
  </div>
 </section>
 </div></header><main>
-<section class="tile" id="geoTile">
-<div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with roads, lochs, railway and estimated train position markers; drag or pinch to navigate"></div>
-<div class="geo-map-overlay"><span class="geo-load-status" id="geoStatus">Loading map</span>
-<div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view">Reset</button><button type="button" id="geoFullscreen" aria-label="Expand map to full screen" aria-pressed="false">⛶</button></div></div>
-<div class="geo-map-bottom"><span>Drag · Pinch to zoom</span></div>
-<p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
-</section>
 <details class="tile" id="photoTile" open>
  <summary>
   <span class="photo-score-label">PHOTO SCORE</span>
@@ -801,15 +796,23 @@ main>.planned-works-status{margin:0 0 10px}
   <div class="small" id="photoAdvice" hidden></div>
  </div>
 </details>
-<section class="tile" id="timetableTile" aria-labelledby="timetableHeading">
+<section class="tile" id="geoTile">
+<div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with roads, lochs, railway and estimated train position markers; drag or pinch to navigate"></div>
+<div class="geo-map-overlay"><span class="geo-load-status" id="geoStatus">Loading map</span>
+<div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view">Reset</button><button type="button" id="geoFullscreen" aria-label="Expand map to full screen" aria-pressed="false">⛶</button></div></div>
+<div class="geo-map-bottom"><span>Drag · Pinch to zoom</span></div>
+<p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
+</section>
+<details class="tile" id="timetableTile" aria-labelledby="timetableHeading" open>
+<summary class="heading" id="timetableHeading">Next 10 services</summary>
+<div class="small" id="timetableStatus">Loading upcoming services…</div>
+<div class="table-wrap"><table class="timetable" id="timetableTable" hidden><thead><tr><th>Departs</th><th>Route</th><th>Viaduct</th><th>Calls</th></tr></thead><tbody id="timetableRows"></tbody><tbody id="timetableMoreRows" hidden></tbody></table></div>
 <div class="timetable-controls">
- <div class="heading" id="timetableHeading">Services in next 24 hours</div>
+ <button class="ticker-control" id="timetableMore" type="button" aria-controls="timetableMoreRows" aria-expanded="false" hidden>More</button>
  <button class="ticker-control" id="tickerToggle" type="button" hidden>Pause ticker</button>
 </div>
-<div class="small" id="timetableStatus">Loading upcoming services…</div>
-<div class="table-wrap"><table class="timetable" id="timetableTable" hidden><thead><tr><th>Departs</th><th>Route</th><th>Viaduct</th><th>Calls</th></tr></thead><tbody id="timetableRows"></tbody></table></div>
 <div class="small" id="timetableSource"></div>
-</section>
+</details>
 <div class="cols single-viewpoint">
 <section class="tile"><div class="eyebrow">YOUR VIEWPOINT</div><div class="heading">Photography timing</div><label class="field">Location<select id="viewpoint"><option value="glenfinnan">Glenfinnan Viaduct</option><option value="lochailort">Lochailort</option><option value="arisaig">Arisaig</option><option value="morar">Morar</option><option value="glenStation">Glenfinnan station</option><option value="beasdale">Beasdale</option><option value="locheilside">Locheilside</option><option value="lochEilOutwardBound">Loch Eil Outward Bound</option><option value="banavie">Banavie</option><option value="eilt">Loch Eilt</option><option value="corpach">Corpach</option><option value="mallaig">Mallaig</option><option value="fortWilliam">Fort William</option></select></label><div class="value countdown" id="eta">—</div><div class="muted" id="etaNote">No verified train ETA available.</div><div class="small" id="etaSource"></div>
 <div class="alerts" style="margin-top:12px"><select id="alertLead" aria-label="Train approaching warning"><option value="5">5 min alert</option><option value="10" selected>10 min alert</option><option value="15">15 min alert</option><option value="20">20 min alert</option></select><button class="button" id="notifyBtn">Enable alerts</button><button class="button" id="disableAlertsBtn" style="display:none">Disable alerts</button></div><div class="small" id="notificationStatus">Checking whether background notifications are available…</div><div class="small" id="installHint"></div>
@@ -1651,6 +1654,13 @@ const BUNDLED_VIADUCT_TIMETABLE={"validFrom":"2026-11-19","validThrough":"2026-1
 let publishedTimetable=BUNDLED_VIADUCT_TIMETABLE;
 let renderedTimetableKey=null;
 const tickerTile=$("timetableTile"),tickerToggle=$("tickerToggle");
+const timetableMore=$("timetableMore"),timetableMoreRows=$("timetableMoreRows");
+function setTimetableMore(expanded){
+ timetableMoreRows.hidden=!expanded;
+ timetableMore.setAttribute("aria-expanded",String(expanded));
+ timetableMore.textContent=expanded?"Less":"More";
+}
+timetableMore.addEventListener("click",()=>setTimetableMore(timetableMoreRows.hidden));
 function setTickerPaused(paused){
  tickerTile.toggleAttribute("data-ticker-paused",paused);
  tickerToggle.textContent=paused?"Play ticker":"Pause ticker";
@@ -1703,9 +1713,7 @@ function renderTimetable(){
  const start=Date.UTC(+parts.year,+parts.month-1,+parts.day);
  const now=Date.now(),services=[];
  const formatUK=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short",day:"numeric",month:"short"});
- const end=now+86400000;
- // A 24-hour window can touch three UK calendar dates when the clocks advance.
- for(let offset=0;offset<3;offset++){
+ for(let offset=0;offset<15&&services.length<10;offset++){
   const day=new Date(start+offset*86400000),date=day.toISOString().slice(0,10);
   if(date<data.validFrom||date>data.validThrough)continue;
   const dow=day.getUTCDay(),pattern=dow===0?"sunday":dow===6?"saturday":dow===5?"friday":"weekday";
@@ -1720,24 +1728,26 @@ function renderTimetable(){
    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(depart))continue;
    const [hours,mins]=depart.split(":").map(Number);
    const at=day.getTime()+(hours*60+mins-shift)*60000;
-   if(at<now||at>=end)continue;
+   if(at<now)continue;
    const key=[date,depart,train.from,train.to].join("|");
    services.push({train,at,date,key});
   }
  }
  services.sort((a,b)=>a.at-b.at);
- const upcoming=services;
- status.textContent=upcoming.length?"":"No scheduled services in the next 24 hours.";
+ const upcoming=services.slice(0,10);
+ status.textContent=upcoming.length?"":"No upcoming scheduled services.";
  status.hidden=upcoming.length>0;
  table.hidden=!upcoming.length;
  tickerToggle.hidden=!upcoming.length;
+ timetableMore.hidden=upcoming.length<2;
+ if(timetableMore.hidden)setTimetableMore(false);
  // Keep open call rows and their animation running while the listed services are unchanged.
  const key=JSON.stringify(upcoming.map(({key,train})=>[key,train.viaduct,train.stops]));
  if(key===renderedTimetableKey)return;
  renderedTimetableKey=key;
- const expandedKeys=new Set([...rows.querySelectorAll('.calls-button[aria-expanded="true"]')].map(b=>b.dataset.service));
+ const expandedKeys=new Set([...table.querySelectorAll('.calls-button[aria-expanded="true"]')].map(b=>b.dataset.service));
  const previousFirst=rows.querySelector(".calls-button")?.dataset.service;
- rows.innerHTML=upcoming.map(({train,date,key:id},index)=>{
+ const serviceRows=upcoming.map(({train,date,key:id},index)=>{
   const day=formatUK.format(new Date(date+"T12:00:00Z"));
   const expanded=expandedKeys.has(id)||(index===0&&id!==previousFirst);
   const items=train.stops.map(([station,time,request])=>
@@ -1748,8 +1758,10 @@ function renderTimetable(){
    '<td>'+safe(train.from)+' → '+safe(train.to)+'</td><td>'+safe(train.viaduct)+'</td>'+
    '<td><button class="calls-button" data-service="'+safe(id)+'" type="button" aria-expanded="'+expanded+'" aria-controls="calls-'+index+'">Calls '+(expanded?'▴':'▾')+'</button></td></tr>'+
    '<tr class="calls-expanded" id="calls-'+index+'"'+(expanded?'':' hidden')+'><td colspan="4">'+ticker+'</td></tr>';
- }).join("");
- rows.querySelectorAll(".calls-button").forEach(button=>button.addEventListener("click",()=>{
+ });
+ rows.innerHTML=serviceRows[0]||"";
+ timetableMoreRows.innerHTML=serviceRows.slice(1).join("");
+ table.querySelectorAll(".calls-button").forEach(button=>button.addEventListener("click",()=>{
   const detail=$(button.getAttribute("aria-controls"));
   const expanded=button.getAttribute("aria-expanded")==="true";
   button.setAttribute("aria-expanded",String(!expanded));
