@@ -812,6 +812,14 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 .photo-weather>summary{padding:9px 12px 4px;white-space:nowrap}
 .photo-weather>.photo-toggle-in-weather{justify-content:flex-end;padding:0 12px 7px}
 .photo-weather>.photo-toggle-in-weather .photo-periods button{font-size:11px;padding:4px 9px}
+/* Keep a little clearance above the header on phones, including Home Screen installs. */
+@media(max-width:600px){.app-header{padding-top:12px}}
+@media(max-width:600px) and (display-mode:standalone){
+ .app-header{padding-top:calc(env(safe-area-inset-top, 0px) + 12px)}
+}
+main .tile>.heading{font-size:19px}
+.app-header #viaductCombinedTile .viaduct-title-row{font-size:clamp(10px,2.2vw,14px)!important}
+.photo-overview{padding-bottom:5px}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
