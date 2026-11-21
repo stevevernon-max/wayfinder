@@ -723,6 +723,15 @@ main>.planned-works-status{margin:0 0 10px}
 #timetableTile[data-ticker-paused] .ticker-loop{animation:none}
 #timetableTile[data-ticker-paused] .ticker-copy[aria-hidden="true"]{display:none}
 @media(max-width:380px){#photoTile>.heading,#photoTile>.field{margin:12px}.photo-overview,.photo-panel,.viewpoint-alerts{padding-left:12px;padding-right:12px}.photo-metrics{gap:5px}}
+.app-header #viaductCombinedTile #viaductRemaining{
+ color:#75d9b7;
+ font-size:clamp(22px,6.5vw,45px)!important;
+ font-weight:800!important;
+ font-variant-numeric:tabular-nums;
+}
+.app-header #viaductCombinedTile .viaduct-integrated-row:has(#viaductTrackTile:not([hidden])) #viaductRemaining{
+ font-size:clamp(16px,5.2vw,38px)!important;
+}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -1326,6 +1335,16 @@ function renderPlannedWorks(){
   alert.append(row);
  }
 }
+function formatViaductCountdown(milliseconds){
+ const total=Math.max(0,Math.ceil(milliseconds/1000));
+ const days=Math.floor(total/86400);
+ const hours=Math.floor(total%86400/3600);
+ const minutes=Math.floor(total%3600/60);
+ const seconds=String(total%60).padStart(2,"0");
+ const minuteText=days||hours?String(minutes).padStart(2,"0"):String(minutes);
+ const clock=minuteText+"m "+seconds+"s";
+ return days?days+"d "+hours+"h "+clock:hours?hours+"h "+clock:clock;
+}
 function updateViaductCountdown(markers){
  // A malformed or missing live feed must never stop the published timetable timer.
  let liveNext=null;
@@ -1386,11 +1405,7 @@ function updateViaductCountdown(markers){
   return;
  }
  // Countdown may span midnight or several days; do not reset at 00:00.
- const total=Math.max(0,Math.ceil(minutes)),days=Math.floor(total/1440);
- const hours=Math.floor(total%1440/60),mins=total%60;
- const minuteLabel=(days||hours?String(mins).padStart(2,"0"):String(mins))+(mins===1?" min":" mins");
- label.textContent=days?days+"d "+hours+"h "+minuteLabel
-   :hours?hours+"h "+minuteLabel:minuteLabel;
+ label.textContent=formatViaductCountdown(trainAt-now);
  const inPositionAt=trainAt-3*60*1000; // three minutes before the crossing, matching the original display
  const fmt=at=>new Date(at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/London"});
  const dateOf=at=>new Date(at).toLocaleDateString("en-GB",{year:"numeric",month:"2-digit",day:"2-digit",timeZone:"Europe/London"});
