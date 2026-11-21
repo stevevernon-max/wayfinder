@@ -708,7 +708,7 @@ main>.planned-works-status{margin:0 0 10px}
 <circle class="node" cx="865" cy="83" r="12"/><text class="station-label" x="892" y="45" text-anchor="end">Fort William</text>
 <g id="trains"></g>
 </svg></div>
-<div id="trainDelaySummary" class="train-delay-summary" aria-live="off">Delay information not reported by station boards</div>
+<div id="trainDelaySummary" class="train-delay-summary" aria-live="off" hidden></div>
 <div class="muted" id="trackStatus" hidden></div>
 </section>
 <section id="viaductCombinedTile" aria-label="Glenfinnan Viaduct approach and next crossing">
@@ -1357,11 +1357,11 @@ function updateActiveTrainsPill(markers=visibleTrainMarkers()){
   const reports=markers.map(({train})=>train).filter(t=>Number.isFinite(t.delayMinutes));
   const delayed=reports.filter(t=>t.delayMinutes>0);
   const basis=delayed[0]||reports[0];
+  delayStatus.hidden=reports.length===0;
   delayStatus.textContent=delayed.length?
    "Station-board delay estimate · +"+Math.max(...delayed.map(t=>t.delayMinutes))+" min"+
     (basis?.delayStation?" at "+basis.delayStation:""):
-   reports.length?"No delay indicated in available station timing comparisons":
-   "Delay information not reported by station boards";
+   reports.length?"No delay indicated in available station timing comparisons":"";
   delayStatus.classList.toggle("is-delayed",delayed.length>0);
  }
  const gpsPill=$("gpsAccuracyPill");
