@@ -126,7 +126,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 .single-viewpoint{grid-template-columns:1fr;gap:0}
 .single-viewpoint>.tile{margin-bottom:12px}
 #trackerTile .rail-svg{overflow:visible}
-#viaductTrackTile .focus-eta-label{fill:#e9f6ff;font-size:25px;font-weight:800;paint-order:stroke;stroke:#102331;stroke-width:3px;stroke-linejoin:round}
+#viaductTrackTile .focus-eta-label{fill:#e9f6ff;font-size:35px;font-weight:800;paint-order:stroke;stroke:#102331;stroke-width:3px;stroke-linejoin:round}
 #trackerTile .user-ripple{fill:#39a4ff;opacity:.55}
 #trackerTile .user-spot{fill:#278eff;stroke:#e9f9ff;stroke-width:3}
 #trackerTile #gpsDistanceTag{text-rendering:geometricPrecision}
@@ -639,9 +639,13 @@ main>.planned-works-status{margin:0 0 10px}
 .app-header #viaductTrackTile .focus-train-estimate .train-body{fill:#66bde8;stroke:#c9eeff;stroke-width:2}
 @media(max-width:440px){.app-header #viaductTrackTile .hero-km{font-size:18px}}
 
-/* The close-up has a full-width row below the countdown. */
+/* The countdown sets the row height; the close-up fits alongside it. */
 .app-header #viaductCombinedTile{padding:5px 4px 3px!important;min-width:0}
-.app-header #viaductCombinedTile .viaduct-integrated-row{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;align-items:center;width:100%;min-width:0}
+.app-header #viaductCombinedTile .viaduct-integrated-row{position:relative;width:100%;min-width:0}
+.app-header #viaductCombinedTile .viaduct-integrated-row:has(#viaductTrackTile:not([hidden])){padding-right:46%}
+.app-header #viaductCombinedTile #viaductTrackTile{position:absolute;inset:0 0 0 auto;width:44%;display:grid;align-items:center}
+.app-header #viaductCombinedTile #viaductTrackTile .rail-scroll{height:100%}
+.app-header #viaductCombinedTile #viaductTrackTile .viaduct-hero-rail{height:100%}
 .app-header #viaductCombinedTile .viaduct-countdown-layout{display:flex;gap:8px;align-items:center;min-width:0}
 .app-header #viaductCombinedTile .viaduct-countdown-layout>.viaduct-icon{flex:0 0 38px!important;width:38px!important;height:43px!important;aspect-ratio:auto!important;padding:5px!important;border-radius:10px!important}
 .app-header #viaductCombinedTile .viaduct-countdown-content{min-width:0;flex:1 1 auto}
@@ -673,9 +677,9 @@ main>.planned-works-status{margin:0 0 10px}
  .app-header #viaductCombinedTile #viaductRemaining{font-size:clamp(20px,5.7vw,28px)!important}
 }
 
-/* Only show the close-up when an estimated train is within 5 km of the viaduct. */
+/* Only show the close-up when an estimated train is within 1 km of the viaduct. */
 .app-header #viaductTrackTile[hidden]{display:none!important}
-.app-header #viaductTrackTile .focus-station-label{font-size:22px}
+.app-header #viaductTrackTile .focus-distance-label{font-size:34px;fill:#a9b9cc}
 
 .app-header #viaductCombinedTile .viaduct-countdown-top{display:grid;justify-items:start;gap:3px}
 #geoTile #geoStatus:empty{visibility:hidden}
@@ -754,10 +758,11 @@ main>.planned-works-status{margin:0 0 10px}
  </div>
  <section id="viaductTrackTile" aria-label="Zoomed train approach to Glenfinnan Viaduct" hidden>
  <div class="rail-scroll">
-  <svg class="rail-svg viaduct-hero-rail" viewBox="0 0 600 140" role="img" aria-label="Estimated train position between Lochailort and Locheilside via Glenfinnan Viaduct">
+  <svg class="rail-svg viaduct-hero-rail" viewBox="0 0 600 120" role="img" aria-label="Estimated train position within one kilometre on either side of Glenfinnan Viaduct">
    <path class="bed" d="M 14 59 H 263 M 337 59 H 586"/>
    <path class="track" d="M 14 59 H 263 M 337 59 H 586"/>
-   <g id="viaductStations"></g>
+   <text class="station-label focus-distance-label" x="14" y="109">1 km</text>
+   <text class="station-label focus-distance-label" x="586" y="109" text-anchor="end">1 km</text>
    <g id="viaductMarker" transform="translate(300 59)" fill="none" stroke="#80b8fa" stroke-linecap="round" aria-label="Glenfinnan Viaduct centre">
     <path d="M -27 -11 H 27" stroke-width="2.8"/>
     <path d="M -25 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
@@ -1426,19 +1431,17 @@ function updateActiveTrainsPill(markers=visibleTrainMarkers()){
  gpsPill.classList.toggle("gps-poor",accurate&&gpsAccuracyMetres>100);
  gpsPill.title=accurate?"Estimated horizontal location accuracy: ±"+Math.round(gpsAccuracyMetres)+" metres":"Waiting for GPS accuracy";
 }
-// A station-to-station schematic centred on Glenfinnan Viaduct.
-function focusRailX(raw,westRaw,viaductRaw,eastRaw){
- if(!Number.isFinite(raw)||!Number.isFinite(westRaw)||!Number.isFinite(eastRaw))return null;
- if(raw<westRaw||raw>eastRaw)return null;
- if(raw<=viaductRaw)return 14+286*(raw-westRaw)/(viaductRaw-westRaw);
- return 300+286*(raw-viaductRaw)/(eastRaw-viaductRaw);
+const viaductFocusKm=1;
+function focusRailX(distanceFromViaduct){
+ if(!Number.isFinite(distanceFromViaduct)||Math.abs(distanceFromViaduct)>viaductFocusKm)return null;
+ return 300+286*distanceFromViaduct/viaductFocusKm;
 }
 function renderViaductApproach(markers=renderedTrainMarkers){
  const tile=$("viaductTrackTile"),group=$("viaductTrains");
  if(!tile||!group)return;
  const rawOf=name=>timingStations.find(([label])=>label.toLowerCase()===String(name||"").toLowerCase())?.[1];
- const westRaw=rawOf("Lochailort"),glen=rawOf("Glenfinnan"),eastRaw=rawOf("Locheilside");
- if(![westRaw,glen,eastRaw].every(Number.isFinite)){tile.hidden=true;group.replaceChildren();return}
+ const glen=rawOf("Glenfinnan"),eastRaw=rawOf("Locheilside");
+ if(![glen,eastRaw].every(Number.isFinite)){tile.hidden=true;group.replaceChildren();return}
  // Cumulative approximate railway chainage built from the ordered station
  // reference coordinates. Use kilometres, not raw schematic SVG units.
  const chainage=[0];
@@ -1460,24 +1463,6 @@ function renderViaductApproach(markers=renderedTrainMarkers){
  // Use the viaduct point also used by the existing focus marker.
  const viaductRaw=glen+(eastRaw-glen)*.14;
  const viaductKm=rawToKm(viaductRaw);
- const stations=$("viaductStations");
- if(!stations.childElementCount){
-  for(const [name,raw,anchor] of [["Lochailort",westRaw,"start"],["Glenfinnan",glen,"middle"],["Locheilside",eastRaw,"end"]]){
-   const x=focusRailX(raw,westRaw,viaductRaw,eastRaw);
-   const dot=document.createElementNS(stations.namespaceURI,"circle");
-   dot.setAttribute("class","node");
-   dot.setAttribute("cx",x);
-   dot.setAttribute("cy",59);
-   dot.setAttribute("r",8);
-   const label=document.createElementNS(stations.namespaceURI,"text");
-   label.setAttribute("class","station-label focus-station-label");
-   label.setAttribute("x",x);
-   label.setAttribute("y",134);
-   label.setAttribute("text-anchor",anchor);
-   label.textContent=name;
-   stations.append(dot,label);
-  }
- }
  const visible=[];
  for(const {train} of markers){
   // A timetable-only projection is not evidence of a train being nearby.
@@ -1498,22 +1483,22 @@ function renderViaductApproach(markers=renderedTrainMarkers){
    }
   }
   const trainKm=rawToKm(raw);
-  if(!Number.isFinite(trainKm)||!Number.isFinite(viaductKm)||
-     Math.abs(trainKm-viaductKm)>5)continue;
-  const x=focusRailX(raw,westRaw,viaductRaw,eastRaw);
+  if(!Number.isFinite(trainKm)||!Number.isFinite(viaductKm))continue;
+  const x=focusRailX(trainKm-viaductKm);
   if(!Number.isFinite(x))continue;
   const g=document.createElementNS("http://www.w3.org/2000/svg","g");
   g.setAttribute("transform","translate("+x.toFixed(1)+",59)");
   g.setAttribute("class","focus-train-reported");
   const crossing=viaductCrossingForMarker(train,Date.now());
-  const away=crossing?Math.max(0,Math.ceil((crossing.at-Date.now())/60000)):null;
+  const remaining=crossing?crossing.at-Date.now():null;
+  const away=remaining!==null&&remaining>=0?Math.ceil(remaining/60000):null;
   const direction=trainDirectionArrow(train);
   g.innerHTML='<circle class="train-halo" r="15"><animate attributeName="r" values="14;34" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".65;0" dur="1.4s" repeatCount="indefinite"/></circle><circle class="train-body" r="14"><animate attributeName="r" values="13;17;13" dur="1.4s" repeatCount="indefinite"/></circle><text class="train-arrow" y="1">'+direction+'</text>';
   if(away!==null){
    const etaLabel=document.createElementNS("http://www.w3.org/2000/svg","text");
    etaLabel.setAttribute("class","focus-eta-label");
    etaLabel.setAttribute("x",x<=300?"8":"-8");
-   etaLabel.setAttribute("y","-34");
+   etaLabel.setAttribute("y","-29");
    etaLabel.setAttribute("text-anchor",x<=300?"start":"end");
    etaLabel.textContent=away<1?"<1 min away":away+" min"+(away===1?"":"s")+" away";
    g.appendChild(etaLabel);
