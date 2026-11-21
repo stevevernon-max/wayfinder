@@ -189,6 +189,13 @@ def _merge_ldb_service(state: dict[str, Any], raw: dict[str, Any], board_crs: st
         else:
             merged_locations[tiploc] = location
     merged_schedule.update(schedule_at)
+    # Calling-point times can describe arrival. Preserve explicit Glenfinnan
+    # departure fields separately when this record is from Glenfinnan itself.
+    if board_tiploc == "GLNFNNN":
+        for field, key in (("atd", "actualAt"), ("etd", "forecastAt"), ("std", "scheduledAt")):
+            departure = _ldb_time(get(raw, field), now)
+            if departure:
+                service.setdefault("glenfinnanDeparture", {})[key] = departure.isoformat().replace("+00:00", "Z")
     service.update({
         "rid": identifier,
         "uid": str(get(raw, "serviceID", "rsid", default="") or ""),
@@ -742,7 +749,8 @@ def future_viaduct_crossings(state: dict[str, Any], now: datetime) -> list[dict[
             previous = next((p for p in reversed(timed[:i]) if p[2] != km), None)
             following = next((p for p in timed[i + 1:] if p[2] != km), None)
             if following and following[2] > km:  # Towards Fort William
-                crossing_at, direction = at + timedelta(minutes=1), "fort_william"
+                departure = _to_utc((service.get("glenfinnanDeparture") or {}).get("scheduledAt"))
+                crossing_at, direction = (departure or at) + timedelta(minutes=1), "fort_william"
             elif previous and previous[2] > km:  # Towards Mallaig
                 crossing_at, direction = at - timedelta(minutes=1), "mallaig"
             else:
@@ -1138,6 +1146,7 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
             "delayBasis": reported_delay[3] if reported_delay else None,
             "delayStation": STATION_NAME_BY_KEY.get(reported_delay[2], reported_delay[2]) if reported_delay else None,
             "viewpoints": viewpoints,
+            "glenfinnanDeparture": service.get("glenfinnanDeparture"),
             "quality": "Darwin actual/forecast report or scheduled timetable; interpolated line position is an estimate, not GPS",
         })
     trains.sort(key=lambda item: min((v["etaMinutes"] for v in item["viewpoints"].values()), default=9999))

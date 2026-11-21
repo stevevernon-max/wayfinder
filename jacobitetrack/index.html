@@ -1592,6 +1592,24 @@ function updateHeaderDistances(){
 function getApproaching(id,now=Date.now()){
  return services.map(t=>({...t,remaining:etaAt(t,id,now)})).filter(t=>t.remaining!==null&&t.remaining>=0).sort((a,b)=>a.remaining-b.remaining);
 }
+// A board calling-point time may be arrival or an earlier working timing
+// point. Match nearby eastbound estimates to the public departure baseline.
+let crossingBaselineData;
+const crossingBaselines=new Map();
+function fortWilliamCrossingFloor(at){
+ if(!Number.isFinite(at))return at;
+ if(crossingBaselineData!==publishedTimetable){
+  crossingBaselineData=publishedTimetable;
+  crossingBaselines.clear();
+ }
+ const minute=60000,key=Math.floor(at/minute);
+ if(!crossingBaselines.has(key)){
+  if(crossingBaselines.size>=256)crossingBaselines.clear();
+  const match=nextPublishedViaductCrossing(key*minute-1,null,"Fort William");
+  crossingBaselines.set(key,match&&match.at<=key*minute+5*minute?match.at:null);
+ }
+ return Math.max(at,crossingBaselines.get(key)??at);
+}
 // One viaduct crossing model for the same marker used by the whole-line
 // tracker and the close-up. Positions are estimated from station times.
 function viaductCrossingForMarker(train,now=Date.now()){
@@ -1608,8 +1626,15 @@ function viaductCrossingForMarker(train,now=Date.now()){
  const towardFort=to>from;
  let crossingAt=null;
  if(towardFort){
-  if(fromName==="glenfinnan")crossingAt=start+minute;
-  else if(toName==="glenfinnan")crossingAt=end+minute;
+  const departure=train.glenfinnanDeparture||{};
+  const actual=Date.parse(departure.actualAt||"");
+  const forecast=Date.parse(departure.forecastAt||"");
+  const scheduled=Date.parse(departure.scheduledAt||"");
+  if(Number.isFinite(actual))crossingAt=actual+minute;
+  else if(Number.isFinite(forecast)||Number.isFinite(scheduled)){
+   crossingAt=fortWilliamCrossingFloor(Math.max(forecast||0,scheduled||0)+minute);
+  }else if(fromName==="glenfinnan")crossingAt=fortWilliamCrossingFloor(start+minute);
+  else if(toName==="glenfinnan")crossingAt=fortWilliamCrossingFloor(end+minute);
  }else{
   if(toName==="glenfinnan")crossingAt=end-2*minute;
   else if(fromName==="glenfinnan")crossingAt=start-2*minute;
@@ -1620,9 +1645,9 @@ function viaductCrossingForMarker(train,now=Date.now()){
   const frac=Math.max(0,Math.min(1,(now-start)/(end-start)));
   const current=from+(to-from)*frac;
   const approaching=towardFort?current<glen:current>glen;
-  const eta=etaAt(train,"glenfinnan");
+  const eta=etaAt(train,"glenfinnan",now);
   if(approaching&&Number.isFinite(eta)&&eta>0&&eta<=120){
-   crossingAt=now+eta*minute+(towardFort?minute:-2*minute);
+   crossingAt=towardFort?fortWilliamCrossingFloor(now+eta*minute):now+eta*minute-2*minute;
   }
  }
  if(!Number.isFinite(crossingAt)||crossingAt<now-2*minute||
@@ -1677,14 +1702,13 @@ function updateViaductCountdown(markers){
  let liveNext=null;
  try{liveNext=getViaductApproaching(markers||renderedTrainMarkers)[0]||null;}catch(error){console.warn("Viaduct live ETA unavailable",error)}
  const now=Date.now();
- const feedNext=scheduledCrossings.filter(c=>Number.isFinite(Date.parse(c.at))&&Date.parse(c.at)-(c.direction==="mallaig"&&c.basis==="published_schedule_station_offset"?60000:0)>now).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))[0];
- // A station-board crossing and a slightly different PDF crossing can be
- // the SAME service. After the board crossing passes, never start a second
- // countdown to the PDF's nearby time (often Glenfinnan station arrival).
- const adjustedCrossingAt=c=>Date.parse(c.at)-(c.direction==="mallaig"&&c.basis==="published_schedule_station_offset"?60000:0);
- const boardCrossingTimes=scheduledCrossings
-  .map(adjustedCrossingAt)
-  .filter(at=>Number.isFinite(at));
+ // Normalise board times before choosing or deduplicating the next event.
+ const boardCrossingTimes=scheduledCrossings.map(c=>{
+  const at=Date.parse(c.at);
+  if(c.basis!=="published_schedule_station_offset")return at;
+  return c.direction==="fort_william"?fortWilliamCrossingFloor(at):at-60000;
+ }).filter(Number.isFinite);
+ const feedNext=boardCrossingTimes.filter(at=>at>now).sort((a,b)=>a-b)[0];
  let pdfNext=nextPublishedViaductCrossing(now-2*60000);
  // PDF viaduct times are the published baseline. Apply only a display
  // calibration for Mallaig-bound crossings; do not rewrite source times.
@@ -1695,8 +1719,6 @@ function updateViaductCountdown(markers){
   if(!isDuplicate&&pdfCrossingAt(pdfNext)>now)break;
   pdfNext=nextPublishedViaductCrossing(pdfNext.at+5*60000);
  }
- const feedMinutes=feedNext?(adjustedCrossingAt(feedNext)-now)/60000:null;
- const pdfMinutes=pdfNext?(pdfCrossingAt(pdfNext)-now)/60000:null;
  // Prefer the next future event; give a matching fresh live ETA precedence
  // over the static timetable so a small delay does not hide the real train.
  // Prioritise train times currently reported by station arrival/departure boards.
@@ -1705,8 +1727,8 @@ function updateViaductCountdown(markers){
  const boardFresh=Number.isFinite(boardAge)&&boardAge>=-60000&&boardAge<15*60000;
  const liveCandidate=Number.isFinite(liveNext?.remaining)&&liveNext.remaining>=0?
   {at:Math.max(now,liveNext.crossingAt||now+liveNext.remaining*60000),type:"reported_station_times"}:null;
- const scheduleCandidate=boardFresh&&Number.isFinite(feedMinutes)&&feedMinutes>0?
-  {at:adjustedCrossingAt(feedNext),type:"schedule"}:null;
+ const scheduleCandidate=boardFresh&&Number.isFinite(feedNext)?
+  {at:feedNext,type:"schedule"}:null;
  // A train physically approaching the viaduct wins over a later
  // timetable service. Schedule entries are retained only as fallback.
  const boards=liveCandidate||scheduleCandidate;
@@ -2123,7 +2145,7 @@ tickerToggle.addEventListener("click",()=>{
 // The downloaded ScotRail timetable is the last-resort source of planned
 // crossings. Never extend it outside its explicit validity dates or treat
 // scheduled services as live observations.
-function nextPublishedViaductCrossing(now=Date.now(),viewpoint=null){
+function nextPublishedViaductCrossing(now=Date.now(),viewpoint=null,destination=null){
  const data=publishedTimetable;
  if(!data?.patterns||!data.validFrom||!data.validThrough)return null;
  const localParts=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{
@@ -2137,6 +2159,7 @@ function nextPublishedViaductCrossing(now=Date.now(),viewpoint=null){
   if(date<data.validFrom||date>data.validThrough)continue;
   const dow=day.getUTCDay(),pattern=dow===0?"sunday":dow===6?"saturday":dow===5?"friday":"weekday";
   for(const service of data.patterns[pattern]||[]){
+   if(destination&&service.to!==destination)continue;
    const passing=viewpoint?publishedStopTime(service,viewpoint):service.viaduct;
    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(passing||""))continue;
    const [hours,minutes]=passing.split(":").map(Number);
