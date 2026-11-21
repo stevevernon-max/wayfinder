@@ -302,11 +302,19 @@ body.geo-fullscreen-open{overflow:hidden}
 .app-header #proximityTile .viaduct-location{font-size:11px;color:#9db5ca;font-weight:700;margin-left:53px;letter-spacing:.1px}
 #trackerTile{border-color:#30394a;background:#171d27}
 main{padding-top:8px}
-@keyframes headerAmberFlash{
- 0%,100%{border-color:#b57b27}
- 50%{border-color:#ffce65}
+@keyframes headerBorderPulse{
+ 0%,100%{border-color:var(--approach-border-dim)}
+ 50%{border-color:var(--approach-border-bright)}
 }
-.app-header.viaduct-imminent .header-shell{animation:headerAmberFlash 1.35s ease-in-out infinite}
+.app-header.viaduct-imminent .header-shell{
+ --approach-border-dim:#b57b27;
+ --approach-border-bright:#ffce65;
+ animation:headerBorderPulse 1.35s ease-in-out infinite;
+}
+.app-header.viaduct-imminent.viaduct-arriving .header-shell{
+ --approach-border-dim:#31805a;
+ --approach-border-bright:#63eea1;
+}
 @media(max-width:420px){.app-header{padding:2px 8px 0}.app-header .header-shell{padding:8px 10px 9px}.app-header .header-main{margin-bottom:7px}.app-header .header-brand>strong{font-size:21px}.app-header #proximityTile{padding:8px 9px}.app-header #proximityTile .viaduct-icon{width:39px;height:39px}.app-header #proximityTile .viaduct-main-time{font-size:30px}.app-header #proximityTile .viaduct-location{margin-left:49px;font-size:10px}}
 
 /* Live status: only the status dot pulses, not the complete pill. */
@@ -1299,6 +1307,7 @@ function updateViaductCountdown(markers){
  const approaching=Number.isFinite(minutes)&&minutes>=0&&minutes<15;
  const header=document.querySelector(".app-header");
  header?.classList.toggle("viaduct-imminent",approaching);
+ header?.classList.toggle("viaduct-arriving",approaching&&minutes<=5);
  // Flash the single outer card only: the countdown has no independent alert state.
  tile.classList.remove("viaduct-soon","viaduct-arriving");
  const label=$("viaductRemaining"),time=$("viaductTileCountdown"),note=$("viaductTileNote");
