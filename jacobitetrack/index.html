@@ -1952,7 +1952,7 @@ function weatherConditionsScore(cloud,visibility,rain,light){
 function visibilityStatus(visibility,light){
  if(!Number.isFinite(visibility)||light<=0)return null;
  if(visibility<5000)return "Poor";
- return visibility<15000?"Good":"Excellent";
+ return visibility<15000?"Good":"V Good";
 }
 function updateVisibilityMetric(visibility,light){
  const metric=$("photoVisibility"),status=visibilityStatus(visibility,light);
