@@ -761,16 +761,16 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 .photo-weather>.photo-toggle-in-weather{justify-content:flex-end;padding:0 12px 7px}
 .photo-weather>.photo-toggle-in-weather .photo-periods button{font-size:11px;padding:4px 9px}
 /* Keep a little clearance above the header on phones, including Home Screen installs. */
-@media(max-width:600px){.app-header{padding-top:12px}}
+@media(max-width:600px){.app-header{padding-top:15px}}
 @media(max-width:600px) and (display-mode:standalone){
- .app-header{padding-top:calc(env(safe-area-inset-top, 0px) + 12px)}
+ .app-header{padding-top:calc(env(safe-area-inset-top, 0px) + 15px)}
 }
 main .tile>.heading{font-size:19px}
 .app-header #viaductCombinedTile .viaduct-title-row{font-size:clamp(10px,2.2vw,14px)!important}
 .app-header #viaductCombinedTile #viaductTileNote{display:block;font-size:11px;line-height:1.25;color:#a6c3d8;white-space:normal}
 .app-header #viaductCombinedTile #viaductTileNote[hidden]{display:none}
 #viewpointHeading{margin:10px 12px 5px;font-size:clamp(13px,3.7vw,16px)}
-#geoTile>.heading{font-size:16px}
+#geoTile>.heading,#timetableTile>.heading{font-size:16px}
 .viewpoint-train-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(74px,90px);align-items:center;gap:9px;padding:0 12px 8px}
 .viewpoint-train-row select{min-height:44px;font-size:16px}
 .viewpoint-train-row .viewpoint-eta{align-content:center;padding-left:7px;min-width:0}
