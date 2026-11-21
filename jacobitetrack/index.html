@@ -738,9 +738,10 @@ main{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--tile-gap);paddin
 main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 .app-header #trackerTile{padding-bottom:2px}
 .app-header #viaductCombinedTile{padding-top:1px!important}
-.app-header #viaductCombinedTile .viaduct-title-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:3px}
-.app-header #viaductCombinedTile .viaduct-title-row .viaduct-combined-heading{flex:none}
-.app-header #viaductCombinedTile .viaduct-title-row .viaduct-next-clock{margin:0!important;text-align:right!important}
+.app-header #viaductCombinedTile .viaduct-title-row{margin-bottom:3px!important}
+.app-header #viaductCombinedTile .viaduct-title-row #viaductTileCountdown{white-space:nowrap}
+.viewpoint-eta #etaNote:empty{display:none}
+.photo-metrics .visibility-label{font-size:clamp(10px,2.6vw,12px)}
 @keyframes trackingPillBorder{0%,100%{border-color:#397f77}50%{border-color:#83e6b9}}
 .app-header #activeTrainsPill.has-tracked-trains{animation:trackingPillBorder 1.4s ease-in-out infinite}
 #photoTile #viewpoint{margin-top:0}
@@ -749,7 +750,7 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 #timetableTile .timetable .service-main:has(+.calls-expanded:not([hidden])) td,
 #timetableTile .timetable .calls-expanded td{border-bottom:0}
 #timetableTile .calls-ticker{border-block:0}
-.map-viewpoint-ring{fill:none;stroke:#c1e5ff;stroke-width:3;animation:mapViewpointPulse 1.8s ease-out infinite;transform-box:fill-box;transform-origin:center}
+.map-viewpoint-ring{fill:none;stroke:#c1e5ff;stroke-width:4.5;animation:mapViewpointPulse 1.8s ease-out infinite;transform-box:fill-box;transform-origin:center}
 @keyframes mapViewpointPulse{0%{transform:scale(.75);opacity:1}85%,100%{transform:scale(2.15);opacity:0}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
@@ -771,10 +772,7 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 <div class="muted" id="trackStatus" hidden></div>
 </section>
 <section id="viaductCombinedTile" aria-label="Glenfinnan Viaduct approach and next crossing">
- <div class="viaduct-title-row">
-  <div class="viaduct-combined-heading">Next Viaduct Crossing</div>
-  <div id="viaductTileCountdown" class="viaduct-next-clock">Checking time…</div>
- </div>
+ <div class="viaduct-combined-heading viaduct-title-row">Next Viaduct Crossing · <span id="viaductTileCountdown">Checking time…</span></div>
  <div class="viaduct-integrated-row">
  <div class="viaduct-countdown-layout">
   <div class="viaduct-countdown-content">
@@ -831,7 +829,7 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
   </div>
   <div class="photo-metrics">
    <div><span>Cloud</span><strong id="photoCloud">—</strong></div>
-   <div><span>Visibility</span><strong id="photoVisibility">—</strong></div>
+   <div><span class="visibility-label" title="Weather visibility through the air, independent of daylight">Air visibility</span><strong id="photoVisibility">—</strong></div>
    <div><span>Rain</span><strong id="photoRain">—</strong></div>
    <div><span>Temp</span><strong id="photoTemp">—</strong></div>
   </div>
@@ -1576,7 +1574,7 @@ function updateViewpointCountdown(viaductAt,now){
  const at=useViaduct?viaductAt:next?Math.round(now+next.remaining*60000):scheduled;
  const eta=$("eta"),note=$("etaNote");
  const time=Number.isFinite(at)?timeText((at-now)/60000):"—";
- const status=Number.isFinite(scheduled)?"Scheduled estimate":Number.isFinite(at)?"":"No passing time available";
+ const status=Number.isFinite(at)?"":"No passing time available";
  if(eta.textContent!==time)eta.textContent=time;
  if(note.textContent!==status)note.textContent=status;
  if(photoCrossingAt!==at){
@@ -1621,7 +1619,7 @@ function photoDaylight(time,rise,set){
  return Math.max(0,Math.min(1,(at-first+30)/60,(last+30-at)/60));
 }
 function photoScore(cloud,visibility,rain,light){
- if(![cloud,visibility,rain,light].every(Number.isFinite))return null;
+ if(![cloud,visibility,rain,light].every(Number.isFinite)||light<=0)return null;
  const weather=10-(visibility<2000?4.5:visibility<5000?2.7:visibility<12000?1.2:0)
   -(rain>=70?4:rain>=40?2.5:rain>=20?1.2:0)-cloud/50;
  return Math.max(0,Math.round(weather*light));
@@ -1656,7 +1654,7 @@ function updatePhotographyLightStatus(){
  const light=rise&&set?photoDaylight(time,rise,set):null;
  const score=photoScore(cloud,visibility,rain,light);
  $("photoStatus").textContent=score??"—";
- $("photoStatus").title="Estimated photo conditions from daylight, cloud, visibility and rain chance";
+ $("photoStatus").title="Estimated daylight photo conditions from cloud, air visibility and rain chance";
  $("photoBars").innerHTML=Array.from({length:10},(_,index)=>index<score?'<span class="filled"></span>':"<span></span>").join("");
  const hour=time.slice(11,16);
  const middle=rise&&set?(Date.parse(rise+":00Z")+Date.parse(set+":00Z"))/2:null;
@@ -2279,8 +2277,8 @@ function updateMapViewpoint(view,svg){
  const [x,y]=geoPoint(spot.lat,spot.lon,view.bounds);
  const pin=geoSVG("g",{class:"map-viewpoint","aria-label":spot.name});
  const title=geoSVG("title");title.textContent=spot.name;pin.appendChild(title);
- pin.appendChild(geoSVG("circle",{cx:x,cy:y,r:13,class:"map-viewpoint-ring"}));
- pin.appendChild(geoSVG("circle",{cx:x,cy:y,r:9,fill:"#9cd6ff",stroke:"#112439","stroke-width":2.5}));
+ pin.appendChild(geoSVG("circle",{cx:x,cy:y,r:19.5,class:"map-viewpoint-ring"}));
+ pin.appendChild(geoSVG("circle",{cx:x,cy:y,r:13.5,fill:"#a8dcff",stroke:"#112439","stroke-width":4}));
  svg.appendChild(pin);
 }
 function makeMap(view){
