@@ -158,7 +158,7 @@ body.geo-fullscreen-open{overflow:hidden}
 #trackerTile #trackStatus{font-size:10px;line-height:1.3;margin-top:2px}
 #trackerTile>.row{align-items:center}
 #trackerTile .station-label{font-size:20px}
-@media(max-width:380px){#trackerTile .station-label{font-size:19px}}
+@media(max-width:600px){#trackerTile .station-label{font-size:32px}}
 .app-header .header-brand{flex:1}
 .app-header .header-main{justify-content:flex-start}
 #activeTrainsPill{--pill-glow:#e87d7d66;flex:0 0 auto;align-self:center;border-radius:999px;padding:9px 12px;margin-left:auto;border:1px solid #bf6262;background:#522929;color:#ffd3d3;font-size:11px;font-weight:800;letter-spacing:.4px;white-space:nowrap;animation:activePillPulse 1.7s ease-out infinite}
@@ -766,6 +766,8 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 }
 main .tile>.heading{font-size:19px}
 .app-header #viaductCombinedTile .viaduct-title-row{font-size:clamp(10px,2.2vw,14px)!important}
+.app-header #viaductCombinedTile #viaductTileNote{display:block;font-size:11px;line-height:1.25;color:#a6c3d8;white-space:normal}
+.app-header #viaductCombinedTile #viaductTileNote[hidden]{display:none}
 #viewpointHeading{margin:10px 12px 5px;font-size:clamp(15px,4.2vw,18px)}
 .viewpoint-train-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(74px,90px);align-items:center;gap:9px;padding:0 12px 8px}
 .viewpoint-train-row select{min-height:44px;font-size:16px}
@@ -1634,6 +1636,7 @@ function getViaductApproaching(markers=visibleTrainMarkers()){
  // current-service inputs to the countdown.
  const now=Date.now();
  return markers.flatMap(({train})=>{
+  if(train.positionQuality==="timetable_only"||train.position?.basis==="published_timetable")return [];
   const crossing=viaductCrossingForMarker(train,now);
   return crossing?[{...train,crossingAt:crossing.at,
    remaining:Math.max(0,(crossing.at-now)/60000),
@@ -1684,35 +1687,30 @@ function updateViaductCountdown(markers){
  const boardCrossingTimes=scheduledCrossings.map(c=>{
   const at=Date.parse(c.at);
   if(c.basis!=="published_schedule_station_offset")return at;
-  return c.direction==="fort_william"?fortWilliamCrossingFloor(at):at-60000;
+  return c.direction==="fort_william"?fortWilliamCrossingFloor(at):at;
  });
  const feedNext=scheduledCrossings.map((crossing,index)=>({...crossing,at:boardCrossingTimes[index]}))
   .filter(crossing=>crossing.at>now).sort((a,b)=>a.at-b.at)[0];
- let pdfNext=nextPublishedViaductCrossing(now-2*60000);
- // PDF viaduct times are the published baseline. Apply only a display
- // calibration for Mallaig-bound crossings; do not rewrite source times.
- const pdfCrossingAt=p=>p.at-(p.to==="Mallaig"?2*60000:0);
+ // Published entries already carry crossing times.
+ let pdfNext=nextPublishedViaductCrossing(now);
  for(let attempts=0;pdfNext&&attempts<8;attempts++){
   const isDuplicate=boardCrossingTimes.some(at=>
-   Math.abs(pdfCrossingAt(pdfNext)-at)<=5*60000&&at<=now+60000);
-  if(!isDuplicate&&pdfCrossingAt(pdfNext)>now)break;
-  pdfNext=nextPublishedViaductCrossing(pdfNext.at+5*60000);
+   Math.abs(pdfNext.at-at)<=5*60000&&at<=now+60000);
+  if(!isDuplicate)break;
+  pdfNext=nextPublishedViaductCrossing(pdfNext.at);
  }
- // Prefer the next future event; give a matching fresh live ETA precedence
- // over the static timetable so a small delay does not hide the real train.
- // Prioritise train times currently reported by station arrival/departure boards.
- // If no further board-based crossing remains, use the PDF timetable.
  const boardAge=now-Date.parse(feedUpdated||"");
  const boardFresh=Number.isFinite(boardAge)&&boardAge>=-60000&&boardAge<15*60000;
  const liveCandidate=Number.isFinite(liveNext?.remaining)&&liveNext.remaining>=0?
   {at:liveNext.crossingAt,direction:liveNext.direction}:null;
  const scheduleCandidate=boardFresh&&feedNext?
-  {at:feedNext.at,direction:feedNext.direction==="mallaig"?"back":"out"}:null;
+  {at:feedNext.at,direction:feedNext.direction==="mallaig"?"back":"out",
+   timetable:feedNext.basis==="published_schedule_station_offset"}:null;
  // A train physically approaching the viaduct wins over a later
  // timetable service. Schedule entries are retained only as fallback.
  const boards=liveCandidate||scheduleCandidate;
  const next=boards||
-  (pdfNext&&Number.isFinite(pdfCrossingAt(pdfNext))&&pdfCrossingAt(pdfNext)>now?{at:pdfCrossingAt(pdfNext),direction:pdfNext.to==="Mallaig"?"back":"out"}:null);
+  (pdfNext?{at:pdfNext.at,direction:pdfNext.to==="Mallaig"?"back":"out",timetable:true}:null);
  // Keep the completed crossing on screen briefly so the marker can pass
  // over the bridge before both tiles switch to the next service.
  const previous=displayedViaductCrossing;
@@ -1727,7 +1725,7 @@ function updateViaductCountdown(markers){
  const approaching=Number.isFinite(minutes)&&minutes>=0&&minutes<15;
  const header=document.querySelector(".app-header");
  header?.classList.toggle("viaduct-imminent",approaching);
- header?.classList.toggle("viaduct-arriving",approaching&&minutes<=5);
+ header?.classList.toggle("viaduct-arriving",approaching&&minutes<=3);
  // Flash the single outer card only: the countdown has no independent alert state.
  tile.classList.remove("viaduct-soon","viaduct-arriving");
  const label=$("viaductRemaining"),time=$("viaductTileCountdown"),note=$("viaductTileNote");
@@ -1748,10 +1746,8 @@ function updateViaductCountdown(markers){
   :new Date(trainAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"});
  const inPositionDay=dateOf(inPositionAt)===crossingLocal?"":dateOf(inPositionAt)===nowLocal?"Today ":""+new Date(inPositionAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"})+" ";
  time.textContent=when+" "+fmt(trainAt);
- // Keep Tile 2 focused on the countdown and crossing time.
- // Timetable predictions remain estimates internally, without a warning/error label.
- note.hidden=true;
- note.textContent="";
+ note.hidden=!chosen.timetable;
+ note.textContent=chosen.timetable?"Timetable estimate":"";
 }
 setInterval(updateViaductCountdown,1000);
 function updateActiveTrainsPill(markers=visibleTrainMarkers()){
