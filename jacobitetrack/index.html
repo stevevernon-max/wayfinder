@@ -17,8 +17,6 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 .geo-panel{border:1px solid #324055;border-radius:17px;overflow:hidden;background:#111a26;margin:13px 0}
 .geo-heading{padding:11px 13px;font-size:14px;font-weight:750;color:#e8eef7}
 .geo-map{height:400px;width:100%;background:#111c2b;z-index:0;touch-action:none;overflow:hidden;cursor:grab;user-select:none;-webkit-user-select:none}.geo-map:active{cursor:grabbing}
-#geoTile{padding:14px 0 12px}
-#geoTile>.row,#geoTile>#geoNote{margin-left:14px;margin-right:14px}
 .geo-panel-full{margin:12px 0;border-left:0;border-right:0;border-radius:0}
 .geo-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;color:#c5d8e9;font-size:12px;font-weight:700}
 .geo-controls{display:flex;gap:5px;flex-shrink:0}
@@ -45,7 +43,9 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 .geo-map{position:relative;isolation:isolate}
 
 /* Full-bleed map fills the tile, with floating controls instead of letterboxing. */
-#geoTile{position:relative;padding:0;min-height:480px;overflow:hidden;isolation:isolate}
+#geoTile{position:relative;padding:0;overflow:hidden;isolation:isolate}
+#geoTile>.heading{margin:0;padding:12px 16px;cursor:pointer}
+#geoTile .geo-map-content{position:relative}
 #geoTile .geo-map{height:clamp(480px,70vh,760px);width:100%;display:block;touch-action:none;background:#142235;cursor:grab}
 #geoTile .geo-map svg{display:block;width:100%;height:100%}
 #geoTile .geo-map-overlay{position:absolute;z-index:3;top:12px;left:12px;right:12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;pointer-events:none}
@@ -58,7 +58,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 #geoTile .geo-map-bottom{position:absolute;z-index:3;bottom:31px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;pointer-events:none;font-size:11px;color:#e4f4fc;text-shadow:0 1px 3px #0b172c}
 #geoTile .geo-map-bottom span{display:flex;align-items:center;gap:7px}
 #geoTile .geo-note{position:absolute;z-index:3;bottom:0;left:0;right:0;margin:0;padding:7px 12px;background:#101b2cdd;color:#aebed2;font-size:10px;pointer-events:none}
-@media(max-width:740px){#geoTile{min-height:0}#geoTile .geo-map{height:clamp(460px,68vh,700px)}}
+@media(max-width:740px){#geoTile .geo-map{height:clamp(460px,68vh,700px)}}
 
 .app-header{padding:12px 14px}
 .app-header .header-main{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:1080px;margin:auto}
@@ -88,7 +88,6 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 .app-header .header-metric:first-child>strong{color:#8dcaff;font-size:14px}
 @media(max-width:450px){.app-header .header-main{gap:5px}.app-header .header-metrics{padding:6px 7px;gap:4px}.app-header .header-metric{gap:5px}.app-header .header-metric>span{font-size:9px}.app-header .header-metric>strong{font-size:10px}.app-header .header-metric:first-child>strong{font-size:12px}.app-header .header-gps{font-size:10px}.app-header .header-brand>strong{font-size:20px}}
 @media(display-mode:standalone){.app-header{padding-top:calc(10px + env(safe-area-inset-top, 0px))}}
-#geoTile{min-height:0}
 #geoTile .geo-map{height:clamp(220px,35vh,380px)}
 @media(max-width:740px){#geoTile .geo-map{height:clamp(220px,34vh,350px)}}
 
@@ -141,6 +140,8 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 /* CSS full-screen works in iPhone Safari and installed Home Screen web apps. */
 body.geo-fullscreen-open{overflow:hidden}
 #geoTile.geo-fullscreen{position:fixed;inset:0;z-index:99999;margin:0;border:0;border-radius:0;width:100%;height:100vh;height:100dvh;background:#142235}
+#geoTile.geo-fullscreen>.heading{display:none}
+#geoTile.geo-fullscreen .geo-map-content{height:100%}
 #geoTile.geo-fullscreen .geo-map{height:100%!important;width:100%}
 #geoTile.geo-fullscreen .geo-map-overlay{top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right))}
 #geoTile.geo-fullscreen .geo-map-bottom{bottom:calc(31px + env(safe-area-inset-bottom))}
@@ -717,7 +718,7 @@ main>.planned-works-status{margin:0 0 10px}
 .photo-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(75px,1fr));gap:8px}
 .photo-metrics span{display:block;font-size:12px;color:#aab8cb}
 .photo-metrics strong{display:block;font-size:clamp(14px,4.2vw,20px);margin-top:3px;white-space:nowrap}
-.photo-metrics strong[data-tone]::before{content:"";display:inline-block;width:.45em;height:.45em;margin-right:.28em;border-radius:50%;background:#72ce9b;vertical-align:.14em}
+.photo-metrics strong[data-tone]::before{content:"";display:inline-block;width:9px;height:9px;margin-right:5px;border-radius:50%;background:#72ce9b;vertical-align:.14em}
 .photo-metrics strong[data-tone="fair"]::before{background:#edb74e}
 .photo-meta{display:flex;gap:3px 9px;flex-wrap:wrap;margin-top:12px;color:#9aaabd;font-size:11px}
 .photo-meta b{color:#d5dfee}
@@ -855,7 +856,7 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
   <div class="photo-score">
    <span class="photo-score-label">WEATHER CONDITIONS</span>
    <div class="photo-score-reading">
-    <span class="photo-score-value" title="Daylight weather score: 70% visibility and 30% chance of staying dry"><span id="photoStatus">—</span><small>/10</small></span>
+    <span class="photo-score-value" title="Weather score: 70% visibility and 30% chance of staying dry"><span id="photoStatus">—</span><small>/10</small></span>
     <span class="rating-track" id="photoBars" aria-hidden="true"></span>
    </div>
   </div>
@@ -880,7 +881,7 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
   <div class="photo-panel">
    <div class="photo-metrics">
     <div><span>Cloud</span><strong id="photoCloud">—</strong></div>
-    <div><span title="Forecast visibility in daylight. Local terrain can block the view.">Visibility</span><strong id="photoVisibility">—</strong></div>
+    <div><span title="Forecast visibility. Local terrain and darkness can affect what you see.">Visibility</span><strong id="photoVisibility">—</strong></div>
     <div><span>Rain</span><strong id="photoRain">—</strong></div>
     <div><span>Temp</span><strong id="photoTemp">—</strong></div>
     <div><span>Wind speed</span><strong id="photoWind">—</strong></div>
@@ -901,13 +902,16 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
   <div class="alerts"><select id="alertLead" aria-label="Train approaching warning"><option value="5">5 min alert</option><option value="10" selected>10 min alert</option><option value="15">15 min alert</option><option value="20">20 min alert</option></select><button class="button" id="notifyBtn">Enable alerts</button><button class="button" id="disableAlertsBtn" style="display:none">Disable alerts</button></div><div class="small" id="notificationStatus">Checking whether background notifications are available…</div><div class="small" id="installHint"></div>
  </details>
 </section>
-<section class="tile" id="geoTile">
+<details class="tile" id="geoTile" open>
+<summary class="heading">Big Map</summary>
+<div class="geo-map-content">
 <div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with roads, lochs, railway and estimated train position markers; drag or pinch to navigate"></div>
 <div class="geo-map-overlay"><span class="geo-load-status" id="geoStatus">Loading map</span>
 <div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view">Reset</button><button type="button" id="geoFullscreen" aria-label="Expand map to full screen" aria-pressed="false">⛶</button></div></div>
 <div class="geo-map-bottom"><span>Drag · Pinch to zoom</span></div>
 <p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
-</section>
+</div>
+</details>
 <details class="tile" id="timetableTile" aria-labelledby="timetableHeading" open>
 <summary class="heading" id="timetableHeading">Upcoming train services</summary>
 <div class="small" id="timetableStatus">Loading upcoming services…</div>
@@ -1922,24 +1926,19 @@ function photoHour(hourly,time){
  const hour=new Date(Math.round(target/3600000)*3600000).toISOString().slice(0,16);
  return hourly.time?.indexOf(hour)??-1;
 }
-function photoDaylight(time,rise,set){
- const minutes=value=>Number(value.slice(11,13))*60+Number(value.slice(14,16));
- const first=minutes(rise),last=minutes(set),at=minutes(time);
- return Math.max(0,Math.min(1,(at-first+30)/60,(last+30-at)/60));
-}
-function weatherConditionsScore(visibility,rain,light){
- if(![visibility,rain,light].every(Number.isFinite)||light<=0)return null;
+function weatherConditionsScore(visibility,rain){
+ if(![visibility,rain].every(Number.isFinite))return null;
  const visibilityScore=Math.max(0,Math.min(1,visibility/15000));
  const dryWeather=1-Math.max(0,Math.min(1,rain/100));
  return Math.round(10*(.7*visibilityScore+.3*dryWeather));
 }
-function visibilityStatus(visibility,light){
- if(!Number.isFinite(visibility)||light<=0)return null;
+function visibilityStatus(visibility){
+ if(!Number.isFinite(visibility))return null;
  if(visibility<5000)return "Poor";
  return visibility<15000?"Good":"V Good";
 }
-function updateVisibilityMetric(visibility,light){
- const metric=$("photoVisibility"),status=visibilityStatus(visibility,light);
+function updateVisibilityMetric(visibility){
+ const metric=$("photoVisibility"),status=visibilityStatus(visibility);
  metric.textContent=status??"—";
  if(status)metric.dataset.tone=status==="Poor"?"fair":"good";
  else delete metric.dataset.tone;
@@ -1980,12 +1979,11 @@ function updatePhotographyLightStatus(){
  const temp=forecast?hourly.temperature_2m?.[i]:current.temperature_2m;
  const day=daily?.time?.indexOf(time.slice(0,10));
  const rise=daily?.sunrise?.[day],set=daily?.sunset?.[day];
- const light=rise&&set?photoDaylight(time,rise,set):null;
- const score=weatherConditionsScore(visibility,rain,light);
+ const score=weatherConditionsScore(visibility,rain);
  $("photoStatus").textContent=score??"—";
  setRatingBar($("photoBars"),score);
  photoMetric("photoCloud",cloud,"%",cloud>=55?"fair":"good");
- updateVisibilityMetric(visibility,light);
+ updateVisibilityMetric(visibility);
  photoMetric("photoRain",rain,"%",rain>=20?"fair":"good");
  photoMetric("photoTemp",temp,"°C");
  const wind=forecast?hourly.wind_speed_10m?.[i]:current.wind_speed_10m;
@@ -2649,7 +2647,11 @@ function makeMap(view){
  container.appendChild(svg);
  updateGeoTrainMarkers();
 }
-function renderGeoMaps(){geoViews.forEach(makeMap);updateGeoTrainMarkers()}
+function renderGeoMaps(){
+ if(!$("geoTile").open)return;
+ geoViews.forEach(makeMap);
+ updateGeoTrainMarkers();
+}
 let lastGeoGpsRender=0;
 function updateGeoLocation(lat,lon){
  const previous=geoLocation,now=Date.now();
@@ -2754,6 +2756,7 @@ function setGeoFullscreen(expanded){
 }
 function initGeoInteraction(){
  window.addEventListener("resize",renderGeoMaps);
+ $("geoTile").addEventListener("toggle",renderGeoMaps);
  const el=$("mapOverview");const active=new Map();let previous=null;
  $("geoZoomIn").addEventListener("click",()=>geoZoom(.65));
  $("geoZoomOut").addEventListener("click",()=>geoZoom(1.55));
