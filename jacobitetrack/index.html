@@ -784,6 +784,29 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 .viewpoint-ratings dd{margin:2px 0 0;font-weight:750}
 .viewpoint-card-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
 .viewpoint-card-actions .button{padding:6px 9px}
+
+/* Compact mobile viewpoint panel and quiet train status. */
+#activeTrainsPill,#activeTrainsPill.has-trains{background:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;animation:none!important;padding:0!important;color:#a9bdce!important;font-size:clamp(10px,2.8vw,12px)!important;font-weight:600!important;line-height:1.15;letter-spacing:0}
+#activeTrainsPill::before,#activeTrainsPill.has-trains::before{animation:none!important;box-shadow:none!important;width:6px;height:6px}
+.photo-overview .photo-score{grid-template-rows:auto auto;gap:4px;padding:7px 5px}
+.photo-overview .photo-score-label{white-space:nowrap;font-size:clamp(8px,2.1vw,10px);letter-spacing:-.1px;line-height:1.2}
+.photo-overview .photo-score-reading{gap:3px}
+.photo-weather-heading{display:flex;align-items:center;justify-content:space-between;gap:5px;padding:6px 12px}
+.photo-weather-heading summary{flex:1;min-width:0;padding:6px 0;white-space:nowrap;font-size:clamp(11px,2.9vw,13px)}
+.photo-weather-heading .photo-toggle-row{flex:0 0 auto;padding:0}
+.photo-weather-heading .photo-periods button{font-size:clamp(9px,2.5vw,11px);padding:5px 6px;white-space:nowrap}
+.photo-weather .photo-metrics{grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}
+.photo-weather .photo-metrics span{font-size:clamp(9px,2.5vw,12px);white-space:nowrap}
+.photo-weather .photo-metrics strong{font-size:clamp(11px,3.2vw,17px);white-space:nowrap;letter-spacing:-.4px}
+#photoVisibility{font-size:clamp(10px,2.7vw,14px);white-space:nowrap;overflow-wrap:normal}
+.photo-weather .photo-metrics strong[data-tone]::before{width:6px;height:6px;margin-right:3px}
+.viewpoint-guide-body{padding:0 10px 8px}
+#spots{gap:3px}
+.viewpoint-card{border-radius:9px}
+.viewpoint-card summary{padding:4px 7px;gap:4px;font-size:clamp(11px,2.9vw,13px);min-height:33px}
+.viewpoint-total{padding:2px 4px;font-size:11px}
+.viewpoint-total .rating-track{height:4px;margin-top:2px}
+.viewpoint-card-body{padding:0 9px 9px}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -861,7 +884,7 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
    </div>
   </div>
   <div class="photo-score viewpoint-distance">
-   <span class="photo-score-label">DISTANCE FROM ME</span>
+   <span class="photo-score-label">NAVIGATE</span>
    <div class="photo-score-reading">
     <strong id="viewpointDistance" title="Straight-line distance to the viewpoint pin">— km</strong>
     <a id="viewpointDirections" class="viewpoint-directions" target="_blank" rel="noopener" aria-label="Directions">
@@ -870,14 +893,13 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
    </div>
   </div>
  </div>
- <div class="photo-toggle-row">
+ <details class="photo-weather" id="weatherConditions">
+  <div class="photo-weather-heading"><summary>Weather Conditions at Viewpoint</summary><div class="photo-toggle-row">
   <div class="photo-periods" role="group" aria-label="Weather forecast time">
    <button type="button" id="photoNow" aria-pressed="true">Now</button>
    <button type="button" id="photoCrossing" aria-pressed="false">At Next Passing</button>
   </div>
- </div>
- <details class="photo-weather" id="weatherConditions">
-  <summary>Weather Conditions at Viewpoint</summary>
+ </div></div>
   <div class="photo-panel">
    <div class="photo-metrics">
     <div><span>Cloud</span><strong id="photoCloud">—</strong></div>
@@ -1926,21 +1948,22 @@ function photoHour(hourly,time){
  const hour=new Date(Math.round(target/3600000)*3600000).toISOString().slice(0,16);
  return hourly.time?.indexOf(hour)??-1;
 }
-function weatherConditionsScore(visibility,rain){
+function weatherConditionsScore(visibility,rain,light="day"){
  if(![visibility,rain].every(Number.isFinite))return null;
  const visibilityScore=Math.max(0,Math.min(1,visibility/15000));
  const dryWeather=1-Math.max(0,Math.min(1,rain/100));
- return Math.round(10*(.7*visibilityScore+.3*dryWeather));
+ const weatherScore=Math.round(10*(.7*visibilityScore+.3*dryWeather));
+ return light==="night"?Math.min(2,weatherScore):light==="twilight"?Math.min(5,weatherScore):weatherScore;
 }
 function visibilityStatus(visibility){
  if(!Number.isFinite(visibility))return null;
  if(visibility<5000)return "Poor";
  return visibility<15000?"Good":"V Good";
 }
-function updateVisibilityMetric(visibility){
- const metric=$("photoVisibility"),status=visibilityStatus(visibility);
+function updateVisibilityMetric(visibility,light="day"){
+ const metric=$("photoVisibility"),status=light==="night"?"Dark":light==="twilight"?"Low light":visibilityStatus(visibility);
  metric.textContent=status??"—";
- if(status)metric.dataset.tone=status==="Poor"?"fair":"good";
+ if(status)metric.dataset.tone=(status==="Poor"||status==="Dark"||status==="Low light")?"fair":"good";
  else delete metric.dataset.tone;
 }
 function photoMetric(id,value,suffix,tone){
@@ -1979,18 +2002,25 @@ function updatePhotographyLightStatus(){
  const temp=forecast?hourly.temperature_2m?.[i]:current.temperature_2m;
  const day=daily?.time?.indexOf(time.slice(0,10));
  const rise=daily?.sunrise?.[day],set=daily?.sunset?.[day];
- const score=weatherConditionsScore(visibility,rain);
+ const minuteOfDay=value=>{if(typeof value!=="string"||!/^\\d{2}:\\d{2}$/.test(value.slice(11,16)))return null;const [h,m]=value.slice(11,16).split(":").map(Number);return h*60+m;};
+ const atMinute=minuteOfDay(time),riseMinute=minuteOfDay(rise),setMinute=minuteOfDay(set);
+ // Sunrise/sunset are local to the viewpoint (Open-Meteo timezone Europe/London).
+ // Keep weather-only visibility distinct from usable photographic light.
+ const light=atMinute===null||riseMinute===null||setMinute===null?"unknown":
+  atMinute<riseMinute||atMinute>=setMinute?"night":
+  atMinute<riseMinute+25||atMinute>=setMinute-25?"twilight":"day";
+ const score=weatherConditionsScore(visibility,rain,light);
  $("photoStatus").textContent=score??"—";
  setRatingBar($("photoBars"),score);
  photoMetric("photoCloud",cloud,"%",cloud>=55?"fair":"good");
- updateVisibilityMetric(visibility);
+ updateVisibilityMetric(visibility,light);
  photoMetric("photoRain",rain,"%",rain>=20?"fair":"good");
  photoMetric("photoTemp",temp,"°C");
  const wind=forecast?hourly.wind_speed_10m?.[i]:current.wind_speed_10m;
  photoMetric("photoWind",wind," km/h");
  $("photoSunrise").textContent=rise?.slice(11,16)||"—";
  $("photoSunset").textContent=set?.slice(11,16)||"—";
- $("weatherTime").textContent="Updated "+current.time.slice(11,16)+" · Open-Meteo";
+ $("weatherTime").textContent=(light==="night"?"After dark · ":light==="twilight"?"Low daylight · ":"")+"Updated "+current.time.slice(11,16)+" · Open-Meteo";
 }
 function selectPhotoPeriod(period){
  photoPeriod=period;
