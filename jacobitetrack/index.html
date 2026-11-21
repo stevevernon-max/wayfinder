@@ -805,21 +805,25 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 }
 main .tile>.heading{font-size:19px}
 .app-header #viaductCombinedTile .viaduct-title-row{font-size:clamp(10px,2.2vw,14px)!important}
-.viewpoint-train-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(74px,90px);gap:7px 9px;padding:12px 12px 8px}
+#viewpointHeading{margin:10px 12px 5px;font-size:clamp(15px,4.2vw,18px)}
+.viewpoint-train-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(74px,90px);align-items:center;gap:9px;padding:0 12px 8px}
 .viewpoint-train-row select{min-height:44px;font-size:16px}
-.viewpoint-train-row .viewpoint-eta{grid-area:1/2/3/3;align-content:center;border-left:1px solid #30394a;padding-left:7px;min-width:0}
+.viewpoint-train-row .viewpoint-eta{align-content:center;border-left:1px solid #30394a;padding-left:7px;min-width:0}
 .viewpoint-eta .photo-score-label{font-size:9px;letter-spacing:.6px}
 .viewpoint-eta strong{overflow-wrap:anywhere}
-.photo-overview{display:flex;flex-wrap:wrap;gap:5px}
-.photo-score{display:inline-flex;align-items:baseline;gap:4px;padding:5px 6px;background:#1d293a;border-radius:8px;min-width:0}
-.photo-score .photo-score-label{font-size:11px;letter-spacing:0}
-.photo-score-value{font-size:15px;color:var(--score-color,#d7e9f9)}
-.viewpoint-directions{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;margin:0 12px 6px;padding:0 10px;border:1px solid #3b5976;border-radius:9px;background:#182a3b;color:#a5d2ff;text-decoration:none;font-size:13px}
+.photo-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:0 12px;padding:7px 0 8px;border-top:1px solid #30394a}
+.photo-score{display:grid;gap:5px;min-width:0;padding:0 8px}
+.photo-score+.photo-score{border-left:1px solid #30394a}
+.photo-score .photo-score-label{font-size:clamp(9px,2.6vw,11px);letter-spacing:0}
+.photo-score-reading{display:flex;align-items:center;gap:7px;min-width:0}
+.photo-score-value{color:var(--rating-color,#d7e9f9)}
+.photo-score-reading .rating-track{flex:1;min-width:0;height:5px}
+.viewpoint-footer{display:grid;grid-template-columns:auto auto auto minmax(0,1fr);align-items:stretch;padding:0 8px;border-top:1px solid #30394a}
+.viewpoint-footer button{min-height:44px;padding:0 clamp(3px,1.2vw,8px);border:0;background:transparent;color:#d7e9f9;font:inherit;font-size:clamp(11px,3.2vw,13px);font-weight:700;cursor:pointer}
+.viewpoint-directions{display:flex;align-items:center;justify-content:flex-end;gap:5px;min-height:44px;padding:0 4px;color:#a5d2ff;text-align:right;text-decoration:none;font-size:clamp(10px,2.9vw,13px);line-height:1.2}
+.viewpoint-directions strong{white-space:nowrap}
 .viewpoint-directions svg{flex:none}
-.viewpoint-footer{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid #30394a}
-.viewpoint-footer button{min-height:44px;padding:0 4px;border:0;background:transparent;color:#d7e9f9;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
-.viewpoint-footer button+button{border-left:1px solid #30394a}
-.viewpoint-footer button::after{content:"";display:inline-block;margin-left:6px;width:5px;height:5px;border-top:1px solid;border-right:1px solid;transform:rotate(45deg);vertical-align:2px}
+.viewpoint-footer button::after{content:"";display:inline-block;margin-left:4px;width:4px;height:4px;border-top:1px solid;border-right:1px solid;transform:rotate(45deg);vertical-align:2px}
 .viewpoint-footer button[aria-expanded="true"]{background:#1d293a;color:#a5d2ff}
 .viewpoint-footer button[aria-expanded="true"]::after{transform:rotate(135deg)}
 .photo-weather>.photo-toggle-in-weather,.viewpoint-guide-body{padding-top:8px}
@@ -878,7 +882,8 @@ main .tile>.heading{font-size:19px}
  </div>
 </section>
 </div></header><main>
-<section class="tile" id="photoTile" aria-label="Viewpoints and weather conditions">
+<section class="tile" id="photoTile" aria-labelledby="viewpointHeading">
+ <h2 class="heading" id="viewpointHeading">Viewpoints &amp; Weather Conditions</h2>
  <div class="viewpoint-train-row">
   <div class="field"><select id="viewpoint" aria-label="Viewpoint"></select></div>
   <div class="viewpoint-eta">
@@ -886,25 +891,31 @@ main .tile>.heading{font-size:19px}
    <strong id="eta" class="countdown">—</strong>
    <span id="etaNote" class="small"></span>
   </div>
-  <div class="photo-overview">
-   <div class="photo-score">
-    <span class="photo-score-label">Viewpoint</span>
+ </div>
+ <div class="photo-overview">
+  <div class="photo-score" id="viewpointRating">
+   <span class="photo-score-label">VIEWPOINT RATING</span>
+   <div class="photo-score-reading">
     <span class="photo-score-value"><span id="selectedViewpointRating">—</span><small>/10</small></span>
+    <span class="rating-track" aria-hidden="true"></span>
    </div>
-   <div class="photo-score">
-    <span class="photo-score-label">Weather</span>
+  </div>
+  <div class="photo-score" id="weatherRating">
+   <span class="photo-score-label">WEATHER CONDITIONS</span>
+   <div class="photo-score-reading">
     <span class="photo-score-value" title="Weather score: 70% visibility and 30% chance of staying dry"><span id="photoStatus">—</span><small>/10</small></span>
+    <span class="rating-track" aria-hidden="true"></span>
    </div>
   </div>
  </div>
- <a id="viewpointDirections" class="viewpoint-directions" target="_blank" rel="noopener">
-  <span><strong id="viewpointDistance" title="Straight-line distance to the viewpoint pin">— km</strong> · Get directions</span>
-  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M17.7 2.3 1.9 8.5a.7.7 0 0 0 .1 1.3l6 1.8 1.8 6a.7.7 0 0 0 1.3.1l7.5-14.5c.3-.6-.3-1.2-.9-.9z"/></svg>
- </a>
- <div class="viewpoint-footer" role="group" aria-label="Viewpoint details">
+ <div class="viewpoint-footer" role="group" aria-label="Viewpoint actions">
   <button type="button" aria-expanded="false" aria-controls="weatherConditions">Weather</button>
   <button type="button" aria-expanded="false" aria-controls="viewpointGuide">Viewpoints</button>
   <button type="button" aria-expanded="false" aria-controls="viewpointAlerts">Alerts</button>
+  <a id="viewpointDirections" class="viewpoint-directions" target="_blank" rel="noopener">
+   <span>Directions · <strong id="viewpointDistance" title="Straight-line distance to the viewpoint pin">— km</strong></span>
+   <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M17.7 2.3 1.9 8.5a.7.7 0 0 0 .1 1.3l6 1.8 1.8 6a.7.7 0 0 0 1.3.1l7.5-14.5c.3-.6-.3-1.2-.9-.9z"/></svg>
+  </a>
  </div>
  <details class="photo-weather" id="weatherConditions">
   <summary hidden>Weather Conditions at Viewpoint</summary><div class="photo-toggle-row photo-toggle-in-weather">
@@ -1902,16 +1913,18 @@ function ratingColour(score){
 function ratingBar(score){
  return '<span class="rating-track" aria-hidden="true" style="--rating-fill:'+(score*10)+'%;--rating-color:'+ratingColour(score)+'"></span>';
 }
-function setPhotoScore(id,score){
+function setPhotoScore(id,ratingId,score){
  const value=$(id);
  value.textContent=score??"—";
- value.parentElement.style.setProperty("--score-color",score==null?"":ratingColour(score));
+ const rating=$(ratingId);
+ rating.style.setProperty("--rating-fill",(score??0)*10+"%");
+ rating.style.setProperty("--rating-color",score==null?"":ratingColour(score));
 }
 function updateSelectedViewpointRating(){
  const spot=siteData[$("viewpoint").value];
  if(!spot)return;
  const score=Math.round(viewpointScore(spot));
- setPhotoScore("selectedViewpointRating",score);
+ setPhotoScore("selectedViewpointRating","viewpointRating",score);
 }
 function renderSpots(){
  const viewpoints=Object.entries(siteData).sort(([,a],[,b])=>
@@ -1986,7 +1999,7 @@ function photoMetric(id,value,suffix,tone){
  else delete metric.dataset.tone;
 }
 function clearPhotoWeather(message){
- setPhotoScore("photoStatus",null);
+ setPhotoScore("photoStatus","weatherRating",null);
  for(const field of ["photoCloud","photoVisibility","photoRain","photoTemp","photoWind"])photoMetric(field,null,"");
  $("photoSunrise").textContent=$("photoSunset").textContent="—";
  $("weatherTime").textContent=message;
@@ -2022,7 +2035,7 @@ function updatePhotographyLightStatus(){
   atMinute<riseMinute||atMinute>=setMinute?"night":
   atMinute<riseMinute+25||atMinute>=setMinute-25?"twilight":"day";
  const score=weatherConditionsScore(visibility,rain,light);
- setPhotoScore("photoStatus",score);
+ setPhotoScore("photoStatus","weatherRating",score);
  photoMetric("photoCloud",cloud,"%",cloud>=55?"fair":"good");
  updateVisibilityMetric(visibility,light);
  photoMetric("photoRain",rain,"%",rain>=20?"fair":"good");
