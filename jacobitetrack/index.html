@@ -684,9 +684,14 @@ main>.planned-works-status{margin:0 0 10px}
 .app-header #viaductCombinedTile .viaduct-countdown-top{display:grid;justify-items:start;gap:3px}
 #geoTile #geoStatus:empty{visibility:hidden}
 #photoTile{padding:0;overflow:hidden;background:#171d2b}
-#photoTile>.heading,#photoTile>.field{margin:14px 16px}
-.photo-overview{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:10px 14px;padding:0 16px 12px}
-.photo-score{display:flex;align-items:center;flex-wrap:wrap;gap:5px 8px;min-width:0}
+#photoTile>.heading{margin:14px 16px}
+.viewpoint-train-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(70px,auto);align-items:center;gap:10px;margin:0 16px 13px}
+.viewpoint-train-row .field{min-width:0;margin:0}
+.viewpoint-train-row select{text-overflow:ellipsis}
+.viewpoint-train-row .viewpoint-eta{max-width:110px}
+.photo-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;padding:0 16px}
+.photo-score{display:grid;align-content:start;gap:5px;min-width:0}
+.photo-toggle-row{display:flex;justify-content:center;padding:12px 12px 10px}
 .viewpoint-eta{display:grid;gap:3px;text-align:right;justify-items:end}
 .viewpoint-eta strong{color:#8bcaff;font-size:clamp(18px,5vw,25px)}
 .viewpoint-alerts{padding:10px 16px;border-top:1px solid #30394a}
@@ -694,23 +699,19 @@ main>.planned-works-status{margin:0 0 10px}
 .photo-score-label{color:#9aaabd;font-size:11px;letter-spacing:1.2px;font-weight:800}
 .photo-score-value{font-size:25px;font-weight:850;line-height:1}
 .photo-score-value small{font-size:12px;color:#9aaabd}
-.photo-score-controls{flex:0 0 100%;min-width:0;display:grid;justify-items:start;gap:7px}
 .photo-score-bars{display:grid;grid-template-columns:repeat(10,minmax(3px,1fr));gap:2px;width:min(100%,165px)}
 .photo-score-bars span{height:8px;border-radius:2px;background:#293346}
 .photo-score-bars .filled{background:#edb74e}
 .photo-score-bars .filled:nth-child(n+6){background:#72ce9b}
-#photoTrend{font-size:12px;color:#8dbaff}
 .photo-weather{border-top:1px solid #30394a}
 .photo-weather summary{padding:10px 16px;cursor:pointer;font-size:13px;font-weight:700}
 .photo-panel{padding:0 16px 14px}
 @media(max-width:380px){.photo-weather summary{padding-inline:12px}}
-.photo-panel-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;margin-bottom:13px}
-#photoCondition{font-size:16px;font-weight:750}
 .photo-periods{display:flex;gap:2px;max-width:100%;border:1px solid #30394a;border-radius:999px;background:#101522;padding:2px}
 .photo-periods button{min-width:0;font:inherit;font-size:12px;color:#aab8cb;padding:5px 9px;border:0;border-radius:999px;background:transparent;cursor:pointer}
 .photo-periods button[aria-pressed="true"]{color:#d5e6ff;background:#223c60}
 .photo-periods button:disabled{opacity:.55;cursor:default}
-.photo-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.photo-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(75px,1fr));gap:8px}
 .photo-metrics span{display:block;font-size:12px;color:#aab8cb}
 .photo-metrics strong{display:block;font-size:clamp(14px,4.2vw,20px);margin-top:3px;white-space:nowrap}
 .photo-metrics strong[data-tone]::before{content:"";display:inline-block;width:.45em;height:.45em;margin-right:.28em;border-radius:50%;background:#72ce9b;vertical-align:.14em}
@@ -725,7 +726,7 @@ main>.planned-works-status{margin:0 0 10px}
 #timetableTile[data-ticker-paused] .calls-ticker{overflow-x:auto}
 #timetableTile[data-ticker-paused] .ticker-loop{animation:none}
 #timetableTile[data-ticker-paused] .ticker-copy[aria-hidden="true"]{display:none}
-@media(max-width:380px){#photoTile>.heading,#photoTile>.field{margin:12px}.photo-overview,.photo-panel,.viewpoint-alerts{padding-left:12px;padding-right:12px}.photo-metrics{gap:5px}}
+@media(max-width:380px){#photoTile>.heading{margin:12px}.viewpoint-train-row{margin-inline:12px}.photo-overview,.photo-panel,.viewpoint-alerts{padding-left:12px;padding-right:12px}.photo-metrics{gap:5px}}
 .app-header #viaductCombinedTile #viaductRemaining{
  color:#75d9b7;
  font-size:clamp(22px,6.5vw,45px)!important;
@@ -744,7 +745,6 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 .app-header #viaductCombinedTile .viaduct-title-row{margin-bottom:3px!important}
 .app-header #viaductCombinedTile .viaduct-title-row #viaductTileCountdown{white-space:nowrap}
 .viewpoint-eta #etaNote:empty{display:none}
-.photo-metrics .visibility-label{font-size:clamp(10px,2.6vw,12px)}
 @keyframes trackingPillBorder{0%,100%{border-color:#397f77}50%{border-color:#83e6b9}}
 .app-header #activeTrainsPill.has-tracked-trains{animation:trackingPillBorder 1.4s ease-in-out infinite}
 #photoTile #viewpoint{margin-top:0}
@@ -756,7 +756,16 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 .map-viewpoint-ring{fill:none;stroke:#c1e5ff;stroke-width:4.5;animation:mapViewpointPulse 1.8s ease-out infinite;transform-box:fill-box;transform-origin:center}
 @keyframes mapViewpointPulse{0%{transform:scale(.75);opacity:1}85%,100%{transform:scale(2.15);opacity:0}}
 
-#viewpointGuide>p{margin:7px 0 10px}
+.viewpoint-guide{border-top:1px solid #30394a}
+.viewpoint-guide>summary{padding:10px 16px;cursor:pointer;font-weight:700;font-size:13px}
+.viewpoint-guide-body{padding:0 16px 10px}
+.viewpoint-guide-body>p{margin:7px 0 10px}
+.viewpoint-map-switch{display:flex;align-items:center;gap:6px;font-size:12px;color:#c4d5e7}
+.viewpoint-map-switch input{accent-color:#72ce9b}
+.rating-track{display:block;width:min(100%,165px);height:6px;border-radius:4px;background:#293346;overflow:hidden}
+.rating-track::before{content:"";display:block;width:var(--rating-fill,0%);height:100%;background:var(--rating-color,#edb74e);border-radius:inherit}
+.viewpoint-total .rating-track,.viewpoint-ratings .rating-track{width:100%;margin-top:4px}
+#geoTile[data-hide-viewpoints] :is(.map-viewpoint,.map-viewpoint-places){display:none}
 #viewpointGuide a{color:#a5d2ff}
 #spots{display:grid;gap:6px}
 .viewpoint-card{background:#111924;border:1px solid #324154;border-radius:12px;min-width:0}
@@ -830,37 +839,50 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 </section>
 </div></header><main>
 <section class="tile" id="photoTile" aria-labelledby="viewpointHeading">
- <h2 class="heading" id="viewpointHeading">Viewpoint and Conditions</h2>
- <div class="field"><select id="viewpoint" aria-label="Viewpoint"></select></div>
- <div class="photo-overview">
-  <div class="photo-score">
-   <span class="photo-score-label">PHOTO SCORE</span>
-   <span class="photo-score-value"><span id="photoStatus">—</span><small>/10</small></span>
-   <span id="photoTrend"></span>
-   <div class="photo-score-controls">
-    <span class="photo-score-bars" id="photoBars" aria-hidden="true"></span>
-     <div class="photo-periods" role="group" aria-label="Weather forecast time">
-      <button type="button" id="photoNow" aria-pressed="true">Now</button>
-      <button type="button" id="photoCrossing" aria-pressed="false" disabled>At Next Passing</button>
-     </div>
-   </div>
-  </div>
+ <h2 class="heading" id="viewpointHeading">Viewpoints &amp; Weather Conditions</h2>
+ <div class="viewpoint-train-row">
+  <div class="field"><select id="viewpoint" aria-label="Viewpoint"></select></div>
   <div class="viewpoint-eta"><span class="photo-score-label">NEXT TRAIN</span><strong id="eta" class="countdown">—</strong><span id="etaNote" class="small"></span></div>
  </div>
- <details class="photo-weather" id="weatherConditions" open>
-  <summary>Weather conditions</summary>
+ <div class="photo-overview">
+  <div class="photo-score">
+   <span class="photo-score-label">PHOTO CONDITIONS</span>
+   <span class="photo-score-value"><span id="photoStatus">—</span><small>/10</small></span>
+   <span class="photo-score-bars" id="photoBars" aria-hidden="true"></span>
+  </div>
+  <div class="photo-score">
+   <span class="photo-score-label">VIEWPOINT RATING</span>
+   <span class="photo-score-value"><span id="selectedViewpointRating">—</span><small>/10</small></span>
+   <span class="rating-track" id="selectedViewpointBar" aria-hidden="true"></span>
+  </div>
+ </div>
+ <div class="photo-toggle-row">
+  <div class="photo-periods" role="group" aria-label="Weather forecast time">
+   <button type="button" id="photoNow" aria-pressed="true">Now</button>
+   <button type="button" id="photoCrossing" aria-pressed="false" disabled>At Next Passing</button>
+  </div>
+ </div>
+ <details class="photo-weather" id="weatherConditions">
+  <summary>Weather Conditions at Viewpoint</summary>
   <div class="photo-panel">
-   <div class="photo-panel-top">
-    <strong id="photoCondition" role="status">Loading weather…</strong>
-   </div>
    <div class="photo-metrics">
     <div><span>Cloud</span><strong id="photoCloud">—</strong></div>
-    <div><span class="visibility-label" title="Weather visibility through the air, independent of daylight">Air visibility</span><strong id="photoVisibility">—</strong></div>
+    <div><span title="Estimated distance you can see in daylight in open terrain. Hills and trees can block the view.">Viewing distance</span><strong id="photoVisibility">—</strong></div>
     <div><span>Rain</span><strong id="photoRain">—</strong></div>
     <div><span>Temp</span><strong id="photoTemp">—</strong></div>
+    <div><span>Wind speed</span><strong id="photoWind">—</strong></div>
    </div>
    <div class="photo-meta"><span>☀ <b id="photoSunrise">—</b></span><span>☾ <b id="photoSunset">—</b></span><span id="weatherTime"></span></div>
     </div>
+ </details>
+ <details id="viewpointGuide" class="viewpoint-guide">
+  <summary>Photo Viewpoints</summary>
+  <div class="viewpoint-guide-body">
+   <label class="viewpoint-map-switch"><input type="checkbox" id="showViewpoints" checked> Show viewpoints on map</label>
+   <p class="small">Total is the average of photo impact, visibility from the spot and parking. Ratings are editorial. Parking scores describe typical access.</p>
+   <div id="spots"></div>
+   <p class="small">Use public paths and signed parking. Map pins mark approximate photo areas. Passing times can include ScotRail services. <a href="https://westcoastrailways.co.uk/jacobite/steam-train-trip" target="_blank" rel="noopener">Check Jacobite dates with West Coast Railways</a>.</p>
+  </div>
  </details>
  <details class="viewpoint-alerts">
   <summary>Alerts</summary>
@@ -883,12 +905,6 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
  <button class="ticker-control" id="tickerToggle" type="button" hidden>Pause ticker</button>
 </div>
 </details>
-<section class="tile" id="viewpointGuide" aria-labelledby="viewpointGuideTitle">
- <h2 class="heading" id="viewpointGuideTitle">10 Jacobite photo viewpoints</h2>
- <p class="small">Total is the average of photo impact, visibility from the spot and parking. Ratings are editorial. Parking scores describe typical access.</p>
- <div id="spots"></div>
- <p class="small">Use public paths and signed parking. Map pins mark approximate photo areas. Passing times can include ScotRail services. <a href="https://westcoastrailways.co.uk/jacobite/steam-train-trip" target="_blank" rel="noopener">Check Jacobite dates with West Coast Railways</a>.</p>
-</section>
 <footer>Independent photography project. Railway ETAs use authorised Darwin and VSTP schedules, with Network Rail TRUST reports used as actual station-time anchors. Train markers estimate position between timed points along the mapped line; they are not GPS positions, and speed restrictions are not individually modelled. In-app navigation and alerts do not link to external websites. Location and weather estimates are not safety guarantees.</footer>
 </main><script>
 "use strict";
@@ -1704,20 +1720,38 @@ function updateViewpointCountdown(viaductAt,now){
 function viewpointScore(spot){
  return spot.scores.reduce((sum,score)=>sum+score,0)/spot.scores.length;
 }
+function ratingColour(score){
+ return score>=8?"#72ce9b":score>=5?"#edb74e":"#ed8c82";
+}
+function ratingBar(score){
+ return '<span class="rating-track" aria-hidden="true" style="--rating-fill:'+(score*10)+'%;--rating-color:'+ratingColour(score)+'"></span>';
+}
+function updateSelectedViewpointRating(){
+ const spot=siteData[$("viewpoint").value];
+ if(!spot)return;
+ const score=viewpointScore(spot);
+ $("selectedViewpointRating").textContent=score.toFixed(1);
+ const bar=$("selectedViewpointBar");
+ bar.style.setProperty("--rating-fill",score*10+"%");
+ bar.style.setProperty("--rating-color",ratingColour(score));
+}
 function renderSpots(){
  const ranked=Object.entries(siteData).sort(([,a],[,b])=>viewpointScore(b)-viewpointScore(a));
  const select=$("viewpoint");
  const selected=select.value;
  select.replaceChildren(...ranked.map(([id,spot])=>new Option(spot.name,id)));
  if(siteData[selected])select.value=selected;
+ updateSelectedViewpointRating();
  $("spots").innerHTML=ranked.map(([id,spot],index)=>{
   const [impact,sightline,parking]=spot.scores;
+  const total=viewpointScore(spot);
   return '<details class="viewpoint-card" name="photo-viewpoints"><summary>'+
    '<span class="viewpoint-rank">'+(index+1)+'</span><span>'+safe(spot.name)+'</span>'+
-   '<span class="viewpoint-total" aria-label="Total rating '+viewpointScore(spot).toFixed(1)+' out of 10">'+viewpointScore(spot).toFixed(1)+'/10</span></summary>'+
+   '<span class="viewpoint-total" aria-label="Total rating '+total.toFixed(1)+' out of 10">'+total.toFixed(1)+'/10'+ratingBar(total)+'</span></summary>'+
    '<div class="viewpoint-card-body"><p>'+safe(spot.note)+'</p>'+
-   '<dl class="viewpoint-ratings"><div><dt>Photo impact</dt><dd>'+impact+'/10</dd></div>'+
-   '<div><dt>Visibility</dt><dd>'+sightline+'/10</dd></div><div><dt>Parking</dt><dd>'+parking+'/10</dd></div></dl>'+
+   '<dl class="viewpoint-ratings"><div><dt>Photo impact</dt><dd>'+impact+'/10'+ratingBar(impact)+'</dd></div>'+
+   '<div><dt>Visibility</dt><dd>'+sightline+'/10'+ratingBar(sightline)+'</dd></div>'+
+   '<div><dt>Parking</dt><dd>'+parking+'/10'+ratingBar(parking)+'</dd></div></dl>'+
    '<p class="small">'+safe(spot.parking)+'</p><div class="viewpoint-card-actions">'+
    '<button class="button" type="button" data-spot="'+safe(id)+'">Use viewpoint</button>'+
    '<a href="'+safe(spot.source)+'" target="_blank" rel="noopener">Location notes</a>'+
@@ -1791,17 +1825,14 @@ function updatePhotographyLightStatus(){
  $("photoStatus").textContent=score??"—";
  $("photoStatus").title="Estimated daylight photo conditions from cloud, air visibility and rain chance";
  $("photoBars").innerHTML=Array.from({length:10},(_,index)=>index<score?'<span class="filled"></span>':"<span></span>").join("");
- const hour=time.slice(11,16);
- const middle=rise&&set?(Date.parse(rise+":00Z")+Date.parse(set+":00Z"))/2:null;
- $("photoTrend").textContent=rise&&set&&hour>=rise.slice(11,16)&&hour<set.slice(11,16)?
-  (Date.parse(time+":00Z")<middle?"Brightening":"Fading light"):"";
- $("photoCondition").textContent=light===0?"After dark":visibility<5000?"Low visibility":
-  rain>=50?"Rain likely":!Number.isFinite(cloud)?"Conditions unavailable":
-  cloud>=85?"Overcast":cloud>=55?"Cloudy, but bright":cloud>=25?"Partly cloudy":"Mostly clear";
  photoMetric("photoCloud",cloud,"%",cloud>=55?"fair":"good");
- photoMetric("photoVisibility",visibility/1000," km",visibility<12000?"fair":"good");
+ const viewingDistance=light>0?visibility:NaN;
+ if(viewingDistance<1000)photoMetric("photoVisibility",viewingDistance," m","fair");
+ else photoMetric("photoVisibility",viewingDistance/1000," km",viewingDistance<12000?"fair":"good");
  photoMetric("photoRain",rain,"%",rain>=20?"fair":"good");
  photoMetric("photoTemp",temp,"°C");
+ const wind=forecast?hourly.wind_speed_10m?.[i]:current.wind_speed_10m;
+ photoMetric("photoWind",wind," km/h");
  $("photoSunrise").textContent=rise?.slice(11,16)||"—";
  $("photoSunset").textContent=set?.slice(11,16)||"—";
  $("weatherTime").textContent="Updated "+current.time.slice(11,16)+" · Open-Meteo";
@@ -1829,16 +1860,14 @@ async function fetchWeather(){
  if(!weatherData){
   $("photoStatus").textContent="—";
   $("photoBars").replaceChildren();
-  $("photoTrend").textContent="";
-  $("photoCondition").textContent="Loading weather…";
-  for(const field of ["photoCloud","photoVisibility","photoRain","photoTemp"])photoMetric(field,null,"");
+  for(const field of ["photoCloud","photoVisibility","photoRain","photoTemp","photoWind"])photoMetric(field,null,"");
   $("photoSunrise").textContent=$("photoSunset").textContent="—";
-  $("weatherTime").textContent="";
+  $("weatherTime").textContent="Loading weather…";
  }
  const request=new AbortController();
  weatherRequest=request;
  try{
-  const url="https://api.open-meteo.com/v1/forecast?latitude="+location.lat+"&longitude="+location.lon+"&current=temperature_2m,cloud_cover,visibility&hourly=precipitation_probability,cloud_cover,visibility,temperature_2m&daily=sunrise,sunset&forecast_days=7&timezone=Europe%2FLondon";
+  const url="https://api.open-meteo.com/v1/forecast?latitude="+location.lat+"&longitude="+location.lon+"&current=temperature_2m,cloud_cover,visibility,wind_speed_10m&hourly=precipitation_probability,cloud_cover,visibility,temperature_2m,wind_speed_10m&wind_speed_unit=kmh&daily=sunrise,sunset&forecast_days=7&timezone=Europe%2FLondon";
   const response=await fetch(url,{cache:"no-store",signal:request.signal});
   if(!response.ok)throw Error("HTTP "+response.status);
   const data=await response.json();
@@ -1848,7 +1877,7 @@ async function fetchWeather(){
   viewpointWeather.set(id,{at:Date.now(),data:weatherData});
   updatePhotographyLightStatus();
  }catch{
-  if(!request.signal.aborted&&!weatherData)$("photoCondition").textContent="Weather unavailable";
+  if(!request.signal.aborted&&!weatherData)$("weatherTime").textContent="Weather unavailable";
  }finally{
   if(weatherRequest===request)weatherRequest=null;
  }
@@ -2100,11 +2129,18 @@ $("disableAlertsBtn").addEventListener("click",async()=>{
 });
 function changeViewpoint(){
  photoPeriod="now";
+ updateSelectedViewpointRating();
  updateViaductCountdown();
  fetchWeather();
  updateMapViewpoint(geoViews[0],$("mapOverview").querySelector("svg"));
 }
 $("viewpoint").addEventListener("change",changeViewpoint);
+const showViewpoints=$("showViewpoints");
+function updateViewpointMapVisibility(){
+ $("geoTile").toggleAttribute("data-hide-viewpoints",!showViewpoints.checked);
+}
+showViewpoints.addEventListener("change",updateViewpointMapVisibility);
+updateViewpointMapVisibility();
 $("alertLead").addEventListener("change",render);
 
 let refreshInFlight=false;
@@ -2445,13 +2481,15 @@ function makeMap(view){
   const [x,y]=geoPoint(label.lat,label.lon,view.bounds);
   const node=geoSVG("text",{x,y,fill:"#7197bd","font-size":15,"font-style":"italic","text-anchor":"middle"});node.textContent=label.name;svg.appendChild(node);
  }
+ const photoPins=geoSVG("g",{class:"map-viewpoint-places"});
  for(const site of Object.values(siteData)){
   if(site.lat>view.bounds.north||site.lat<view.bounds.south||site.lon<view.bounds.west||site.lon>view.bounds.east)continue;
   const [x,y]=geoPoint(site.lat,site.lon,view.bounds);
   const marker=geoSVG("circle",{cx:x,cy:y,r:11,fill:"#152d49",stroke:"#7ec4ff","stroke-width":3});
-  const title=geoSVG("title");title.textContent=site.name+" (approximate photo location)";marker.appendChild(title);svg.appendChild(marker);
-  svg.appendChild(geoSVG("circle",{cx:x,cy:y,r:4,fill:"#9cd6ff"}));
+  const title=geoSVG("title");title.textContent=site.name+" (approximate photo location)";marker.appendChild(title);photoPins.appendChild(marker);
+  photoPins.appendChild(geoSVG("circle",{cx:x,cy:y,r:4,fill:"#9cd6ff"}));
  }
+ svg.appendChild(photoPins);
  if(geoLocation){
   const {lat,lon}=geoLocation;
   if(lat<=view.bounds.north&&lat>=view.bounds.south&&lon<=view.bounds.east&&lon>=view.bounds.west){
