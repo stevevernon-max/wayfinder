@@ -25,11 +25,20 @@
   const shortPlace=value=>/^Current Location \[/.test(String(value))?'Current Location':String(value||'').split(',').slice(0,2).join(',').trim();
   const localStores=[
     {match:/^mowi(?: scotland)?$/i,name:'Mowi Scotland - Lochailort',address:'Mowi Scotland - Lochailort, Inverness-shire, PH38 4LZ'},
-    {match:/^morrisons(?:\s+fort(?:\s+william)?)?$/i,name:'Morrisons Fort William',address:'An Aird Road, Fort William, PH33 6AN'},
+    {match:/^morrisons(?:\s+(?:fort|for)(?:\s+william)?)?$/i,name:'Morrisons Fort William',address:'An Aird Road, Fort William, PH33 6AN'},
     {match:/^(?:m\s*&\s*s|marks and spencer)(?:\s+fort(?:\s+william)?)?$/i,name:'M&S Fort William',address:'Fort William Retail Park, North Road, Fort William'}
   ];
   const normalisePlaceQuery=value=>String(value||'').replace(/[’‘]/g,"'").replace(/\s+/g,' ').trim();
-  const preferredStore=query=>localStores.find(store=>store.match.test(normalisePlaceQuery(query)));
+  const preferredStore=query=>{
+    const text=normalisePlaceQuery(query);
+    return localStores.find(store=>store.match.test(text) || text.toLowerCase()===store.name.toLowerCase()
+      || text.toLowerCase().startsWith(store.name.toLowerCase()+','));
+  };
+  const storeSearchName=store=>store.address.toLowerCase().startsWith(store.name.toLowerCase())
+    ?store.address:store.name+', '+store.address;
+  const morrisons=localStores.find(store=>store.name==='Morrisons Fort William');
+  const isMorrisonsSearch=value=>preferredStore(value)===morrisons
+    || normalisePlaceQuery(value).toLowerCase()===morrisons.address.toLowerCase();
   const placeLabel=place=>{
     const name=place.poi?.name?.trim() || '';
     const address=place.address?.freeformAddress?.trim() || '';
@@ -39,6 +48,29 @@
   const mapsUrl=(place,coord)=>'https://maps.apple.com/?'+(coord
     ? 'll='+encodeURIComponent(coord)+'&q='+encodeURIComponent(shortPlace(place))
     : 'q='+encodeURIComponent(place));
+  if(state.morrisonsLookupVersion!==1){
+    const wrongLabels=new Set([...resolvedPlaceLabels].filter(([query,label])=>isMorrisonsSearch(query) && /wash[\s.-]*me/i.test(label)).map(([,label])=>label));
+    let repairedTrips=false;
+    for(const plan of [state,...trips]){
+      for(const field of ['start','destination']){
+        if(wrongLabels.has(plan[field])){plan[field]=morrisons.name;repairedTrips ||= plan!==state;}
+      }
+      for(const stop of plan.stops||[]){
+        if(wrongLabels.has(stop.name)){stop.name=morrisons.name;repairedTrips ||= plan!==state;}
+      }
+    }
+    for(const key of Object.keys(state.places||{})){
+      if(isMorrisonsSearch(key))delete state.places[key];
+    }
+    for(const query of [...resolvedPlaceLabels.keys()]){
+      if(isMorrisonsSearch(query))resolvedPlaceLabels.delete(query);
+    }
+    state.placeLabels=Object.fromEntries(resolvedPlaceLabels);
+    if([state.start,...state.stops.map(stop=>stop.name),state.destination].some(isMorrisonsSearch))delete state.cachedRoute;
+    state.morrisonsLookupVersion=1;
+    persist();
+    if(repairedTrips)try{localStorage.setItem(TRIPS,JSON.stringify(trips));}catch{status('Corrected trip names could not be saved on this device.');}
+  }
   let routeData=state.cachedRoute, timelineEvents=[], gpsFix, gpsWatch, arrivalMargin=null;
   function newJourneyTracking(signature=''){
     return {version:2,signature,leftAt:null,origin:null};
@@ -303,7 +335,8 @@
   function routeNames(){
     return [state.start,...state.stops.map(stop=>stop.name),state.destination].map(value=>{
       const name=loc(value);
-      return preferredStore(name)?.address||name;
+      const store=preferredStore(name);
+      return store?storeSearchName(store):name;
     });
   }
   function currentRoute(){
@@ -1007,7 +1040,7 @@
   } else if (typeof body?.query === 'string' && body.query.trim() && body.query.length <= 500) {
     url = new URL('https://api.tomtom.com/search/2/search/' + encodeURIComponent(body.query.trim()) + '.json');
     url.searchParams.set('countrySet', 'GB');
-    url.searchParams.set('limit', body.suggestions ? '5' : '1');
+    url.searchParams.set('limit', body.storeMatch ? '10' : body.suggestions ? '5' : '1');
     if (body.suggestions) url.searchParams.set('typeahead', 'true');
     url.searchParams.set('language', 'en-GB');
   } else if (Array.isArray(body?.coords) && body.coords.length >= 2 && body.coords.length <= 150
@@ -1031,9 +1064,14 @@
     const current=String(address).match(/^Current Location \[(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)\]$/);
     if(current && Math.abs(Number(current[1]))<=90 && Math.abs(Number(current[2]))<=180)return current[1]+','+current[2];
     if(selectedPlaces.has(address))return selectedPlaces.get(address);
-    const r=await tomTom({query:normalisePlaceQuery(address)});
+    const storeMatch=isMorrisonsSearch(address);
+    const r=await tomTom({query:storeMatch?storeSearchName(morrisons):normalisePlaceQuery(address),storeMatch});
     if(!r.ok)throw Error(r.status===401?'TomTom rejected the key. Check its website and product restrictions.':`Place search failed (${r.status})`);
-    const place=(await r.json()).results?.[0],p=place?.position;
+    const matches=(await r.json()).results||[];
+    const place=storeMatch?matches.find(result=>/^morrisons\b/i.test(result.poi?.name||'')
+      && /fort william/i.test(result.address?.freeformAddress||result.address?.municipality||'')):matches[0];
+    if(storeMatch && !place)throw Error('Could not confirm Morrisons Fort William. Search and select the supermarket from the suggestions.');
+    const p=place?.position;
     if(!Number.isFinite(p?.lat)||!Number.isFinite(p?.lon))throw Error(`Could not find “${address}”.`);
     const coord=`${p.lat},${p.lon}`,label=placeLabel(place);
     selectedPlaces.set(address,coord);
