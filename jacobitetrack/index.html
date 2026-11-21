@@ -698,7 +698,7 @@ main>.planned-works-status{margin:0 0 10px}
 .app-header #viaductCombinedTile .viaduct-integrated-row.approach-hidden{grid-template-columns:minmax(0,1fr)}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
-<div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span></button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
+<div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
 <section id="trackerTile" aria-label="Railway train tracker">
 <span id="feedBadge" hidden aria-live="polite">Checking</span>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 177" aria-label="Railway stations from Mallaig to Fort William positioned approximately by route distance" role="img">
@@ -755,7 +755,7 @@ main>.planned-works-status{margin:0 0 10px}
 <div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with roads, lochs, railway and estimated train position markers; drag or pinch to navigate"></div>
 <div class="geo-map-overlay"><span class="geo-load-status" id="geoStatus">Loading map</span>
 <div class="geo-controls"><button type="button" id="geoZoomOut" aria-label="Zoom out">−</button><button type="button" id="geoZoomIn" aria-label="Zoom in">+</button><button type="button" id="geoReset" aria-label="Reset map view">Reset</button><button type="button" id="geoFullscreen" aria-label="Expand map to full screen" aria-pressed="false">⛶</button></div></div>
-<div class="geo-map-bottom"><span><i class="geo-line"></i> Railway</span><span><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#60c1fb;border:2px solid #f1f9ff"></i> Reported</span><span><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#f0b84a;border:2px solid #fff4d4"></i> Estimated</span><span>Drag · Pinch to zoom</span></div>
+<div class="geo-map-bottom"><span>Drag · Pinch to zoom</span></div>
 <p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
 </section>
 <div class="cols single-viewpoint weather-first"><section class="tile"><div class="eyebrow">GLENFINNAN</div><div class="photo-header"><div class="heading">Photography conditions</div><span id="photoStatus" class="photo-rating-pill" role="status">Checking</span></div><div class="weather-row" id="weather"><div class="muted">Loading weather forecast…</div></div><div class="photo-light-row"><span>☀ Sunrise <b id="photoSunrise">—</b></span><span>☾ Sunset <b id="photoSunset">—</b></span><span id="photoAdvice">Checking conditions</span></div><div class="small" id="weatherTime"></div></section></div>
@@ -1754,56 +1754,18 @@ $("disableAlertsBtn").addEventListener("click",async()=>{
 $("viewpoint").addEventListener("change",render);
 $("alertLead").addEventListener("change",render);
 
-// Manual refreshes are limited per device to once every five minutes.
-// Foreground auto-sync and periodic feed checks continue independently.
-const MANUAL_SYNC_COOLDOWN_MS=5*60000;
-const MANUAL_SYNC_KEY="jacobitetrack-manual-sync-v1";
-let refreshInFlight=false,manualSyncTime=0;
-try{manualSyncTime=Number(localStorage.getItem(MANUAL_SYNC_KEY))||0}catch{}
-function manualSyncRemaining(){
- return Math.max(0,MANUAL_SYNC_COOLDOWN_MS-(Date.now()-manualSyncTime));
-}
-function updateRefreshButton(){
- const btn=$("forceSyncBtn");if(!btn)return;
- const remaining=manualSyncRemaining(),blocked=remaining>0;
- btn.disabled=blocked||refreshInFlight;
- if(refreshInFlight){
-  btn.setAttribute("aria-busy","true");
-  btn.setAttribute("aria-label","Synchronising train information");
-  btn.innerHTML='<span aria-hidden="true">↻</span>';
- }else{
-  btn.removeAttribute("aria-busy");
-  if(blocked){
-   const mins=Math.floor(remaining/60000),secs=Math.ceil(remaining%60000/1000);
-   btn.innerHTML='<span aria-hidden="true">↻</span>';
-   btn.setAttribute("aria-label","Refresh available in "+mins+" minutes "+secs+" seconds");
-   btn.title="Manual refresh available in "+mins+" min "+secs+" sec. Automatic synchronisation continues.";
-  }else{
-   btn.innerHTML='<span aria-hidden="true">↻</span>';
-   btn.setAttribute("aria-label","Refresh train information");
-   btn.title="Manually sync the latest available railway data";
-  }
- }
-}
-async function refreshNow({manual=false}={}){
+let refreshInFlight=false;
+async function refreshNow(){
  if(refreshInFlight)return;
- if(manual&&manualSyncRemaining()>0){updateRefreshButton();return}
- if(manual){
-  manualSyncTime=Date.now();
-  try{localStorage.setItem(MANUAL_SYNC_KEY,String(manualSyncTime))}catch{}
- }
- refreshInFlight=true;updateRefreshButton();
+ refreshInFlight=true;
  try{
   await Promise.allSettled([load(),loadTimetable(),fetchWeather()]);
   render();
   if(typeof renderGeoMaps==="function")renderGeoMaps();
  }finally{
-  refreshInFlight=false;updateRefreshButton();
+  refreshInFlight=false;
  }
 }
-$("forceSyncBtn").addEventListener("click",()=>refreshNow({manual:true}));
-updateRefreshButton();
-setInterval(updateRefreshButton,1000);
 
 // iOS Home Screen apps commonly resume a suspended page without running
 // its startup code. The 60-second interval may be paused while backgrounded.
@@ -1957,7 +1919,7 @@ function updateGeoTrainMarkers(){
   const point=mapped||({...rough,angle:0,approximate:true});
   if(point.lat>geoViews[0].bounds.north||point.lat<geoViews[0].bounds.south||point.lon<geoViews[0].bounds.west||point.lon>geoViews[0].bounds.east)continue;
   const [x,y]=geoPoint(point.lat,point.lon,geoViews[0].bounds);
-  const marker=geoSVG("g",{transform:"translate("+x.toFixed(1)+","+y.toFixed(1)+")",class:"train-direction-blip "+(train.positionQuality==="last_actual_report"?"train-map-reported":"train-estimated")});
+  const marker=geoSVG("g",{transform:"translate("+x.toFixed(1)+","+y.toFixed(1)+") scale(1.1)",class:"train-direction-blip "+(train.positionQuality==="last_actual_report"?"train-map-reported":"train-estimated")});
   const halo=geoSVG("circle",{r:17,class:"train-map-halo",style:"animation:none"});
   halo.appendChild(geoSVG("animate",{attributeName:"r",values:"16;37",dur:"1.4s",repeatCount:"indefinite"}));
   halo.appendChild(geoSVG("animate",{attributeName:"opacity",values:".75;0",dur:"1.4s",repeatCount:"indefinite"}));marker.appendChild(halo);
@@ -2060,7 +2022,7 @@ function appendMapTiles(svg,view){
  const group=geoSVG("g",{"clip-path":"url(#clip-"+view.id+")",class:"geo-basemap"});
  let loaded=0,failed=0;
  const total=(right-left+1)*(bottom-top+1);
- if(total>90||total<=0){$("geoStatus").textContent="Map temporarily unavailable";return}
+ if(total>90||total<=0){$("geoStatus").textContent="Map unavailable";return}
  for(let tx=left;tx<=right;tx++)for(let ty=top;ty<=bottom;ty++){
   const image=geoSVG("image",{
    x:450+(tx-centerX)*tilePixels,y:f.height/2+(ty-centerY)*tilePixels,
@@ -2074,8 +2036,8 @@ function appendMapTiles(svg,view){
   image.addEventListener("error",()=>{
    failed++;
    if(failed===total&&loaded===0){
-    $("geoStatus").textContent="Map offline";
-    $("geoNote").textContent="Map imagery could not load. Check your connection. Station positions remain visible.";
+    $("geoStatus").textContent="Offline";
+    $("geoNote").textContent="Map imagery unavailable. Positions remain visible.";
    }
   });
   group.appendChild(image);
@@ -2184,7 +2146,7 @@ function restoreGeo(){
   const raw=JSON.parse(localStorage.getItem("jacobitetrack-osm-geometry-v5")||"null");
   if(raw&&Date.now()-raw.saved<14*86400000&&Array.isArray(raw.rail)&&Array.isArray(raw.water)){
    geoMapFeatures.rail=raw.rail;geoMapFeatures.water=raw.water;geoMapFeatures.coast=raw.coast||[];
-   renderGeoMaps();$("geoStatus").textContent="Cached OSM geography";
+   renderGeoMaps();$("geoStatus").textContent="Cached map details";
   }
  }catch{}
 }
@@ -2192,7 +2154,7 @@ async function loadGeoRailway(){
  restoreGeo();
  const bounds="(56.795,-5.96,57.03,-5.03)";
  const waterQuery='[out:json][timeout:35];(way["natural"="water"]["name"~"Loch (Shiel|Eilt|Morar|Linnhe|nan Uamh|Ailort)",i]'+bounds+';relation["natural"="water"]["name"~"Loch (Shiel|Eilt|Morar|Linnhe|nan Uamh|Ailort)",i]'+bounds+';way["water"="lake"]["name"~"Loch (Shiel|Eilt|Morar|Linnhe|nan Uamh|Ailort)",i]'+bounds+';relation["water"="lake"]["name"~"Loch (Shiel|Eilt|Morar|Linnhe|nan Uamh|Ailort)",i]'+bounds+';way["natural"="coastline"]'+bounds+';);out geom;';
- $("geoStatus").textContent="Loading OSM geography";
+ $("geoStatus").textContent="Loading map details";
  let r={status:"rejected"},w;
  try{
   const response=await fetch("./data/railway-geometry.json",{cache:"force-cache"});
@@ -2200,7 +2162,7 @@ async function loadGeoRailway(){
   const data=await response.json();
   if(!Array.isArray(data.paths)||!data.paths.length)throw Error("No railway paths in bundled map data");
   geoMapFeatures.rail=data.paths.map(path=>path.map(([lat,lon])=>({lat,lon}))).filter(path=>path.length>1);
-  if(geoMapFeatures.rail.length){r={status:"fulfilled"};renderGeoMaps();$("geoStatus").textContent="Mapped railway loaded"}
+  if(geoMapFeatures.rail.length){r={status:"fulfilled"};renderGeoMaps();$("geoStatus").textContent="Railway loaded"}
  }catch(error){
   const railQuery='[out:json][timeout:35];way["railway"="rail"]'+bounds+';out geom;';
   try{const fresh=extractShapes(await overpassGeometry(railQuery),"rail");if(fresh.length){geoMapFeatures.rail=fresh;r={status:"fulfilled"}}}catch{}
@@ -2210,9 +2172,9 @@ async function loadGeoRailway(){
  if(w.status==="fulfilled"){const lakes=extractShapes(w.value,"water");if(lakes.length)geoMapFeatures.water=lakes;geoMapFeatures.coast=extractShapes(w.value,"coast")}
  renderGeoMaps();cacheGeo();
  const hasRail=geoMapFeatures.rail.length>0,hasWater=geoMapFeatures.water.length>0;
- if(hasRail&&hasWater){$("geoStatus").textContent="OSM detail loaded";$("geoNote").textContent="Mapped railway and loch boundaries from OpenStreetMap, including multipolygon shoreline segments. The diagram uses geographic coordinates, with photo pins as approximate areas. No API key required. © OpenStreetMap contributors."}
- else if(hasRail||hasWater){$("geoStatus").textContent="Partial geography";$("geoNote").textContent="Some OpenStreetMap geometry is temporarily unavailable. Showing "+(hasRail?"railway":"loch outlines")+" from available or cached geographic data. Try refreshing later."}
- else {$("geoStatus").textContent="Geometry unavailable";$("geoNote").textContent="Detailed railway geometry is temporarily unavailable. No invented railway path is drawn; roads and lochs remain available from OpenStreetMap tiles."}
+ if(hasRail&&hasWater){$("geoStatus").textContent="Map details loaded";$("geoNote").textContent="Railway and loch data © OpenStreetMap contributors."}
+ else if(hasRail||hasWater){$("geoStatus").textContent="Partial map";$("geoNote").textContent="Some map details unavailable."}
+ else {$("geoStatus").textContent="Map detail unavailable";$("geoNote").textContent="Railway detail unavailable."}
 }
 /* Geographic map interaction: preserve real OSM geometry, change viewport only. */
 function geoZoom(factor,nx=.5,ny=.5){
