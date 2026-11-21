@@ -548,3 +548,15 @@ body.journey-active #leave-time { font-size: 38px; }
 
 .place-box:has(.place-results:not([hidden])), .stop-place:has(.place-results:not([hidden])) { flex-wrap: wrap; }
 .place-results button { touch-action: manipulation; }
+
+/* A connector includes the stay first, followed by the next drive. */
+#timeline .timeline-segments { top: 23px; }
+#timeline .timeline-segments i[data-has-stay="true"]::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: var(--stay-share);
+  height: 1px;
+  background: #d3e3ec90;
+}

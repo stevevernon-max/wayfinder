@@ -291,7 +291,7 @@
       const driveMinutes=next?Math.max(0,(next.forecastTime-event.time)/60000):0;
       const stayMinutes=Math.max(0,(event.time-event.forecastTime)/60000);
       const driveHeight=next?Math.max(8,driveMinutes*1.3):0;
-      const stayHeight=stayMinutes*.6;
+      const stayHeight=stayMinutes*1.3;
       const coord=route?.coords[event.location] || selectedPlaces.get(names[event.location]);
       const hourly=weather.get(coord);
       const hour=Math.ceil(event.forecastTime/3600000)*3600;
@@ -694,13 +694,24 @@
   }
 
   function updateTimelineSegments(segments,leg,best,arrived,waitingToDepart,stayIndex=-1){
-    const current=best?.i===leg;
-    const completed=current ? Math.floor(best.progress*segments.length) : 0;
+    const event=timelineEvents[leg],next=timelineEvents[leg+1];
+    const stayMs=event?Math.max(0,event.time-event.forecastTime):0;
+    const driveMs=next?Math.max(0,next.forecastTime-event.time):0;
+    const durationMs=stayMs+driveMs;
+    const staying=stayIndex===leg;
+    const driving=stayIndex<0 && best?.i===leg;
+    const passed=stayIndex>=0?leg<stayIndex:leg<best?.i;
+    const recorded=departureTracking.manualStop;
+    const arrival=recorded?.index===leg-1?recorded.arrivedAt:event?.forecastTime;
+    const elapsedStay=Math.min(stayMs,Math.max(0,Date.now()-(arrival||Date.now())));
+    const elapsed=staying?elapsedStay:driving?stayMs+Math.max(0,Math.min(1,best.progress))*driveMs:0;
+    const progress=arrived || passed?1:durationMs?Math.min(1,elapsed/durationMs):0;
     segments.forEach((segment,index)=>{
-      segment.style.setProperty('--line-progress',arrived || (stayIndex>=0 ? leg<stayIndex : leg<best?.i)?'100%':current?Math.round(best.progress*100)+'%':'0%');
-      segment.classList.toggle('complete',arrived || (stayIndex>=0 ? leg<stayIndex : leg<best?.i || (current && index<completed)));
-      segment.classList.toggle('current',(waitingToDepart && leg===0 && index===0)
-        || (stayIndex<0 && current && index===Math.min(completed,segments.length-1)));
+      segment.style.setProperty('--line-progress',Math.round(progress*100)+'%');
+      segment.style.setProperty('--stay-share',durationMs?Math.round(stayMs/durationMs*100)+'%':'0%');
+      segment.dataset.hasStay=String(stayMs>0);
+      segment.classList.toggle('complete',progress>=1);
+      segment.classList.toggle('current',Boolean(staying || driving || (waitingToDepart && leg===0 && index===0)));
     });
   }
 
