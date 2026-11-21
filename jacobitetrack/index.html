@@ -693,7 +693,13 @@ main>.planned-works-status{margin:0 0 10px}
 .photo-score{display:grid;align-content:start;gap:5px;min-width:0;padding:9px 10px;background:#1d293a;border-radius:9px}
 .photo-score .rating-track{width:100%}
 .photo-score .photo-score-label{font-size:clamp(9px,2.6vw,11px);letter-spacing:.55px}
-.photo-toggle-row{display:flex;justify-content:flex-end;padding:12px 16px 10px}
+.photo-toggle-row{display:flex;align-items:center;gap:7px;padding:12px 16px 10px}
+.photo-toggle-row .photo-periods{margin-left:auto;flex:0 0 auto}
+.viewpoint-distance{display:grid;gap:2px;min-width:0;font-size:10px;color:#aab8cb;line-height:1.05}
+.viewpoint-distance strong{color:#d7e9f9;font-size:13px;font-variant-numeric:tabular-nums}
+.viewpoint-directions{display:grid;place-items:center;flex:0 0 28px;height:28px;border:1px solid #3b5976;border-radius:8px;background:#182a3b;color:#a5d2ff}
+#photoVisibility{font-size:clamp(11px,3.4vw,16px);white-space:normal;overflow-wrap:anywhere}
+@media(max-width:380px){.photo-toggle-row{padding-inline:12px}.photo-toggle-row .photo-periods button{padding-inline:6px}}
 .viewpoint-eta{display:grid;gap:3px;text-align:right;justify-items:end}
 .viewpoint-eta strong{color:#8bcaff;font-size:clamp(18px,5vw,25px)}
 .viewpoint-alerts{padding:10px 16px;border-top:1px solid #30394a}
@@ -758,21 +764,18 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 .viewpoint-guide>summary{padding:10px 16px;cursor:pointer;font-weight:700;font-size:13px}
 .viewpoint-guide-body{padding:0 16px 10px}
 .viewpoint-guide-body>p{margin:7px 0 10px}
-.viewpoint-map-switch{display:flex;align-items:center;gap:6px;font-size:12px;color:#c4d5e7}
-.viewpoint-map-switch input{accent-color:#72ce9b}
 .rating-track{display:block;width:min(100%,165px);height:6px;border-radius:4px;background:#293346;overflow:hidden}
 .rating-track::before{content:"";display:block;width:var(--rating-fill,0%);height:100%;background:var(--rating-color,#edb74e);border-radius:inherit}
 .viewpoint-total .rating-track,.viewpoint-ratings .rating-track{width:100%;margin-top:4px}
-#geoTile[data-hide-viewpoints] :is(.map-viewpoint,.map-viewpoint-places){display:none}
 #viewpointGuide a{color:#a5d2ff}
-#spots{display:grid;gap:6px}
+#spots{display:grid;gap:3px}
 .viewpoint-card{background:#111924;border:1px solid #324154;border-radius:12px;min-width:0}
-.viewpoint-card summary{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:8px;padding:9px 10px;cursor:pointer;font-size:clamp(12px,3vw,15px);font-weight:730;list-style:none}
+.viewpoint-card summary{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;font-size:clamp(12px,3vw,14px);font-weight:730;list-style:none}
 .viewpoint-card summary::-webkit-details-marker{display:none}
 .viewpoint-card summary::after{content:"▸";color:#94aac1}
 .viewpoint-card[open] summary::after{content:"▾"}
 .viewpoint-rank{width:1.6em;text-align:center;color:#9aaabd;font-variant-numeric:tabular-nums}
-.viewpoint-total{padding:4px 6px;background:#203952;color:#c6e5ff;border-radius:7px;white-space:nowrap;font-size:12px}
+.viewpoint-total{padding:3px 5px;background:#203952;color:#c6e5ff;border-radius:7px;white-space:nowrap;font-size:12px}
 .viewpoint-card-body{padding:0 12px 12px;color:#d3dfed;font-size:13px;line-height:1.45}
 .viewpoint-card-body p{margin:4px 0 10px}
 .viewpoint-ratings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}
@@ -855,6 +858,12 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
   </div>
  </div>
  <div class="photo-toggle-row">
+  <div class="viewpoint-distance" title="Straight-line distance to the approximate viewpoint">
+   <span>Distance from me</span><strong id="viewpointDistance">— km</strong>
+  </div>
+  <a id="viewpointDirections" class="viewpoint-directions" target="_blank" rel="noopener" aria-label="Directions">
+   <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M17.7 2.3 1.9 8.5a.7.7 0 0 0 .1 1.3l6 1.8 1.8 6a.7.7 0 0 0 1.3.1l7.5-14.5c.3-.6-.3-1.2-.9-.9z"/></svg>
+  </a>
   <div class="photo-periods" role="group" aria-label="Weather forecast time">
    <button type="button" id="photoNow" aria-pressed="true">Now</button>
    <button type="button" id="photoCrossing" aria-pressed="false" disabled>At Next Passing</button>
@@ -876,8 +885,7 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
  <details id="viewpointGuide" class="viewpoint-guide">
   <summary>Photo Viewpoints</summary>
   <div class="viewpoint-guide-body">
-   <label class="viewpoint-map-switch"><input type="checkbox" id="showViewpoints" checked> Show viewpoints on map</label>
-   <p class="small">Total is the rounded average of photo impact, visibility from the spot and parking. Ratings are editorial. Parking scores describe typical access.</p>
+   <p class="small">20 spots in route order. Editorial totals combine photo impact, visibility and typical parking access. The classic viaduct view has a featured 10/10.</p>
    <div id="spots"></div>
    <p class="small">Use public paths and signed parking. Map pins mark approximate photo areas. Passing times can include ScotRail services. <a href="https://westcoastrailways.co.uk/jacobite/steam-train-trip" target="_blank" rel="noopener">Check Jacobite dates with West Coast Railways</a>.</p>
   </div>
@@ -903,7 +911,7 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
  <button class="ticker-control" id="tickerToggle" type="button" hidden>Pause ticker</button>
 </div>
 </details>
-<footer>Independent photography project. Railway ETAs use authorised Darwin and VSTP schedules, with Network Rail TRUST reports used as actual station-time anchors. Train markers estimate position between timed points along the mapped line; they are not GPS positions, and speed restrictions are not individually modelled. In-app navigation and alerts do not link to external websites. Location and weather estimates are not safety guarantees.</footer>
+<footer>Independent photography project. Railway ETAs use authorised Darwin and VSTP schedules, with Network Rail TRUST reports used as actual station-time anchors. Train markers estimate position between timed points along the mapped line; they are not GPS positions, and speed restrictions are not individually modelled. Directions open your maps app. Location and weather estimates are not safety guarantees.</footer>
 </main><script>
 "use strict";
 // Configure an authorised backend which returns train reports, ETAs and delays.
@@ -914,108 +922,230 @@ let pushConfig=null, pushRegistration=null, pushSubscription=null;
 const $=id=>document.getElementById(id);
 
 const siteData={
- glenfinnan:{
-  name:"Glenfinnan Viaduct",
-  lat:56.8745,
-  lon:-5.4344,
-  station:"Glenfinnan",
-  scores:[10,10,5],
-  note:"The classic elevated shot of the train sweeping across the arches, with mountains behind.",
-  parking:"Use the visitor or community car park and follow the signed uphill viewpoint path. Both can fill at peak times.",
-  source:"https://www.nts.org.uk/accessibility/glenfinnan-monument-accessibility-guide"
- },
- banavie:{
-  name:"Banavie · Neptune’s Staircase",
-  lat:56.8436,
-  lon:-5.0957,
-  station:"Banavie",
-  scores:[8,8,9],
-  note:"Frame the train crossing the Caledonian Canal near the lower locks, with Ben Nevis on a clear day.",
-  parking:"Use the Banavie Locks car park and watch from the canal towpath, clear of the road and railway swing bridges.",
-  source:"https://www.scottishcanals.co.uk/visit/canals/visit-the-caledonian-canal/attractions/neptunes-staircase/location"
- },
- lochNanUamh:{
-  name:"Loch nan Uamh Viaduct",
-  lat:56.89157,
-  lon:-5.73043,
-  between:["Lochailort","Beasdale",0.68],
-  scores:[10,8,3],
-  note:"Eight arches above a tidal loch make a dramatic coastal alternative to Glenfinnan.",
-  parking:"Parking and safe pedestrian access near the viaduct are limited. Use signed parking and a verified public path if available. The pin marks the photo area.",
-  source:"https://portal.historicenvironment.scot/apex/f?p=1505:300:::NO:VIEWTYPE,VIEWREF:designation,LB295",
-  photo:"https://commons.wikimedia.org/wiki/File:Loch_nan_Uamh_Viaduct_-_geograph.org.uk_-_369982.jpg"
- },
- corpach:{
-  name:"Corpach · Canal basin",
-  lat:56.8427,
-  lon:-5.1216,
-  station:"Corpach",
-  scores:[8,8,8],
-  note:"Look for a lochside composition with the train, the canal basin and the hills across Loch Linnhe.",
-  parking:"Use the canal basin parking area and look for a clear angle from public paths near the station.",
-  source:"https://corpachwreck.com/visit/getting-here",
-  photo:"https://www.youtube.com/watch?v=IMoFSbYRKC8"
- },
- mallaig:{
-  name:"Mallaig · Harbour terminus",
-  lat:57.0052,
-  lon:-5.829,
-  station:"Mallaig",
-  scores:[7,9,8],
-  note:"A good place for arrival and departure portraits, with a fishing harbour nearby for wider scenes.",
-  parking:"Use a signed village car park, such as West Bay. Photograph from areas open to visitors and follow station staff instructions.",
-  source:"https://www.highland.gov.uk/directory/3/parking-locations/category/8"
- },
- glenStation:{
-  name:"Glenfinnan · Heritage station",
-  lat:56.8724,
-  lon:-5.449,
-  station:"Glenfinnan",
-  scores:[8,9,4],
-  note:"The station building and heritage carriages give a close steam-era composition when the train calls.",
-  parking:"Station parking is limited. Check the signs and museum arrangements. Use the visitor car parks if you are also visiting the viaduct.",
-  source:"https://glenfinnan.andylock.co.uk/node/1"
- },
- eilt:{
-  name:"Loch Eilt · North shore",
-  lat:56.8846,
-  lon:-5.621,
-  between:["Lochailort","Glenfinnan",0.2],
-  scores:[9,7,2],
-  note:"Look across the water towards the south-shore railway. A long lens and calm water can make a strong reflection shot.",
-  parking:"No dedicated visitor parking verified at the photo area. Only stop where parking and safe off-road viewing are clearly available. Skip this spot if neither is available.",
-  source:"https://www.geograph.org.uk/photo/6758867"
- },
- morarFalls:{
-  name:"Morar · River viaduct",
-  lat:56.9629,
-  lon:-5.8161,
-  between:["Arisaig","Morar",0.9],
-  scores:[9,7,3],
-  note:"A smaller stone viaduct above the short River Morar, with rushing water for foreground detail.",
-  parking:"No dedicated parking verified at the bridge. Use signed parking and public paths in the village if available. Keep road bridges and carriageways clear.",
-  source:"https://hbsmrweb-highland-esdm.co.uk/Monument/MHG17291",
-  photo:"https://www.railscot.co.uk/img/65/82/"
- },
- arisaig:{
-  name:"Arisaig · Station approach",
-  lat:56.9136,
-  lon:-5.8406,
-  station:"Arisaig",
-  scores:[7,8,6],
-  note:"The curve into Arisaig offers a railway portrait with a rural backdrop. The Jacobite may pass through without stopping.",
-  parking:"ScotRail lists a station car park. Use the public platform or station approach as permitted and stay behind the platform edge.",
-  source:"https://www.scotrail.co.uk/plan-your-journey/stations-and-facilities/arg"
- },
  fortWilliam:{
-  name:"Fort William · Steam departure",
+  name:"Fort William Station",
+  near:"Fort William",
   lat:56.8201,
   lon:-5.1061,
   station:"Fort William",
-  scores:[7,9,9],
-  note:"The starting point for a close locomotive portrait while the crew prepares to depart.",
-  parking:"Use the signed Transport Centre car park. Follow staff instructions on platform access and photography.",
-  source:"https://www.highland.gov.uk/directory-record/19/fort-william---transport-centre"
+  scores:[8,9,9],
+  destination:"Fort William Transport Centre Car Park, PH33 6BT",
+  note:"Close-up platform shots of the locomotive and crew before departure, when station access permits.",
+  parking:"Use the paid Transport Centre car park next to the station. Follow staff instructions."
+ },
+ banavie:{
+  name:"Neptune’s Staircase",
+  near:"Banavie",
+  lat:56.8436,
+  lon:-5.0957,
+  station:"Banavie",
+  scores:[9,9,10],
+  destination:"Banavie Locks Car Park, Neptune’s Staircase",
+  note:"Watch the train cross the canal swing bridge from the lower towpath, with Ben Nevis on a clear day.",
+  parking:"Use the dedicated Banavie Locks visitor car park off the B8004."
+ },
+ corpach:{
+  name:"Corpach Basin & Loch Linnhe",
+  near:"Corpach",
+  lat:56.8427,
+  lon:-5.1216,
+  station:"Corpach",
+  scores:[9,8,9],
+  destination:"Corpach Canal Basin Car Park, Corpach",
+  note:"Look for canal-basin reflections and the Ben Nevis massif. Scout a clear angle towards the railway by Corpach station.",
+  parking:"Use the canal basin car park south of the A830 and follow the public paths."
+ },
+ annat:{
+  name:"Kilmallie / Annat Shoreline",
+  near:"Corpach",
+  lat:56.8456,
+  lon:-5.1394,
+  between:["Corpach","Loch Eil Outward Bound",0.25],
+  scores:[8,8,6],
+  destination:"Corpach Canal Basin Car Park, Corpach",
+  note:"A wide coastal frame near the entrance to Loch Eil, with the railway along the north shore.",
+  parking:"Directions go to Corpach Basin. For Annat itself, use a signed layby only where there is safe off-road viewing."
+ },
+ fassfern:{
+  name:"Fassfern Shoreline",
+  near:"Fassfern",
+  lat:56.8546,
+  lon:-5.2476,
+  between:["Loch Eil Outward Bound","Locheilside",0.58],
+  scores:[9,8,7],
+  destination:"Fassfern Forest Walks Car Park, Fassfern",
+  note:"On still days, look for the steam plume reflected in Loch Eil from a clear shore-side angle.",
+  parking:"Start at the signed Fassfern forest walks car park. Leave forestry gates and access tracks clear."
+ },
+ kinlocheil:{
+  name:"Kinlocheil · Head of Loch Eil",
+  near:"Kinlocheil",
+  lat:56.8549,
+  lon:-5.3326,
+  between:["Locheilside","Glenfinnan",0.28],
+  scores:[9,8,8],
+  destination:"56.8549,-5.3326",
+  directionsLabel:"Loch Eil head layby",
+  note:"The loch head gives a wide frame as the railway turns inland towards Glenfinnan.",
+  parking:"Use the documented layby overlooking the Loch Eil mudflats near the A861 turnoff. Scout a clear angle from off the road."
+ },
+ callop:{
+  name:"Callop River Bridge",
+  near:"Glenfinnan",
+  lat:56.86,
+  lon:-5.4075,
+  between:["Locheilside","Glenfinnan",0.73],
+  scores:[8,7,7],
+  destination:"Callop Car Park, Glenfinnan",
+  note:"The Callop area offers a mountain backdrop. Scout the train’s approach from a clear section of the public path.",
+  parking:"Use Callop car park and the signed paths. The A830 railway underbridge is narrow."
+ },
+ glenfinnan:{
+  name:"Glenfinnan Viaduct · South Ridge",
+  near:"Glenfinnan",
+  lat:56.87582,
+  lon:-5.43523,
+  station:"Glenfinnan",
+  viaduct:true,
+  total:10,
+  scores:[10,10,7],
+  destination:"Glenfinnan Visitor Centre, PH37 4LT",
+  note:"The classic elevated frame of the train sweeping around the 21-arch curve. Include Loch Shiel if your angle allows.",
+  parking:"Use the visitor centre or adjacent community car park. Allow about 15–20 minutes for the signed uphill path, longer at busy times."
+ },
+ glenLower:{
+  name:"Glenfinnan Viaduct Trail · Lower",
+  near:"Glenfinnan",
+  lat:56.875,
+  lon:-5.4323,
+  station:"Glenfinnan",
+  viaduct:true,
+  scores:[9,9,7],
+  destination:"Glenfinnan Visitor Centre, PH37 4LT",
+  note:"A low-angle shot from the valley path brings out the arches and the steam above them.",
+  parking:"Use the visitor or community car park and follow the lower path towards the arches."
+ },
+ glenMonument:{
+  name:"Glenfinnan Monument Viewpoint",
+  near:"Glenfinnan",
+  lat:56.87145,
+  lon:-5.43445,
+  station:"Glenfinnan",
+  viaduct:true,
+  scores:[8,7,7],
+  destination:"Glenfinnan Visitor Centre, PH37 4LT",
+  note:"Use the raised viewpoint by the visitor centre for a wide scene with the viaduct in the distance. A longer lens helps.",
+  parking:"Use the visitor or community car park. Follow the signed short uphill route to the viewpoint."
+ },
+ glenStation:{
+  name:"Glenfinnan Station Platform",
+  near:"Glenfinnan",
+  lat:56.8724,
+  lon:-5.449,
+  station:"Glenfinnan",
+  scores:[9,9,6],
+  destination:"Glenfinnan Station Museum, PH37 4LT",
+  note:"Close locomotive and carriage details when the Jacobite calls at the heritage station.",
+  parking:"Station parking is limited. Check signs and museum arrangements, or use the visitor car parks and walk via the signed link."
+ },
+ eiltEast:{
+  name:"Loch Eilt · East Layby",
+  near:"Glenfinnan",
+  lat:56.8797,
+  lon:-5.5653,
+  between:["Lochailort","Glenfinnan",0.52],
+  scores:[9,8,6],
+  destination:"Glenfinnan Visitor Centre, PH37 4LT",
+  note:"Frame the south-shore railway across the water from the northern A830 side. The islands work well as foreground.",
+  parking:"Directions go to the Glenfinnan visitor centre. At the photo area, only stop in an open layby with safe off-road viewing."
+ },
+ eilt:{
+  name:"Loch Eilt West · Eilean na Moine",
+  near:"Lochailort",
+  lat:56.8846,
+  lon:-5.6255,
+  between:["Lochailort","Glenfinnan",0.18],
+  scores:[10,8,5],
+  destination:"Lochailort Railway Station, PH38 4LZ",
+  note:"The pine-covered island is a striking foreground for a long-lens shot of the train on the far shore.",
+  parking:"Directions go to Lochailort station. No dedicated parking was verified at the photo area. Only stop in an open, legal layby with safe off-road viewing."
+ },
+ lochailort:{
+  name:"Lochailort · Viaduct & Station",
+  near:"Lochailort",
+  lat:56.8814,
+  lon:-5.6634,
+  station:"Lochailort",
+  scores:[8,8,7],
+  destination:"Lochailort Railway Station, PH38 4LZ",
+  note:"Try the station approach for a curved railway frame as the line heads towards the coast.",
+  parking:"ScotRail lists a small station car park. Use marked spaces and keep the approach clear."
+ },
+ beasdale:{
+  name:"Beasdale Station Approach",
+  near:"Beasdale, near Arisaig",
+  lat:56.9001,
+  lon:-5.764,
+  station:"Beasdale",
+  scores:[8,8,5],
+  destination:"Beasdale Railway Station, Highland",
+  note:"A quiet woodland railway frame as the train climbs the coastal ridge.",
+  parking:"Road access is limited. Use only permitted parking and keep farm tracks and station access clear."
+ },
+ borrodale:{
+  name:"Borrodale Viaduct",
+  near:"Arisaig",
+  lat:56.90339,
+  lon:-5.78315,
+  between:["Beasdale","Arisaig",0.22],
+  scores:[9,7,5],
+  destination:"Arisaig Railway Station, PH39 4NJ",
+  note:"A concrete viaduct in a wooded glen west of Beasdale. A clear gap in the trees makes the shot.",
+  parking:"Directions go to Arisaig station. Verify public access locally before attempting this view. The Prince’s Cairn is a different location."
+ },
+ lochNanUamh:{
+  name:"Loch nan Uamh Viaduct",
+  near:"Arisaig",
+  lat:56.89157,
+  lon:-5.73043,
+  between:["Lochailort","Beasdale",0.62],
+  scores:[10,9,6],
+  destination:"Prince’s Cairn, Loch nan Uamh, A830",
+  note:"Eight concrete arches above the tidal loch offer a strong coastal alternative to Glenfinnan.",
+  parking:"The Prince’s Cairn has a signed layby. Confirm a safe public route and sightline from there before walking towards the viaduct."
+ },
+ arisaig:{
+  name:"Arisaig Station",
+  near:"Arisaig",
+  lat:56.9136,
+  lon:-5.8406,
+  station:"Arisaig",
+  scores:[8,9,7],
+  destination:"Arisaig Railway Station, PH39 4NJ",
+  note:"Close-up passes in coastal light at mainland Britain’s most westerly station. The Jacobite may run through without stopping.",
+  parking:"Use the small station car park. Stay on areas open to visitors."
+ },
+ morarFalls:{
+  name:"Morar Estuary & River Morar",
+  near:"Morar",
+  lat:56.9629,
+  lon:-5.8161,
+  between:["Arisaig","Morar",0.89],
+  scores:[9,8,6],
+  destination:"Morar, Highland",
+  note:"The river viaduct offers rushing water as foreground. The nearby tidal sands provide a wider coastal backdrop where the railway is visible.",
+  parking:"Use signed village or beach parking where available. Check for a public walking route and keep road bridges clear."
+ },
+ mallaig:{
+  name:"Mallaig Harbour Approach",
+  near:"Mallaig",
+  lat:57.0049,
+  lon:-5.8289,
+  station:"Mallaig",
+  scores:[9,9,8],
+  destination:"West Bay Car Park, Mallaig",
+  note:"Photograph the arrival or departure near the fishing harbour, with Skye beyond on clear days.",
+  parking:"Use a signed council car park such as West Bay. Scout from public harbour or station areas."
  }
 };
 let services=[],source=null,feedUpdated=null,feedError=null,weatherData=null,notificationAllowed=false;
@@ -1700,7 +1830,7 @@ function render(){
 }
 function updateViewpointCountdown(viaductAt,now){
  const selection=$("viewpoint"),id=selection.value;
- const useViaduct=id==="glenfinnan"&&Number.isFinite(viaductAt);
+ const useViaduct=siteData[id]?.viaduct===true&&Number.isFinite(viaductAt);
  const feedAge=now-Date.parse(feedUpdated||"");
  const next=!useViaduct&&feedAge>=-60000&&feedAge<900000?getApproaching(id,now)[0]:null;
  const scheduled=useViaduct||next?null:publishedViewpointTime(id,now);
@@ -1716,7 +1846,31 @@ function updateViewpointCountdown(viaductAt,now){
  }
 }
 function viewpointScore(spot){
- return spot.scores.reduce((sum,score)=>sum+score,0)/spot.scores.length;
+ return spot.total??spot.scores.reduce((sum,score)=>sum+score,0)/spot.scores.length;
+}
+function viewpointDistanceText(user,spot){
+ if(!Number.isFinite(user?.lat)||!Number.isFinite(user?.lon)||!spot)return "— km";
+ return distanceKm(user.lat,user.lon,spot.lat,spot.lon).toFixed(1)+" km";
+}
+function updateViewpointDistance(){
+ const label=$("viewpointDistance");
+ const value=viewpointDistanceText(userCoords,selectedViewpointLocation());
+ if(label.textContent!==value)label.textContent=value;
+}
+function viewpointDirectionsUrl(destination,apple){
+ const encoded=encodeURIComponent(destination);
+ return apple?"https://maps.apple.com/?daddr="+encoded+"&dirflg=d":
+  "https://www.google.com/maps/dir/?api=1&destination="+encoded+"&travelmode=driving";
+}
+function updateViewpointDirections(){
+ const spot=selectedViewpointLocation();
+ if(!spot)return;
+ const apple=/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+ const link=$("viewpointDirections");
+ link.href=viewpointDirectionsUrl(spot.destination,apple);
+ const label="Directions to "+(spot.directionsLabel||spot.destination);
+ link.title=label;
+ link.setAttribute("aria-label",label);
 }
 function ratingColour(score){
  return score>=8?"#72ce9b":score>=5?"#edb74e":"#ed8c82";
@@ -1736,26 +1890,26 @@ function updateSelectedViewpointRating(){
  setRatingBar($("selectedViewpointBar"),score);
 }
 function renderSpots(){
- const ranked=Object.entries(siteData).sort(([,a],[,b])=>viewpointScore(b)-viewpointScore(a));
+ const viewpoints=Object.entries(siteData);
  const select=$("viewpoint");
  const selected=select.value;
- select.replaceChildren(...ranked.map(([id,spot])=>new Option(spot.name,id)));
- if(siteData[selected])select.value=selected;
+ select.replaceChildren(...viewpoints.map(([id,spot])=>new Option(spot.name,id)));
+ select.value=siteData[selected]?selected:"glenfinnan";
  updateSelectedViewpointRating();
- $("spots").innerHTML=ranked.map(([id,spot],index)=>{
+ updateViewpointDistance();
+ updateViewpointDirections();
+ $("spots").innerHTML=viewpoints.map(([id,spot],index)=>{
   const [impact,sightline,parking]=spot.scores;
   const total=Math.round(viewpointScore(spot));
   return '<details class="viewpoint-card" name="photo-viewpoints"><summary>'+
    '<span class="viewpoint-rank">'+(index+1)+'</span><span>'+safe(spot.name)+'</span>'+
    '<span class="viewpoint-total" aria-label="Total rating '+total+' out of 10">'+total+'/10'+ratingBar(total)+'</span></summary>'+
-   '<div class="viewpoint-card-body"><p>'+safe(spot.note)+'</p>'+
+   '<div class="viewpoint-card-body"><p class="small">'+safe(spot.near)+'</p><p>'+safe(spot.note)+'</p>'+
    '<dl class="viewpoint-ratings"><div><dt>Photo impact</dt><dd>'+impact+'/10'+ratingBar(impact)+'</dd></div>'+
    '<div><dt>Visibility</dt><dd>'+sightline+'/10'+ratingBar(sightline)+'</dd></div>'+
    '<div><dt>Parking</dt><dd>'+parking+'/10'+ratingBar(parking)+'</dd></div></dl>'+
    '<p class="small">'+safe(spot.parking)+'</p><div class="viewpoint-card-actions">'+
    '<button class="button" type="button" data-spot="'+safe(id)+'">Use viewpoint</button>'+
-   '<a href="'+safe(spot.source)+'" target="_blank" rel="noopener">Location notes</a>'+
-   (spot.photo?'<a href="'+safe(spot.photo)+'" target="_blank" rel="noopener">Example view</a>':"")+
    '</div></div></details>';
  }).join("");
  $("spots").addEventListener("click",event=>{
@@ -2112,7 +2266,7 @@ async function setupPush(){
 }
 async function savePush(){
  const button=$("notifyBtn"),viewpoint=$("viewpoint").value;
- if(viewpoint==="lochNanUamh"||viewpoint==="morarFalls"){pushStatus("Background alerts are unavailable for this viewpoint.");return}
+ if(siteData[viewpoint]?.between&&viewpoint!=="eilt"||siteData[viewpoint]?.viaduct&&viewpoint!=="glenfinnan"){pushStatus("Background alerts are unavailable for this viewpoint.");return}
  if(!pushConfig||!pushRegistration){pushStatus("Push backend is not ready.");return}
  button.disabled=true;
  try{
@@ -2141,17 +2295,13 @@ $("disableAlertsBtn").addEventListener("click",async()=>{
 function changeViewpoint(){
  photoPeriod="now";
  updateSelectedViewpointRating();
+ updateViewpointDistance();
+ updateViewpointDirections();
  updateViaductCountdown();
  fetchWeather();
  updateMapViewpoint(geoViews[0],$("mapOverview").querySelector("svg"));
 }
 $("viewpoint").addEventListener("change",changeViewpoint);
-const showViewpoints=$("showViewpoints");
-function updateViewpointMapVisibility(){
- $("geoTile").toggleAttribute("data-hide-viewpoints",!showViewpoints.checked);
-}
-showViewpoints.addEventListener("change",updateViewpointMapVisibility);
-updateViewpointMapVisibility();
 $("alertLead").addEventListener("change",render);
 
 let refreshInFlight=false;
@@ -2352,7 +2502,7 @@ function startGps(){
    gpsAccuracyMetres=Number.isFinite(position.coords.accuracy)?position.coords.accuracy:null;
    updateActiveTrainsPill();
    updateHeaderDistances();
-   
+   updateViewpointDistance();
    updateGeoLocation(userCoords.lat,userCoords.lon);
    const result=projectToRail(position.coords.latitude,position.coords.longitude);
    if(!Number.isFinite(result.x))return;
@@ -2360,7 +2510,7 @@ function startGps(){
    
    $("gpsIndicator").classList.remove("error");$("gpsIndicator").classList.add("active");$("gpsStatus").textContent="GPS tracking · ±"+Math.round(position.coords.accuracy)+" m";
  },err=>{
-   userCoords=null;gpsAccuracyMetres=null;updateActiveTrainsPill();updateHeaderDistances();
+   userCoords=null;gpsAccuracyMetres=null;updateActiveTrainsPill();updateHeaderDistances();updateViewpointDistance();
    $("gpsIndicator").classList.remove("active");$("gpsIndicator").classList.add("error");
    $("gpsStatus").textContent=err.code===1?"Location permission denied. Allow location in Safari settings.":err.code===2?"Could not determine your location.":"GPS unavailable. Check location permissions.";
    if(gpsWatch!==null){navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;}
