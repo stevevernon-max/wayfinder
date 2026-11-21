@@ -692,6 +692,10 @@ main>.planned-works-status{margin:0 0 10px}
  .app-header #viaductCombinedTile .viaduct-countdown-layout>.viaduct-icon{flex-basis:26px!important;width:26px!important;height:34px!important}
  .app-header #viaductCombinedTile #viaductRemaining{font-size:clamp(20px,5.7vw,28px)!important}
 }
+
+/* Only show the close-up when an estimated train is within 5 km of the viaduct. */
+.app-header #viaductTrackTile[hidden]{display:none!important}
+.app-header #viaductCombinedTile .viaduct-integrated-row.approach-hidden{grid-template-columns:minmax(0,1fr)}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><button id="forceSyncBtn" class="force-sync-btn" type="button" title="Refresh railway data, timetable and weather" aria-label="Refresh train information"><span aria-hidden="true">↻</span></button><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -1374,16 +1378,37 @@ function focusRailX(raw,westRaw,viaductRaw,eastRaw){
  return 225+211*(raw-viaductRaw)/(eastRaw-viaductRaw);
 }
 function renderViaductApproach(markers=renderedTrainMarkers){
- const group=$("viaductTrains");if(!group)return;
+ const tile=$("viaductTrackTile"),group=$("viaductTrains");
+ if(!tile||!group)return;
  const rawOf=name=>timingStations.find(([label])=>label.toLowerCase()===String(name||"").toLowerCase())?.[1];
  const glen=rawOf("Glenfinnan"),locheilside=rawOf("Locheilside");
- if(!Number.isFinite(glen)||!Number.isFinite(locheilside)){group.replaceChildren();return}
- // Approximate 5 km spans using neighbouring station chainages, with the
- // crossing slightly east of Glenfinnan station.
+ if(!Number.isFinite(glen)||!Number.isFinite(locheilside)){tile.hidden=true;group.replaceChildren();return}
+ // Cumulative approximate railway chainage built from the ordered station
+ // reference coordinates. Use kilometres, not raw schematic SVG units.
+ const chainage=[0];
+ for(let i=1;i<railFixes.length;i++){
+  const a=railFixes[i-1],b=railFixes[i];
+  chainage.push(chainage[i-1]+distanceKm(a.lat,a.lon,b.lat,b.lon));
+ }
+ const rawToKm=raw=>{
+  if(!Number.isFinite(raw))return null;
+  for(let i=1;i<timingStations.length;i++){
+   const left=timingStations[i-1][1],right=timingStations[i][1];
+   if(raw<=right||i===timingStations.length-1){
+    const f=Math.max(0,Math.min(1,(raw-left)/(right-left)));
+    return chainage[i-1]+f*(chainage[i]-chainage[i-1]);
+   }
+  }
+  return null;
+ };
+ // Use the viaduct point also used by the existing focus marker.
  const viaductRaw=glen+(locheilside-glen)*.14;
+ const viaductKm=rawToKm(viaductRaw);
  const westRaw=viaductRaw-48,eastRaw=viaductRaw+48;
  const visible=[];
  for(const {train} of markers){
+  // A timetable-only projection is not evidence of a train being nearby.
+  if(train.positionQuality==="timetable_only")continue;
   const p=train.position||{},from=rawOf(p.fromStation),to=rawOf(p.toStation);
   if(!Number.isFinite(from)||!Number.isFinite(to))continue;
   let raw=from;
@@ -1391,8 +1416,6 @@ function renderViaductApproach(markers=renderedTrainMarkers){
   if(Number.isFinite(start)&&Number.isFinite(finish)&&finish>start){
    const now=Math.max(start,Math.min(finish,Date.now()));
    const prediction=viaductCrossingForMarker(train,Date.now());
-   // Calibrate the approach only for the segment directly crossing the
-   // viaduct. Use the same crossing timestamp as the countdown.
    if(prediction&&prediction.at>start&&prediction.at<finish&&
       (p.fromStation==="Glenfinnan"||p.toStation==="Glenfinnan")){
     raw=now<=prediction.at?from+(viaductRaw-from)*(now-start)/(prediction.at-start)
@@ -1401,18 +1424,23 @@ function renderViaductApproach(markers=renderedTrainMarkers){
     raw=from+(to-from)*(now-start)/(finish-start);
    }
   }
+  const trainKm=rawToKm(raw);
+  if(!Number.isFinite(trainKm)||!Number.isFinite(viaductKm)||
+     Math.abs(trainKm-viaductKm)>5)continue;
   const x=focusRailX(raw,westRaw,viaductRaw,eastRaw);
   if(!Number.isFinite(x))continue;
   const g=document.createElementNS("http://www.w3.org/2000/svg","g");
   g.setAttribute("transform","translate("+x.toFixed(1)+",59)");
-  g.setAttribute("class",train.positionQuality==="timetable_only"?"focus-train-estimate":"focus-train-reported");
+  g.setAttribute("class","focus-train-reported");
   const direction=to>from?"→":to<from?"←":train.direction==="back"?"→":"←";
   g.innerHTML='<circle class="train-halo" r="15"><animate attributeName="r" values="14;34" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".65;0" dur="1.4s" repeatCount="indefinite"/></circle><circle class="train-body" r="14"><animate attributeName="r" values="13;17;13" dur="1.4s" repeatCount="indefinite"/></circle><text class="train-arrow" y="1">'+direction+'</text>';
   const title=document.createElementNS("http://www.w3.org/2000/svg","title");
-  title.textContent=(train.positionLabel||"Estimated train position")+" · zoomed viaduct approach (approximate)";
+  title.textContent=(train.positionLabel||"Estimated train position")+" · approximately "+Math.abs(trainKm-viaductKm).toFixed(1)+" km from Glenfinnan Viaduct";
   g.appendChild(title);visible.push(g);
  }
  group.replaceChildren(...visible);
+ tile.hidden=visible.length===0;
+ tile.closest(".viaduct-integrated-row")?.classList.toggle("approach-hidden",tile.hidden);
 }
 
 function render(){
