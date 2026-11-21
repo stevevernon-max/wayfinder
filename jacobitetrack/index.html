@@ -811,9 +811,25 @@ main .tile>.heading{font-size:19px}
 .plan-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
 .plan-fields input { box-sizing:border-box; width:100%; padding:6px; font:inherit; color:inherit; background:#101722; border:1px solid #344456; border-radius:6px; }
 </style>
+<style>
+.train-filter{display:flex;gap:5px;margin:3px 0 5px}
+.train-filter button{border:1px solid #415060;border-radius:999px;padding:5px 11px;font:inherit;font-size:12px;font-weight:700;color:#e7eff8;background:#151e29;cursor:pointer}
+.train-filter button[aria-pressed="true"]{border-color:#e6b65c;background:#3c2d15;color:#ffe19e}
+.train-reported .train-body{fill:#f0b84a;stroke:#fff1c7}
+#mapOverview .train-direction-blip.train-map-reported .train-map-body{fill:#edb35f}
+.jacobite-star{fill:#ffc84f;stroke:#fff1bf;stroke-width:2;stroke-linejoin:round;animation:jacobite-flash 1.3s ease-in-out infinite}
+@keyframes jacobite-flash{0%,100%{opacity:1}50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){.jacobite-star{animation:none}}
+#viaductApproachTrain.is-jacobite .train-body,#viaductApproachTrain.is-jacobite .train-arrow{display:none}
+#viaductApproachTrain:not(.is-jacobite) .jacobite-star{display:none}
+</style>
 </head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
+<div class="train-filter" role="group" aria-label="Train filter">
+ <button type="button" data-train-filter="all" aria-pressed="true">All trains</button>
+ <button type="button" data-train-filter="jacobite" aria-pressed="false">The Jacobite</button>
+</div>
 <section id="trackerTile" aria-label="Railway train tracker">
 <span id="feedBadge" hidden aria-live="polite">Checking</span>
 <div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 140" aria-label="Railway stations from Mallaig to Fort William positioned approximately by route distance" role="img">
@@ -866,6 +882,7 @@ main .tile>.heading{font-size:19px}
    <g id="viaductApproachTrain">
     <circle class="train-halo" r="19"/>
     <circle class="train-body" r="14"/>
+    <path class="jacobite-star" d="M0 -19 5.5 -6.8 19 -5.7 8.8 3.2 11.8 17 0 9.9 -11.8 17 -8.8 3.2 -19 -5.7 -5.5 -6.8Z"/>
     <text id="viaductApproachArrow" class="train-arrow" y="1">→</text>
    </g>
   </svg>
@@ -1282,6 +1299,7 @@ function scheduledTimetableMarkers(now=Date.now()){
  const recognised=new Set(timingStations.map(([name])=>name.toLowerCase()));
  const markers=[];
  for(const [index,service] of (data.patterns[key]||[]).entries()){
+  if(!matchesTrainFilter(service))continue;
   const stops=(service.stops||[])
    .filter(x=>Array.isArray(x)&&recognised.has(String(x[0]).toLowerCase()))
    .map(x=>({station:x[0],at:localAt(x[1])}))
@@ -1293,7 +1311,7 @@ function scheduledTimetableMarkers(now=Date.now()){
   if(first&&(first.station==="Mallaig"||first.station==="Fort William")&&
      now>=first.at-15*60000&&now<first.at){
    const train={
-    id:"Scheduled "+(index+1),direction:service.from==="Mallaig"?"out":"back",
+    id:"Scheduled "+(index+1),serviceKind:service.serviceKind,direction:service.from==="Mallaig"?"out":"back",
     positionQuality:"timetable_only",scheduled:true,locationVerified:false,
     serviceDepartureAt:first.at,
     positionLabel:"Expected at "+first.station+" · departs "+service.stops[0][1]+" (not confirmed live)",
@@ -1310,7 +1328,7 @@ function scheduledTimetableMarkers(now=Date.now()){
    if(b.at<=a.at||now<a.at||now>=b.at)continue;
    const direction=service.from==="Mallaig"?"out":"back";
    const train={
-    id:"Scheduled "+(index+1),direction,positionQuality:"timetable_only",
+    id:"Scheduled "+(index+1),serviceKind:service.serviceKind,direction,positionQuality:"timetable_only",
     serviceDepartureAt:first?.at??null,
     scheduled:true,locationVerified:false,
     positionLabel:"Timetable position estimate: "+a.station+"–"+b.station+" (not live)",
@@ -1336,7 +1354,7 @@ function visibleTrainMarkers(){
  const baseId=id=>(String(id).match(/^(\d{8})(?:[A-Z_]+)?$/)||[])[1]||String(id);
  const stationOk=name=>stationNames.has(String(name||"").toLowerCase());
  for(const t of services){
-  if(t.cancelled)continue;
+  if(t.cancelled||!matchesTrainFilter(t))continue;
   const key=baseId(t.id);
   if(!groups.has(key))groups.set(key,[]);
   groups.get(key).push(t);
@@ -1394,7 +1412,7 @@ function visibleTrainMarkers(){
    // Conflicting schedule-only views cannot establish a trustworthy
    // movement. Let the published timetable render an "expected" icon.
    if(!(ambiguous&&best.positionQuality==="scheduled_estimate")){
-    active.push({train:{...best,id:g.id,
+    active.push({train:{...best,id:g.id,serviceKind:g.records.some(isJacobite)?"jacobite":best.serviceKind,
       delayMinutes:delayReport?.delayMinutes??null,
       delayBasis:delayReport?.delayBasis||null,
       delayStation:delayReport?.delayStation||null,
@@ -1501,7 +1519,7 @@ function visibleTrainMarkers(){
   const pEnd=Date.parse(p?.toAt||"")||pStart;
   const previous=unique.find(v=>{
    const q=v.train.position;
-   if(!p||!q||item.train.direction!==v.train.direction)return false;
+   if(!p||!q||item.train.direction!==v.train.direction||isJacobite(item.train)!==isJacobite(v.train))return false;
    const qStart=Date.parse(q.fromAt||"");
    const qEnd=Date.parse(q.toAt||"")||qStart;
    return Number.isFinite(pStart)&&Number.isFinite(qStart)&&
@@ -1540,6 +1558,7 @@ function visibleTrainMarkers(){
   const fp=fallback.train.position;
   const first=Date.parse(fp.fromAt),last=Date.parse(fp.toAt);
   const overlaps=distinct.some(({train})=>{
+   if(isJacobite(train)!==isJacobite(fallback.train))return false;
    // A delayed LDB working supersedes its on-time timetable projection.
    // Match same-direction trains whose starting report follows the planned
    // departure by up to 90 minutes; do not fabricate two physical trains.
@@ -1593,23 +1612,23 @@ function updateHeaderDistances(){
  $("nearestTrain").textContent=trains.length?trains[0].toFixed(1)+"KM":"—";
 }
 function getApproaching(id,now=Date.now()){
- return services.map(t=>({...t,remaining:etaAt(t,id,now)})).filter(t=>t.remaining!==null&&t.remaining>=0).sort((a,b)=>a.remaining-b.remaining);
+ return services.filter(matchesTrainFilter).map(t=>({...t,remaining:etaAt(t,id,now)})).filter(t=>t.remaining!==null&&t.remaining>=0).sort((a,b)=>a.remaining-b.remaining);
 }
 // A board calling-point time may be arrival or an earlier working timing
 // point. Match nearby eastbound estimates to the public departure baseline.
 let crossingBaselineData;
 const crossingBaselines=new Map();
-function fortWilliamCrossingFloor(at){
+function fortWilliamCrossingFloor(at,train){
  if(!Number.isFinite(at))return at;
  if(crossingBaselineData!==publishedTimetable){
   crossingBaselineData=publishedTimetable;
   crossingBaselines.clear();
  }
- const minute=60000,key=Math.floor(at/minute);
+ const minute=60000,start=Math.floor(at/minute)*minute,jacobite=isJacobite(train),key=start+"|"+jacobite;
  if(!crossingBaselines.has(key)){
   if(crossingBaselines.size>=256)crossingBaselines.clear();
-  const match=nextPublishedViaductCrossing(key*minute-1,null,"Fort William");
-  crossingBaselines.set(key,match&&match.at<=key*minute+5*minute?match.at:null);
+  const match=nextPublishedViaductCrossing(start-1,null,"Fort William",jacobite);
+  crossingBaselines.set(key,match&&match.at<=start+5*minute?match.at:null);
  }
  return Math.max(at,crossingBaselines.get(key)??at);
 }
@@ -1635,9 +1654,9 @@ function viaductCrossingForMarker(train,now=Date.now()){
   const scheduled=Date.parse(departure.scheduledAt||"");
   if(Number.isFinite(actual))crossingAt=actual+minute;
   else if(Number.isFinite(forecast)||Number.isFinite(scheduled)){
-   crossingAt=fortWilliamCrossingFloor(Math.max(forecast||0,scheduled||0)+minute);
-  }else if(fromName==="glenfinnan")crossingAt=fortWilliamCrossingFloor(start+minute);
-  else if(toName==="glenfinnan")crossingAt=fortWilliamCrossingFloor(end+minute);
+   crossingAt=fortWilliamCrossingFloor(Math.max(forecast||0,scheduled||0)+minute,train);
+  }else if(fromName==="glenfinnan")crossingAt=fortWilliamCrossingFloor(start+minute,train);
+  else if(toName==="glenfinnan")crossingAt=fortWilliamCrossingFloor(end+minute,train);
  }else{
   if(toName==="glenfinnan")crossingAt=end-2*minute;
   else if(fromName==="glenfinnan")crossingAt=start-2*minute;
@@ -1650,7 +1669,7 @@ function viaductCrossingForMarker(train,now=Date.now()){
   const approaching=towardFort?current<glen:current>glen;
   const eta=etaAt(train,"glenfinnan",now);
   if(approaching&&Number.isFinite(eta)&&eta>0&&eta<=120){
-   crossingAt=towardFort?fortWilliamCrossingFloor(now+eta*minute):now+eta*minute-2*minute;
+   crossingAt=towardFort?fortWilliamCrossingFloor(now+eta*minute,train):now+eta*minute-2*minute;
   }
  }
  if(!Number.isFinite(crossingAt)||crossingAt<now-2*minute||
@@ -1701,6 +1720,12 @@ function formatViaductCountdown(milliseconds){
  const clock=minuteText+"m "+seconds+"s";
  return days?days+"d "+hours+"h "+clock:hours?hours+"h "+clock:clock;
 }
+let trainFilter="all";
+try{if(localStorage.getItem("jacobiteTrainFilter")==="jacobite")trainFilter="jacobite";}catch{}
+const starPath="M0 -19 5.5 -6.8 19 -5.7 8.8 3.2 11.8 17 0 9.9 -11.8 17 -8.8 3.2 -19 -5.7 -5.5 -6.8Z";
+const isJacobite=train=>train?.serviceKind==="jacobite";
+const matchesTrainFilter=train=>trainFilter==="all"||isJacobite(train);
+const serviceLabel=train=>isJacobite(train)?"The Jacobite":train.operatorCode==="SR"||train.serviceKind==="scotrail"?"ScotRail":"";
 const viaductApproachWindow=5*60000;
 const viaductCrossingHold=8000;
 let displayedViaductCrossing=null;
@@ -1710,12 +1735,13 @@ function updateViaductCountdown(markers){
  try{liveNext=getViaductApproaching(markers||renderedTrainMarkers).find(train=>train.crossingAt>Date.now())||null;}catch(error){console.warn("Viaduct live ETA unavailable",error)}
  const now=Date.now();
  // Normalise board times before choosing or deduplicating the next event.
- const boardCrossingTimes=scheduledCrossings.map(c=>{
+ const filteredCrossings=scheduledCrossings.filter(matchesTrainFilter);
+ const boardCrossingTimes=filteredCrossings.map(c=>{
   const at=Date.parse(c.at);
   if(c.basis!=="published_schedule_station_offset")return at;
-  return c.direction==="fort_william"?fortWilliamCrossingFloor(at):at;
+  return c.direction==="fort_william"?fortWilliamCrossingFloor(at,c):at;
  });
- const feedNext=scheduledCrossings.map((crossing,index)=>({...crossing,at:boardCrossingTimes[index]}))
+ const feedNext=filteredCrossings.map((crossing,index)=>({...crossing,at:boardCrossingTimes[index]}))
   .filter(crossing=>crossing.at>now).sort((a,b)=>a.at-b.at)[0];
  // Published entries already carry crossing times.
  let pdfNext=nextPublishedViaductCrossing(now);
@@ -1728,15 +1754,15 @@ function updateViaductCountdown(markers){
  const boardAge=now-Date.parse(feedUpdated||"");
  const boardFresh=Number.isFinite(boardAge)&&boardAge>=-60000&&boardAge<15*60000;
  const liveCandidate=Number.isFinite(liveNext?.remaining)&&liveNext.remaining>=0?
-  {at:liveNext.crossingAt,direction:liveNext.direction}:null;
+  {at:liveNext.crossingAt,direction:liveNext.direction,serviceKind:liveNext.serviceKind}:null;
  const scheduleCandidate=boardFresh&&feedNext?
   {at:feedNext.at,direction:feedNext.direction==="mallaig"?"back":"out",
-   timetable:feedNext.basis==="published_schedule_station_offset"}:null;
+   serviceKind:feedNext.serviceKind,timetable:feedNext.basis==="published_schedule_station_offset"}:null;
  // A train physically approaching the viaduct wins over a later
  // timetable service. Schedule entries are retained only as fallback.
  const boards=liveCandidate||scheduleCandidate;
  const next=boards||
-  (pdfNext?{at:pdfNext.at,direction:pdfNext.to==="Mallaig"?"back":"out",timetable:true}:null);
+  (pdfNext?{at:pdfNext.at,direction:pdfNext.to==="Mallaig"?"back":"out",serviceKind:pdfNext.serviceKind,timetable:true}:null);
  // Keep the completed crossing on screen briefly so the marker can pass
  // over the bridge before both tiles switch to the next service.
  const previous=displayedViaductCrossing;
@@ -1757,9 +1783,9 @@ function updateViaductCountdown(markers){
  const label=$("viaductRemaining"),time=$("viaductTileCountdown"),note=$("viaductTileNote");
  if(!Number.isFinite(minutes)||minutes<0){
   label.textContent="—";
-  time.textContent="Time unavailable";
-  note.textContent=publishedTimetable&&new Date().toISOString().slice(0,10)>publishedTimetable.validThrough?"Published timetable has expired; update required.":"No upcoming published crossing within the valid timetable dates.";
-  note.hidden=false;
+  time.textContent=trainFilter==="jacobite"?"No confirmed Jacobite crossing":"Time unavailable";
+  note.textContent=trainFilter==="jacobite"?"":publishedTimetable&&new Date().toISOString().slice(0,10)>publishedTimetable.validThrough?"Published timetable has expired; update required.":"No upcoming published crossing within the valid timetable dates.";
+  note.hidden=trainFilter==="jacobite";
   return;
  }
  // Countdown may span midnight or several days; do not reset at 00:00.
@@ -1812,6 +1838,7 @@ function renderViaductApproach(crossing,now){
  // This is a countdown illustration, not a measured distance or GPS fix.
  const offset=remaining>=0?-264*remaining/viaductApproachWindow
   :-48*remaining/viaductCrossingHold;
+ $("viaductApproachTrain").classList.toggle("is-jacobite",isJacobite(crossing));
  $("viaductApproachTrain").style.transform="translate("+(300+direction*offset)+"px,59px)";
  $("viaductApproachArrow").textContent=direction===1?"→":"←";
  $("viaductApproachStatus").textContent=remaining>0?"Estimated approach":"Estimated crossing";
@@ -1821,7 +1848,7 @@ function render(){
  const markers=visibleTrainMarkers();
  renderedTrainMarkers=markers;
  updateActiveTrainsPill(markers);
- $("trains").innerHTML=markers.map(({train:t})=>'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+schematicTrainX(t)+',83)"><circle class="train-halo" r="15" style="animation:none"><animate attributeName="r" values="17;35" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".7;0" dur="1.4s" repeatCount="indefinite"/></circle><circle class="train-body" r="13" style="animation:none"><animate attributeName="r" values="14;19;14" dur="1.4s" repeatCount="indefinite"/></circle><text class="train-arrow" y="1">'+trainDirectionArrow(t)+'</text><title>'+safe(t.id)+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Rail report")+'</title></g>').join("");
+ $("trains").innerHTML=markers.map(({train:t})=>isJacobite(t)?'<g transform="translate('+schematicTrainX(t)+',83)"><path class="jacobite-star" d="'+starPath+'"/><title>The Jacobite · '+safe(t.positionLabel||"Estimated position")+'</title></g>':'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+schematicTrainX(t)+',83)"><circle class="train-halo" r="15" style="animation:none"><animate attributeName="r" values="17;35" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".7;0" dur="1.4s" repeatCount="indefinite"/></circle><circle class="train-body" r="13" style="animation:none"><animate attributeName="r" values="14;19;14" dur="1.4s" repeatCount="indefinite"/></circle><text class="train-arrow" y="1">'+trainDirectionArrow(t)+'</text><title>'+safe([serviceLabel(t),t.id].filter(Boolean).join(" · "))+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Rail report")+'</title></g>').join("");
  updateGeoTrainMarkers();
  updateViaductCountdown(markers);
  updateHeaderDistances();
@@ -1840,7 +1867,7 @@ function updateViewpointCountdown(viaductAt,now){
  const at=useViaduct?viaductAt:next?Math.round(now+next.remaining*60000):scheduled;
  const eta=$("eta"),note=$("etaNote");
  const time=Number.isFinite(at)?timeText((at-now)/60000):"—";
- const status=Number.isFinite(at)?"":"No passing time available";
+ const status=Number.isFinite(at)?"":trainFilter==="jacobite"?"No confirmed Jacobite passing":"No passing time available";
  if(eta.textContent!==time)eta.textContent=time;
  if(note.textContent!==status)note.textContent=status;
  if(photoCrossingAt!==at){
@@ -2091,7 +2118,7 @@ tickerToggle.addEventListener("click",()=>{
 // The downloaded ScotRail timetable is the last-resort source of planned
 // crossings. Never extend it outside its explicit validity dates or treat
 // scheduled services as live observations.
-function nextPublishedViaductCrossing(now=Date.now(),viewpoint=null,destination=null){
+function nextPublishedViaductCrossing(now=Date.now(),viewpoint=null,destination=null,jacobite=null){
  const data=publishedTimetable;
  if(!data?.patterns||!data.validFrom||!data.validThrough)return null;
  const localParts=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{
@@ -2106,7 +2133,8 @@ function nextPublishedViaductCrossing(now=Date.now(),viewpoint=null,destination=
   const dow=day.getUTCDay(),pattern=dow===0?"sunday":dow===6?"saturday":dow===5?"friday":"weekday";
   for(const service of data.patterns[pattern]||[]){
    if(destination&&service.to!==destination)continue;
-   const passing=viewpoint?publishedStopTime(service,viewpoint):service.viaduct;
+   if(jacobite===null?!matchesTrainFilter(service):isJacobite(service)!==jacobite)continue;
+  const passing=viewpoint?publishedStopTime(service,viewpoint):service.viaduct;
    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(passing||""))continue;
    const [hours,minutes]=passing.split(":").map(Number);
    const utcWall=Date.UTC(day.getUTCFullYear(),day.getUTCMonth(),day.getUTCDate(),hours,minutes);
@@ -2118,7 +2146,7 @@ function nextPublishedViaductCrossing(now=Date.now(),viewpoint=null,destination=
    const minutesOffset=match?(match[1]==="-"?-1:1)*(Number(match[2])*60+Number(match[3]||0)):0;
    const at=utcWall-minutesOffset*60000;
    if(at<=now||earliest&&at>=earliest.at)continue;
-   earliest={at,date,from:service.from,to:service.to};
+   earliest={at,date,from:service.from,to:service.to,serviceKind:service.serviceKind};
   }
  }
  return earliest;
@@ -2163,7 +2191,7 @@ function renderTimetable(){
   const match=tz.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
   const shift=match?(match[1]==="-"?-1:1)*(+match[2]*60+ +(match[3]||0)):0;
   for(const train of data.patterns[pattern]||[]){
-   if(!Array.isArray(train.stops)||!train.stops.length)continue;
+   if(!matchesTrainFilter(train)||!Array.isArray(train.stops)||!train.stops.length)continue;
    const depart=train.stops[0][1];
    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(depart))continue;
    const [hours,mins]=depart.split(":").map(Number);
@@ -2175,7 +2203,7 @@ function renderTimetable(){
  }
  services.sort((a,b)=>a.at-b.at);
  const upcoming=services.slice(0,10);
- status.textContent=upcoming.length?"":"No upcoming scheduled services.";
+ status.textContent=upcoming.length?"":trainFilter==="jacobite"?"No confirmed Jacobite services listed.":"No upcoming scheduled services.";
  status.hidden=upcoming.length>0;
  table.hidden=!upcoming.length;
  tickerToggle.hidden=!upcoming.length;
@@ -2496,6 +2524,11 @@ function updateGeoTrainMarkers(){
   if(point.lat>geoViews[0].bounds.north||point.lat<geoViews[0].bounds.south||point.lon<geoViews[0].bounds.west||point.lon>geoViews[0].bounds.east)continue;
   const [x,y]=geoPoint(point.lat,point.lon,geoViews[0].bounds);
   const marker=geoSVG("g",{transform:"translate("+x.toFixed(1)+","+y.toFixed(1)+") scale(1.1)",class:"train-direction-blip "+(train.positionQuality==="last_actual_report"?"train-map-reported":"train-estimated")});
+  if(isJacobite(train)){
+   marker.appendChild(geoSVG("path",{d:starPath,class:"jacobite-star"}));
+   const title=geoSVG("title");title.textContent="The Jacobite · "+(train.positionLabel||"Estimated position");
+   marker.appendChild(title);group.appendChild(marker);continue;
+  }
   const halo=geoSVG("circle",{r:17,class:"train-map-halo",style:"animation:none"});
   halo.appendChild(geoSVG("animate",{attributeName:"r",values:"16;37",dur:"1.4s",repeatCount:"indefinite"}));
   halo.appendChild(geoSVG("animate",{attributeName:"opacity",values:".75;0",dur:"1.4s",repeatCount:"indefinite"}));marker.appendChild(halo);
@@ -2515,7 +2548,7 @@ function updateGeoTrainMarkers(){
   const pointer=geoSVG("path",{d:"M -7 -6 L 8 0 L -7 6 Z",class:"train-map-direction",
    transform:"rotate("+angle.toFixed(1)+")",fill:"#152b3d",stroke:"#efffff","stroke-width":1.8,
    "stroke-linejoin":"round"});marker.appendChild(pointer);
-  const title=geoSVG("title");title.textContent=train.id+" · "+(train.positionLabel||"Estimated position")+(mapped?" · projected onto mapped railway":" · approximate station-based position")+"; not GPS";marker.appendChild(title);
+  const title=geoSVG("title");title.textContent=[serviceLabel(train),train.id].filter(Boolean).join(" · ")+" · "+(train.positionLabel||"Estimated position")+(mapped?" · projected onto mapped railway":" · approximate station-based position")+"; not GPS";marker.appendChild(title);
   group.appendChild(marker);
  }
 }
@@ -2899,7 +2932,7 @@ function rankPhotoCrossings(now=Date.now()){
  const daily=weatherData?.daily,hourly=weatherData?.hourly;
  const dateIndex=daily?.time?.indexOf(today), rise=daily?.sunrise?.[dateIndex],set=daily?.sunset?.[dateIndex];
  if(!hourly||!rise||!set)return [];
- return (data.patterns[pattern]||[]).flatMap(train=>{
+ return (data.patterns[pattern]||[]).filter(matchesTrainFilter).flatMap(train=>{
   const at=railLocalTime(today,spot.viaduct?train.viaduct:publishedStopTime(train,id));
   if(!(at>now))return [];
   const local=photoLocalTime(at), index=photoHour(hourly,local);
@@ -2949,6 +2982,21 @@ $("timetableTable").addEventListener("click",async event=>{
 });
 resetTravelPlan();
 
+for(const button of document.querySelectorAll("[data-train-filter]")){
+ button.setAttribute("aria-pressed",String(button.dataset.trainFilter===trainFilter));
+ button.addEventListener("click",()=>{
+  if(button.dataset.trainFilter===trainFilter)return;
+  trainFilter=button.dataset.trainFilter;
+  try{localStorage.setItem("jacobiteTrainFilter",trainFilter);}catch{}
+  for(const option of document.querySelectorAll("[data-train-filter]"))option.setAttribute("aria-pressed",String(option.dataset.trainFilter===trainFilter));
+  displayedViaductCrossing=null;
+  cachedViewpointPassing=null;
+  crossingBaselines.clear();
+  render();
+  renderTimetable();
+  updatePhotoRanking();
+ });
+}
 initGeoInteraction();
 updateMapReset();renderGeoMaps();loadGeoRailway();fetchWeather();
 

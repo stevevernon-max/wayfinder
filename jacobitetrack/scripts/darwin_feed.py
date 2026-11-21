@@ -196,8 +196,20 @@ def _merge_ldb_service(state: dict[str, Any], raw: dict[str, Any], board_crs: st
             departure = _ldb_time(get(raw, field), now)
             if departure:
                 service.setdefault("glenfinnanDeparture", {})[key] = departure.isoformat().replace("+00:00", "Z")
+    operator_code = str(get(raw, "operatorCode", "tocCode", default="") or service.get("operatorCode") or "").strip().upper()
+    operator = str(get(raw, "operator", default="") or "").strip().casefold()
+    name = str(get(raw, "serviceName", "trainName", default="") or "").strip().casefold()
+    service_kind = service.get("serviceKind")
+    if operator_code == "SR" or operator == "scotrail":
+        operator_code, service_kind = "SR", "scotrail"
+    elif (operator_code == "WR" or operator in {"west coast railways", "west coast railway company"}) and name in {
+        "jacobite", "the jacobite", "jacobite steam train", "the jacobite steam train"
+    }:
+        operator_code, service_kind = "WR", "jacobite"
     service.update({
         "rid": identifier,
+        "operatorCode": operator_code,
+        "serviceKind": service_kind,
         "uid": str(get(raw, "serviceID", "rsid", default="") or ""),
         "id": str(get(raw, "trainID", "rsid", "serviceID", default="") or identifier),
         "headcode": str(get(raw, "trainID", "trainId", default="") or "").strip().upper(),
@@ -762,6 +774,7 @@ def future_viaduct_crossings(state: dict[str, Any], now: datetime) -> list[dict[
                 "at": crossing_at.isoformat().replace("+00:00", "Z"),
                 "direction": direction,
                 "basis": "published_schedule_station_offset",
+                "serviceKind": service.get("serviceKind"),
             })
     published = state.get("futureTimetable", {})
     fetched = _to_utc(published.get("updated")) if isinstance(published, dict) else None
@@ -777,7 +790,9 @@ def future_viaduct_crossings(state: dict[str, Any], now: datetime) -> list[dict[
     for item in items:
         if not any(abs((datetime.fromisoformat(item["at"].replace("Z", "+00:00")) -
                         datetime.fromisoformat(old["at"].replace("Z", "+00:00"))).total_seconds()) < 120
-                   and item["direction"] == old["direction"] for old in unique):
+                   and item["direction"] == old["direction"]
+                   and (item.get("serviceKind") == "jacobite") == (old.get("serviceKind") == "jacobite")
+                   for old in unique):
             unique.append(item)
     return unique
 
@@ -1147,6 +1162,8 @@ def build_feed(state: dict[str, Any], now: datetime | None = None) -> dict[str, 
             "delayStation": STATION_NAME_BY_KEY.get(reported_delay[2], reported_delay[2]) if reported_delay else None,
             "viewpoints": viewpoints,
             "glenfinnanDeparture": service.get("glenfinnanDeparture"),
+            "operatorCode": service.get("operatorCode"),
+            "serviceKind": service.get("serviceKind"),
             "quality": "Darwin actual/forecast report or scheduled timetable; interpolated line position is an estimate, not GPS",
         })
     trains.sort(key=lambda item: min((v["etaMinutes"] for v in item["viewpoints"].values()), default=9999))
