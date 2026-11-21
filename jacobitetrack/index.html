@@ -732,12 +732,31 @@ main>.planned-works-status{margin:0 0 10px}
 .app-header #viaductCombinedTile .viaduct-integrated-row:has(#viaductTrackTile:not([hidden])) #viaductRemaining{
  font-size:clamp(16px,5.2vw,38px)!important;
 }
+
+:root{--tile-gap:8px}
+main{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--tile-gap);padding-top:var(--tile-gap)}
+main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
+.app-header #trackerTile{padding-bottom:2px}
+.app-header #viaductCombinedTile{padding-top:1px!important}
+.app-header #viaductCombinedTile .viaduct-title-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:3px}
+.app-header #viaductCombinedTile .viaduct-title-row .viaduct-combined-heading{flex:none}
+.app-header #viaductCombinedTile .viaduct-title-row .viaduct-next-clock{margin:0!important;text-align:right!important}
+@keyframes trackingPillBorder{0%,100%{border-color:#397f77}50%{border-color:#83e6b9}}
+.app-header #activeTrainsPill.has-tracked-trains{animation:trackingPillBorder 1.4s ease-in-out infinite}
+#photoTile #viewpoint{margin-top:0}
+.viewpoint-alerts summary{cursor:pointer;font-weight:700;font-size:13px}
+.viewpoint-alerts[open] .alerts{margin-top:9px}
+#timetableTile .timetable .service-main:has(+.calls-expanded:not([hidden])) td,
+#timetableTile .timetable .calls-expanded td{border-bottom:0}
+#timetableTile .calls-ticker{border-block:0}
+.map-viewpoint-ring{fill:none;stroke:#c1e5ff;stroke-width:3;animation:mapViewpointPulse 1.8s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes mapViewpointPulse{0%{transform:scale(.75);opacity:1}85%,100%{transform:scale(2.15);opacity:0}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
 <section id="trackerTile" aria-label="Railway train tracker">
 <span id="feedBadge" hidden aria-live="polite">Checking</span>
-<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 145" aria-label="Railway stations from Mallaig to Fort William positioned approximately by route distance" role="img">
+<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 140" aria-label="Railway stations from Mallaig to Fort William positioned approximately by route distance" role="img">
 <line class="track" x1="13" y1="83" x2="887" y2="83"/>
 <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="9" y="45" text-anchor="start">Mallaig</text>
 <circle class="node" cx="93" cy="83" r="12"/><text class="station-label" x="93" y="132" text-anchor="middle">Morar</text>
@@ -752,17 +771,19 @@ main>.planned-works-status{margin:0 0 10px}
 <div class="muted" id="trackStatus" hidden></div>
 </section>
 <section id="viaductCombinedTile" aria-label="Glenfinnan Viaduct approach and next crossing">
+ <div class="viaduct-title-row">
+  <div class="viaduct-combined-heading">Next Viaduct Crossing</div>
+  <div id="viaductTileCountdown" class="viaduct-next-clock">Checking time…</div>
+ </div>
  <div class="viaduct-integrated-row">
  <div class="viaduct-countdown-layout">
   <div class="viaduct-countdown-content">
    <div class="viaduct-countdown-top">
-    <div class="viaduct-combined-heading">Next Viaduct Crossing</div>
     <section id="proximityTile" aria-label="Time until next train crosses Glenfinnan Viaduct">
      <span id="viaductRemaining" class="viaduct-main-time" aria-live="off">—</span>
      <span id="viaductTileNote" hidden></span><span id="nearestTrain" hidden>—</span>
     </section>
    </div>
-   <div id="viaductTileCountdown" class="viaduct-next-clock">Checking next crossing</div>
   </div>
  </div>
  <section id="viaductTrackTile" aria-label="Zoomed train approach to Glenfinnan Viaduct" hidden>
@@ -790,7 +811,7 @@ main>.planned-works-status{margin:0 0 10px}
 </div></header><main>
 <section class="tile" id="photoTile" aria-labelledby="viewpointHeading">
  <h2 class="heading" id="viewpointHeading">Viewpoint and Conditions</h2>
- <label class="field">Viewpoint<select id="viewpoint"><option value="glenfinnan">Glenfinnan Viaduct</option><option value="lochailort">Lochailort</option><option value="arisaig">Arisaig</option><option value="morar">Morar</option><option value="glenStation">Glenfinnan station</option><option value="beasdale">Beasdale</option><option value="locheilside">Locheilside</option><option value="lochEilOutwardBound">Loch Eil Outward Bound</option><option value="banavie">Banavie</option><option value="eilt">Loch Eilt</option><option value="corpach">Corpach</option><option value="mallaig">Mallaig</option><option value="fortWilliam">Fort William</option></select></label>
+ <div class="field"><select id="viewpoint" aria-label="Viewpoint"><option value="glenfinnan">Glenfinnan Viaduct</option><option value="lochailort">Lochailort</option><option value="arisaig">Arisaig</option><option value="morar">Morar</option><option value="glenStation">Glenfinnan station</option><option value="beasdale">Beasdale</option><option value="locheilside">Locheilside</option><option value="lochEilOutwardBound">Loch Eil Outward Bound</option><option value="banavie">Banavie</option><option value="eilt">Loch Eilt</option><option value="corpach">Corpach</option><option value="mallaig">Mallaig</option><option value="fortWilliam">Fort William</option></select></div>
  <div class="photo-overview">
   <div class="photo-score">
   <span class="photo-score-label">PHOTO SCORE</span>
@@ -800,13 +821,12 @@ main>.planned-works-status{margin:0 0 10px}
   </div>
   <div class="viewpoint-eta"><span class="photo-score-label">NEXT TRAIN</span><strong id="eta" class="countdown">—</strong><span id="etaNote" class="small"></span></div>
  </div>
-  <div class="viewpoint-alerts"><div class="alerts"><select id="alertLead" aria-label="Train approaching warning"><option value="5">5 min alert</option><option value="10" selected>10 min alert</option><option value="15">15 min alert</option><option value="20">20 min alert</option></select><button class="button" id="notifyBtn">Enable alerts</button><button class="button" id="disableAlertsBtn" style="display:none">Disable alerts</button></div><div class="small" id="notificationStatus">Checking whether background notifications are available…</div><div class="small" id="installHint"></div></div>
  <div class="photo-panel">
   <div class="photo-panel-top">
    <strong id="photoCondition" role="status">Loading weather…</strong>
    <div class="photo-periods" role="group" aria-label="Weather forecast time">
     <button type="button" id="photoNow" aria-pressed="true">Now</button>
-    <button type="button" id="photoCrossing" aria-pressed="false" disabled>At crossing</button>
+    <button type="button" id="photoCrossing" aria-pressed="false" disabled>Next Passing</button>
    </div>
   </div>
   <div class="photo-metrics">
@@ -818,6 +838,10 @@ main>.planned-works-status{margin:0 0 10px}
   <div class="photo-meta"><span>☀ <b id="photoSunrise">—</b></span><span>☾ <b id="photoSunset">—</b></span><span id="weatherTime"></span></div>
   <div class="small" id="photoAdvice" hidden></div>
  </div>
+ <details class="viewpoint-alerts">
+  <summary>Alerts</summary>
+  <div class="alerts"><select id="alertLead" aria-label="Train approaching warning"><option value="5">5 min alert</option><option value="10" selected>10 min alert</option><option value="15">15 min alert</option><option value="20">20 min alert</option></select><button class="button" id="notifyBtn">Enable alerts</button><button class="button" id="disableAlertsBtn" style="display:none">Disable alerts</button></div><div class="small" id="notificationStatus">Checking whether background notifications are available…</div><div class="small" id="installHint"></div>
+ </details>
 </section>
 <section class="tile" id="geoTile">
 <div class="geo-map" id="mapOverview" role="application" tabindex="0" aria-label="Geographic map with roads, lochs, railway and estimated train position markers; drag or pinch to navigate"></div>
@@ -1399,7 +1423,7 @@ function updateViaductCountdown(markers){
  const label=$("viaductRemaining"),time=$("viaductTileCountdown"),note=$("viaductTileNote");
  if(!Number.isFinite(minutes)||minutes<0){
   label.textContent="—";
-  time.textContent="No crossing available in the current railway data or published timetable";
+  time.textContent="Time unavailable";
   note.textContent=publishedTimetable&&new Date().toISOString().slice(0,10)>publishedTimetable.validThrough?"Published timetable has expired; update required.":"No upcoming published crossing within the valid timetable dates.";
   note.hidden=false;
   return;
@@ -1413,7 +1437,7 @@ function updateViaductCountdown(markers){
  const when=crossingLocal===nowLocal?"Today":dateOf(Date.now()+86400000)===crossingLocal?"Tomorrow"
   :new Date(trainAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"});
  const inPositionDay=dateOf(inPositionAt)===crossingLocal?"":dateOf(inPositionAt)===nowLocal?"Today ":""+new Date(inPositionAt).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"Europe/London"})+" ";
- time.textContent=when+" "+fmt(trainAt)+" crossing";
+ time.textContent=when+" "+fmt(trainAt);
  // Keep Tile 2 focused on the countdown and crossing time.
  // Timetable predictions remain estimates internally, without a warning/error label.
  note.hidden=true;
@@ -1427,6 +1451,7 @@ function updateActiveTrainsPill(markers=visibleTrainMarkers()){
  pill.textContent=expected?(reported?reported+" on track · "+expected+" expected":expected+" "+(expected===1?"train":"trains")+" expected"):count+" "+(count===1?"train":"trains")+" on track";
  pill.title=expected?"Expected markers use the published timetable; actual movement is unconfirmed. Other positions come from station-board timings.":"Positions are inferred from station-board times, not GPS";
  pill.classList.toggle("has-trains",count>0);
+ pill.classList.toggle("has-tracked-trains",reported>0);
  const delayStatus=$("trainDelaySummary");
  if(delayStatus){
   const reports=markers.map(({train})=>train).filter(t=>Number.isFinite(t.delayMinutes));
@@ -1542,12 +1567,16 @@ function render(){
  renderSpots();if(typeof maybeNotify==="function")maybeNotify();
 }
 function updateViewpointCountdown(viaductAt,now){
- const id=$("viewpoint").value;
- const next=id==="glenfinnan"&&Number.isFinite(viaductAt)?null:getApproaching(id,now)[0];
- const at=next?Math.round(now+next.remaining*60000):id==="glenfinnan"?viaductAt:null;
+ const selection=$("viewpoint"),id=selection.value;
+ const useViaduct=id==="glenfinnan"&&Number.isFinite(viaductAt);
+ const feedAge=now-Date.parse(feedUpdated||"");
+ const next=!useViaduct&&feedAge>=-60000&&feedAge<900000?getApproaching(id,now)[0]:null;
+ const station=id==="glenStation"?"Glenfinnan":selection.selectedOptions[0].textContent;
+ const scheduled=useViaduct||next?null:publishedViewpointTime(station,now);
+ const at=useViaduct?viaductAt:next?Math.round(now+next.remaining*60000):scheduled;
  const eta=$("eta"),note=$("etaNote");
  const time=Number.isFinite(at)?timeText((at-now)/60000):"—";
- const status=Number.isFinite(at)?"":"No passing time available";
+ const status=Number.isFinite(scheduled)?"Scheduled estimate":Number.isFinite(at)?"":"No passing time available";
  if(eta.textContent!==time)eta.textContent=time;
  if(note.textContent!==status)note.textContent=status;
  if(photoCrossingAt!==at){
@@ -1609,7 +1638,7 @@ function updatePhotographyLightStatus(){
  const crossing=Number.isFinite(photoCrossingAt)&&photoCrossingAt>=now?photoLocalTime(photoCrossingAt):null;
  const crossingIndex=crossing&&hourly?photoHour(hourly,crossing):-1;
  const crossingButton=$("photoCrossing"),nowButton=$("photoNow");
- crossingButton.textContent=crossing?"At "+crossing.slice(11,16):"At crossing";
+ crossingButton.title=crossing?"Forecast at "+crossing.slice(11,16):"Next passing forecast unavailable";
  crossingButton.disabled=crossingIndex<0;
  if(crossingIndex<0)photoPeriod="now";
  const forecast=photoPeriod==="crossing";
@@ -1647,10 +1676,17 @@ function updatePhotographyLightStatus(){
 $("photoNow").addEventListener("click",()=>{photoPeriod="now";updatePhotographyLightStatus()});
 $("photoCrossing").addEventListener("click",()=>{photoPeriod="crossing";updatePhotographyLightStatus()});
 
+function selectedViewpointLocation(){
+ const select=$("viewpoint");
+ const name=select.selectedOptions[0]?.textContent;
+ const id=select.value;
+ const location=siteData[id]||(id==="banavie"?{lat:56.8433,lon:-5.0954}:
+  railFixes.find(station=>station.name===name));
+ return location?{lat:location.lat,lon:location.lon,name}:null;
+}
 async function fetchWeather(){
  const id=$("viewpoint").value;
- const location=siteData[id]||(id==="banavie"?{lat:56.8433,lon:-5.0954}:
-  railFixes.find(station=>station.name===$("viewpoint").selectedOptions[0].textContent));
+ const location=selectedViewpointLocation();
  if(!location)return;
  weatherRequest?.abort();
  const cached=viewpointWeather.get(id);
@@ -1709,7 +1745,7 @@ tickerToggle.addEventListener("click",()=>{
 // The downloaded ScotRail timetable is the last-resort source of planned
 // crossings. Never extend it outside its explicit validity dates or treat
 // scheduled services as live observations.
-function nextPublishedViaductCrossing(now=Date.now()){
+function nextPublishedViaductCrossing(now=Date.now(),station=null){
  const data=publishedTimetable;
  if(!data?.patterns||!data.validFrom||!data.validThrough)return null;
  const localParts=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{
@@ -1723,8 +1759,9 @@ function nextPublishedViaductCrossing(now=Date.now()){
   if(date<data.validFrom||date>data.validThrough)continue;
   const dow=day.getUTCDay(),pattern=dow===0?"sunday":dow===6?"saturday":dow===5?"friday":"weekday";
   for(const service of data.patterns[pattern]||[]){
-   if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(service.viaduct||""))continue;
-   const [hours,minutes]=service.viaduct.split(":").map(Number);
+   const passing=station?publishedStopTime(service,station):service.viaduct;
+   if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(passing||""))continue;
+   const [hours,minutes]=passing.split(":").map(Number);
    const utcWall=Date.UTC(day.getUTCFullYear(),day.getUTCMonth(),day.getUTCDate(),hours,minutes);
    // Determine the UK offset at this date and time, including BST.
    const offsetParts=Object.fromEntries(new Intl.DateTimeFormat("en-GB",{
@@ -1741,6 +1778,26 @@ function nextPublishedViaductCrossing(now=Date.now()){
 }
 
 
+function publishedStopTime(service,station){
+ const stops=service.stops||[];
+ if(station!=="Loch Eilt")return stops.find(([name])=>name===station)?.[1];
+ const west=stops.find(([name])=>name==="Lochailort")?.[1],east=stops.find(([name])=>name==="Glenfinnan")?.[1];
+ if(![west,east].every(time=>/^\d{2}:\d{2}$/.test(time||"")))return null;
+ const minutes=time=>Number(time.slice(0,2))*60+Number(time.slice(3));
+ const shore=siteData.eilt;
+ const km=key=>distanceKm(shore.lat,shore.lon,siteData[key].lat,siteData[key].lon);
+ const westKm=km("lochailort"),eastKm=km("glenStation");
+ const at=Math.round(minutes(west)+(minutes(east)-minutes(west))*westKm/(westKm+eastKm));
+ return String(Math.floor(at/60)).padStart(2,"0")+":"+String(at%60).padStart(2,"0");
+}
+let cachedViewpointPassing;
+function publishedViewpointTime(station,now){
+ const cached=cachedViewpointPassing;
+ if(cached?.station===station&&cached.data===publishedTimetable&&now<cached.expires)return cached.at;
+ const at=nextPublishedViaductCrossing(now,station)?.at??null;
+ cachedViewpointPassing={station,data:publishedTimetable,at,expires:at??now+60000};
+ return at;
+}
 function renderTimetable(){
  const data=publishedTimetable;
  const status=$("timetableStatus"),table=$("timetableTable"),rows=$("timetableRows");
@@ -1909,8 +1966,9 @@ $("disableAlertsBtn").addEventListener("click",async()=>{
 function changeViewpoint(){
  photoPeriod="now";
  $("photoAdvice").hidden=true;
- fetchWeather();
  updateViaductCountdown();
+ fetchWeather();
+ updateMapViewpoint(geoViews[0],$("mapOverview").querySelector("svg"));
 }
 $("viewpoint").addEventListener("change",changeViewpoint);
 $("alertLead").addEventListener("change",render);
@@ -2212,6 +2270,19 @@ function appendMapPath(g,points,b,stroke,weight,fill="none"){
  const d=clipped.map((p,i)=>{const [x,y]=geoPoint(p.lat,p.lon,b);return (i?"L":"M")+x.toFixed(2)+" "+y.toFixed(2)}).join(" ");
  g.appendChild(geoSVG("path",{d,stroke,"stroke-width":weight,fill,"stroke-linecap":"round","stroke-linejoin":"round"}));
 }
+function updateMapViewpoint(view,svg){
+ if(!svg)return;
+ svg.querySelector(".map-viewpoint")?.remove();
+ const spot=selectedViewpointLocation();
+ if(!spot||spot.lat>view.bounds.north||spot.lat<view.bounds.south||
+    spot.lon<view.bounds.west||spot.lon>view.bounds.east)return;
+ const [x,y]=geoPoint(spot.lat,spot.lon,view.bounds);
+ const pin=geoSVG("g",{class:"map-viewpoint","aria-label":spot.name});
+ const title=geoSVG("title");title.textContent=spot.name;pin.appendChild(title);
+ pin.appendChild(geoSVG("circle",{cx:x,cy:y,r:13,class:"map-viewpoint-ring"}));
+ pin.appendChild(geoSVG("circle",{cx:x,cy:y,r:9,fill:"#9cd6ff",stroke:"#112439","stroke-width":2.5}));
+ svg.appendChild(pin);
+}
 function makeMap(view){
  const container=$(view.id);container.textContent="";
  const height=geoCanvasHeight();
@@ -2256,6 +2327,7 @@ function makeMap(view){
   }
  }
 
+ updateMapViewpoint(view,svg);
  container.appendChild(svg);
  updateGeoTrainMarkers();
 }
