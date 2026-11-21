@@ -812,6 +812,8 @@ main .tile>.heading{font-size:19px}
 .plan-fields input { box-sizing:border-box; width:100%; padding:6px; font:inherit; color:inherit; background:#101722; border:1px solid #344456; border-radius:6px; }
 </style>
 <style>
+#postTrackerSections[hidden],.app-header.jacobite-no-service .viaduct-title-row{display:none!important}
+.app-header.jacobite-no-service #viaductCombinedTile #viaductRemaining{color:#ff7777!important;white-space:normal}
 .train-filter{display:flex;gap:5px;margin:3px 0 5px}
 .train-filter button{border:1px solid #415060;border-radius:999px;padding:5px 11px;font:inherit;font-size:12px;font-weight:700;color:#e7eff8;background:#151e29;cursor:pointer}
 .train-filter button[aria-pressed="true"]{border-color:#e6b65c;background:#3c2d15;color:#ffe19e}
@@ -861,7 +863,7 @@ main .tile>.heading{font-size:19px}
  </div>
  </div>
 </section>
-</div></header><main>
+</div></header><main id="postTrackerSections">
 <section class="tile" id="viaductTrackTile" aria-labelledby="viaductApproachHeading" hidden>
  <div class="viaduct-approach-heading">
   <h2 class="heading" id="viaductApproachHeading">Glenfinnan Viaduct</h2>
@@ -1776,14 +1778,17 @@ function updateViaductCountdown(markers){
  const tile=$("proximityTile");
  const approaching=Number.isFinite(minutes)&&minutes>=0&&minutes<15;
  const header=document.querySelector(".app-header");
+ const noJacobiteService=trainFilter==="jacobite"&&!Number.isFinite(trainAt);
+ $("postTrackerSections").hidden=noJacobiteService;
+ header?.classList.toggle("jacobite-no-service",noJacobiteService);
  header?.classList.toggle("viaduct-imminent",approaching);
  header?.classList.toggle("viaduct-arriving",approaching&&minutes<=3);
  // Flash the single outer card only: the countdown has no independent alert state.
  tile.classList.remove("viaduct-soon","viaduct-arriving");
  const label=$("viaductRemaining"),time=$("viaductTileCountdown"),note=$("viaductTileNote");
  if(!Number.isFinite(minutes)||minutes<0){
-  label.textContent="—";
-  time.textContent=trainFilter==="jacobite"?"No confirmed Jacobite crossing":"Time unavailable";
+  label.textContent=noJacobiteService?"NO SCHEDULED SERVICE":"—";
+  time.textContent=noJacobiteService?"":"Time unavailable";
   note.textContent=trainFilter==="jacobite"?"":publishedTimetable&&new Date().toISOString().slice(0,10)>publishedTimetable.validThrough?"Published timetable has expired; update required.":"No upcoming published crossing within the valid timetable dates.";
   note.hidden=trainFilter==="jacobite";
   return;
