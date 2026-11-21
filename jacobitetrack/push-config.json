@@ -1,4 +1,3 @@
 {
-  "backendUrl": "",
-  "note": "Set backendUrl to deployed Netlify backend HTTPS origin after server configuration. Do not enter API keys here."
+  "backendUrl": "https://hcmenkuwjptezwhyatik.supabase.co/functions/v1/jacobite-push"
 }
