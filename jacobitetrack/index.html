@@ -126,10 +126,7 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 .single-viewpoint{grid-template-columns:1fr;gap:0}
 .single-viewpoint>.tile{margin-bottom:12px}
 #trackerTile .rail-svg{overflow:visible}
-#trackerTile.viaduct-within-15{animation:viaductApproachBorder 1.2s ease-in-out infinite}
-@keyframes viaductApproachBorder{0%,100%{border-color:#30394a;box-shadow:0 0 0 0 #69caff00}50%{border-color:#74cfff;box-shadow:0 0 0 4px #55baff38}}
 #viaductTrackTile .focus-eta-label{fill:#e9f6ff;font-size:12px;font-weight:800;paint-order:stroke;stroke:#102331;stroke-width:3px;stroke-linejoin:round}
-@media(prefers-reduced-motion:reduce){#trackerTile.viaduct-within-15{animation:none;border-color:#74cfff;box-shadow:0 0 0 3px #55baff38}}
 #trackerTile .user-ripple{fill:#39a4ff;opacity:.55}
 #trackerTile .user-spot{fill:#278eff;stroke:#e9f9ff;stroke-width:3}
 #trackerTile #gpsDistanceTag{text-rendering:geometricPrecision}
@@ -305,12 +302,13 @@ body.geo-fullscreen-open{overflow:hidden}
 .app-header #proximityTile .viaduct-location{font-size:11px;color:#9db5ca;font-weight:700;margin-left:53px;letter-spacing:.1px}
 #trackerTile{border-color:#30394a;background:#171d27}
 main{padding-top:8px}
-@keyframes headerAmberFlash{0%,100%{border-color:#b57b27;box-shadow:0 0 0 0 #efaa2a00;background:#242018}50%{border-color:#ffce65;box-shadow:0 0 0 3px #efaa2a39;background:#302719}}
+@keyframes headerAmberFlash{
+ 0%,100%{border-color:#b57b27}
+ 50%{border-color:#ffce65}
+}
 .app-header.viaduct-imminent .header-shell{animation:headerAmberFlash 1.35s ease-in-out infinite}
-.app-header.viaduct-imminent #proximityTile{border-color:#b57b27}
-.app-header.viaduct-imminent #proximityTile .viaduct-main-time{color:#ffc15e}
 @media(max-width:420px){.app-header{padding:2px 8px 0}.app-header .header-shell{padding:8px 10px 9px}.app-header .header-main{margin-bottom:7px}.app-header .header-brand>strong{font-size:21px}.app-header #proximityTile{padding:8px 9px}.app-header #proximityTile .viaduct-icon{width:39px;height:39px}.app-header #proximityTile .viaduct-main-time{font-size:30px}.app-header #proximityTile .viaduct-location{margin-left:49px;font-size:10px}}
-@media(prefers-reduced-motion:reduce){.app-header.viaduct-imminent .header-shell{animation:none;background:#302719;border-color:#ffce65}}
+@media(prefers-reduced-motion:reduce){.app-header.viaduct-imminent .header-shell{animation:none;border-color:#ffce65}}
 
 /* Live status: only the status dot pulses, not the complete pill. */
 @keyframes trainStatusDotPulse{0%,100%{opacity:1;box-shadow:0 0 0 0 #39cc764b}50%{opacity:.55;box-shadow:0 0 0 5px #39cc7600}}
@@ -337,15 +335,6 @@ main{padding-top:8px}
 .app-header #proximityTile{padding-top:5px;padding-bottom:6px}
 .app-header #trackerTile{padding-top:6px}
 .app-header #trackerTile>.row{min-height:0}
-@keyframes viaductGreenFlash{
- 0%,100%{background:#18291e;border-color:#317b52;box-shadow:0 0 0 0 #40d98c00}
- 50%{background:#173e2a;border-color:#54e69c;box-shadow:0 0 0 4px #3de89140}
-}
-.app-header.viaduct-arriving .header-shell{animation:viaductGreenFlash 1.15s ease-in-out infinite}
-.app-header #proximityTile.viaduct-arriving{border-color:#43ba79;animation:none}
-.app-header #proximityTile.viaduct-arriving .viaduct-main-time{color:#75ecab}
-.app-header #proximityTile.viaduct-arriving .viaduct-icon{background:#174832;color:#a5f7c7}
-@media(prefers-reduced-motion:reduce){.app-header.viaduct-arriving .header-shell{animation:none;background:#173e2a;border-color:#54e69c}}
 
 /* iPhone top safe area; leave a small gap beneath the status bar. */
 .app-header{padding-top:8px}
@@ -547,9 +536,6 @@ main>.planned-works-status{margin:0 0 10px}
 #timetableTile .calls-button{background:#173047;border:1px solid #4a718e;color:#9fe0ff;border-radius:7px;padding:5px 8px;font-size:12px;cursor:pointer}
 #timetableTile .service-date{display:block;font-size:10px;font-weight:500;color:#93a9c0;margin-top:3px}
 #viaductCountdownUnit{font-size:clamp(11px,2.9vw,14px);font-weight:600;letter-spacing:0;color:#b7d3e5;align-self:center}
-@keyframes trackerGreenPulse{0%,100%{background:#132d25;box-shadow:inset 0 0 0 1px #2c845d}50%{background:#20593c;box-shadow:inset 0 0 0 2px #70f1ab}}
-.app-header #trackerTile.crossing-two-minutes{animation:trackerGreenPulse 1s ease-in-out infinite;border-radius:10px}
-@media(prefers-reduced-motion:reduce){.app-header #trackerTile.crossing-two-minutes{animation:none;background:#20593c}}
 
 /* Force service details to occupy a dedicated full-width row, not a skinny Calls cell. */
 #timetableTile .timetable{width:100%;table-layout:fixed}
@@ -1311,12 +1297,9 @@ function updateViaductCountdown(markers){
  const trainAt=chosen?.at;
  const minutes=Number.isFinite(trainAt)?(trainAt-now)/60000:null;
  const tile=$("proximityTile");
- const approaching=Number.isFinite(minutes)&&minutes>=0&&minutes<=15;
- const near=Number.isFinite(minutes)&&minutes>=0&&minutes<=2;
+ const approaching=Number.isFinite(minutes)&&minutes>=0&&minutes<15;
  const header=document.querySelector(".app-header");
- header?.classList.toggle("viaduct-imminent",approaching&&!near);
- header?.classList.toggle("viaduct-arriving",near);
- $("trackerTile")?.classList.toggle("crossing-two-minutes",near);
+ header?.classList.toggle("viaduct-imminent",approaching);
  // Flash the single outer card only: the countdown has no independent alert state.
  tile.classList.remove("viaduct-soon","viaduct-arriving");
  const label=$("viaductRemaining"),time=$("viaductTileCountdown"),note=$("viaductTileNote");
@@ -1462,8 +1445,6 @@ function render(){
  const markers=visibleTrainMarkers();
  renderedTrainMarkers=markers;
  updateActiveTrainsPill(markers);
- const approachingViaduct=getViaductApproaching(markers);
- $("trackerTile").classList.toggle("viaduct-within-15",approachingViaduct.some(train=>train.remaining<=15));
  $("trains").innerHTML=markers.map(({train:t})=>'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+schematicTrainX(t)+',83)"><circle class="train-halo" r="15" style="animation:none"><animate attributeName="r" values="17;35" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".7;0" dur="1.4s" repeatCount="indefinite"/></circle><circle class="train-body" r="13" style="animation:none"><animate attributeName="r" values="14;19;14" dur="1.4s" repeatCount="indefinite"/></circle><text class="train-arrow" y="1">'+(t.direction==="back"?"←":"→")+'</text><title>'+safe(t.id)+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Rail report")+'</title></g>').join("");
  updateGeoTrainMarkers();
  renderViaductApproach(markers);
