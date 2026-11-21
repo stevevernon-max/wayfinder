@@ -46,14 +46,40 @@ async function send(sub: any, title: string, body: string, tag: string, settings
   });
 }
 
+async function sendCrossingReminders(now: number, settings: any) {
+  const imminent = new Date(now + 20 * 60000).toISOString();
+  await db(subscriptions + "?crossing_at=lt." + new Date(now).toISOString(), "DELETE");
+  let sent = 0;
+  for (const record of await db(subscriptions + "?crossing_at=lte." + imminent + "&order=crossing_at.asc&limit=100")) {
+    const remaining = (Date.parse(record.crossing_at) - now) / 60000;
+    if (remaining <= 0 || remaining > record.lead) continue;
+    const claim = await db(deliveries, "POST", { subscriber: record.id, event: "crossing-reminder" },
+      "resolution=ignore-duplicates,return=representation");
+    if (!claim.length) continue;
+    try {
+      await send(record.subscription, "Glenfinnan Viaduct crossing reminder",
+        "Scheduled in " + Math.ceil(remaining) + " min.", record.id, settings);
+      sent++;
+    } catch (error: any) {
+      if ([404, 410].includes(error.statusCode)) {
+        await db(subscriptions + "?device_id=eq." + record.device_id, "DELETE");
+      } else {
+        await db(deliveries + "?subscriber=eq." + record.id + "&event=eq.crossing-reminder", "DELETE");
+      }
+    }
+  }
+  return sent;
+}
+
 async function monitor(settings: any) {
   const now = Date.now();
+  const reminders = await sendCrossingReminders(now, settings);
   const response = await fetch(feedUrl + "?alert=" + now, { signal: AbortSignal.timeout(7000) });
   if (!response.ok) throw Error("Rail feed unavailable");
   const feed = await response.json();
   const age = now - Date.parse(feed.updated);
   if (!Number.isFinite(age) || age >= 600000 || age < -60000 || !Array.isArray(feed.trains)) {
-    return reply({ checked: true, reason: "No fresh railway feed" });
+    return reply({ checked: true, reason: "No fresh railway feed", reminders });
   }
   const trains = feed.trains.filter((t: any) => {
     const elapsed = now - Date.parse(t.observedAt);
@@ -61,7 +87,7 @@ async function monitor(settings: any) {
   });
   await db(deliveries + "?created_at=lt." + new Date(now - 3 * 86400000).toISOString(), "DELETE");
   let sent = 0;
-  for (const record of await db(subscriptions + "?select=*&limit=100")) {
+  for (const record of await db(subscriptions + "?crossing_at=is.null&select=*&limit=100")) {
     const due = trains.flatMap((train: any) => {
       const stationEstimate = train.viewpoints?.[record.viewpoint];
       let minutes = Number.isFinite(stationEstimate?.etaMinutes) ? stationEstimate.etaMinutes - age / 60000 : NaN;
@@ -90,7 +116,7 @@ async function monitor(settings: any) {
       }
     }
   }
-  return reply({ checked: true, sent });
+  return reply({ checked: true, sent, reminders });
 }
 
 Deno.serve(async (request) => {
@@ -118,13 +144,21 @@ Deno.serve(async (request) => {
     if (!data || typeof data !== "object") return reply({ error: "Invalid request" }, 400);
     if (action === "unsubscribe") {
       if (typeof data.endpoint !== "string" || data.endpoint.length > 2048) return reply({ error: "Invalid endpoint" }, 400);
-      await db(subscriptions + "?id=eq." + hash(data.endpoint), "DELETE");
+      await db(subscriptions + "?device_id=eq." + hash(data.endpoint), "DELETE");
       return reply({ unsubscribed: true });
     }
     if (!validSubscription(data.subscription) || !Object.hasOwn(viewpoints, data.viewpoint) ||
         ![5, 10, 15, 20].includes(data.leadMinutes)) return reply({ error: "Invalid alert preferences" }, 400);
-    const id = hash(data.subscription.endpoint);
-    const existing = await db(subscriptions + "?select=id&id=eq." + id);
+    const deviceId = hash(data.subscription.endpoint);
+    const once = Object.hasOwn(data, "crossingAt");
+    const now = Date.now();
+    if (once && (data.viewpoint !== "glenfinnan" || !Number.isSafeInteger(data.crossingAt) ||
+        data.crossingAt <= now || data.crossingAt > now + 15 * 86400000)) {
+      return reply({ error: "Invalid crossing time" }, 400);
+    }
+    const crossingAt = once ? new Date(data.crossingAt).toISOString() : null;
+    const id = once ? hash(deviceId + "|" + crossingAt) : deviceId;
+    const existing = await db(subscriptions + "?select=id&device_id=eq." + deviceId + "&limit=1");
     if (!existing.length) {
       const settings = await db("rpc/jacobite_push_settings", "POST", {});
       try {
@@ -133,7 +167,7 @@ Deno.serve(async (request) => {
         return reply({ error: "The test notification could not be sent" }, 422);
       }
     }
-    await db(subscriptions, "POST", { id, subscription: data.subscription, viewpoint: data.viewpoint, lead: data.leadMinutes },
+    await db(subscriptions, "POST", { id, subscription: data.subscription, viewpoint: data.viewpoint, lead: data.leadMinutes, crossing_at: crossingAt, device_id: deviceId },
       "resolution=merge-duplicates,return=minimal");
     return reply({ subscribed: true }, 201);
   } catch {

@@ -804,7 +804,14 @@ main .tile>.heading{font-size:19px}
 @media(prefers-reduced-motion:no-preference){
  #viaductApproachTrain{transition:transform .8s linear}
 }
-</style></head><body>
+</style><style>
+.viewpoint-planner { margin:6px 12px; }
+.viewpoint-planner summary { padding:7px 0; cursor:pointer; font-size:13px; font-weight:700; }
+.viewpoint-planner p,.viewpoint-planner ol { margin:4px 0 8px; }
+.plan-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+.plan-fields input { box-sizing:border-box; width:100%; padding:6px; font:inherit; color:inherit; background:#101722; border:1px solid #344456; border-radius:6px; }
+</style>
+</head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
 <section id="trackerTile" aria-label="Railway train tracker">
@@ -924,6 +931,22 @@ main .tile>.heading{font-size:19px}
    <p class="small">Use public paths and signed parking. Map pins mark approximate photo areas. Passing times can include ScotRail services. <a href="https://westcoastrailways.co.uk/jacobite/steam-train-trip" target="_blank" rel="noopener">Check Jacobite dates with West Coast Railways</a>.</p>
   </div>
  </details>
+ <details class="viewpoint-planner" id="leaveByPanel">
+  <summary>Leave by</summary>
+  <div class="plan-fields">
+   <label class="small">Drive (min)<input id="planDrive" type="number" min="0" max="360" inputmode="numeric"></label>
+   <label class="small">Walk (min)<input id="planWalk" type="number" min="0" max="360" inputmode="numeric"></label>
+   <label class="small">Buffer (min)<input id="planBuffer" type="number" min="0" max="360" value="5" inputmode="numeric"></label>
+  </div>
+  <p id="leaveByResult" class="small" aria-live="polite"></p>
+  <button class="button" id="checkDrive" type="button">Check drive from here</button>
+  <p class="small" id="planRouteNote"></p>
+ </details>
+ <details class="viewpoint-planner" id="photoRanking">
+  <summary>Best services for photos today</summary>
+  <p class="small" id="photoRankingStatus"></p>
+  <ol class="small" id="photoRankedList"></ol>
+ </details>
  <details class="viewpoint-alerts" id="viewpointAlerts">
   <summary hidden>Alerts</summary>
   <div class="alerts"><select id="alertLead" aria-label="Train approaching warning"><option value="5">5 min alert</option><option value="10" selected>10 min alert</option><option value="15">15 min alert</option><option value="20">20 min alert</option></select><button class="button" id="notifyBtn">Enable alerts</button><button class="button" id="disableAlertsBtn" style="display:none">Disable alerts</button></div><div class="small" id="notificationStatus">Checking whether background notifications are available…</div><div class="small" id="installHint"></div>
@@ -941,6 +964,7 @@ main .tile>.heading{font-size:19px}
 </details>
 <details class="tile" id="timetableTile" aria-labelledby="timetableHeading">
 <summary class="heading" id="timetableHeading">Upcoming train services</summary>
+<p id="crossingAlertStatus" class="small" aria-live="polite"></p>
 <div class="small" id="timetableStatus">Loading upcoming services…</div>
 <div class="table-wrap"><table class="timetable" id="timetableTable" hidden><thead><tr><th>Departs</th><th>Route</th><th>Viaduct</th><th>Calls</th></tr></thead><tbody id="timetableRows"></tbody><tbody id="timetableMoreRows" hidden></tbody></table></div>
 <div class="timetable-controls">
@@ -949,7 +973,7 @@ main .tile>.heading{font-size:19px}
 </div>
 </details>
 <footer>Independent photography project. Railway ETAs use authorised Darwin and VSTP schedules, with Network Rail TRUST reports used as actual station-time anchors. Train markers estimate position between timed points along the mapped line; they are not GPS positions, and speed restrictions are not individually modelled. Directions open your maps app. Location and weather estimates are not safety guarantees.</footer>
-</main><script>
+</main><script src="../tomtom-config.js"></script><script>
 "use strict";
 // Configure an authorised backend which returns train reports, ETAs and delays.
 // Never put provider credentials in client-side JavaScript.
@@ -1822,6 +1846,7 @@ function updateViewpointCountdown(viaductAt,now){
  if(photoCrossingAt!==at){
   photoCrossingAt=at;
   updatePhotographyLightStatus();
+  updateLeaveBy();
  }
 }
 function viewpointScore(spot){
@@ -1949,6 +1974,7 @@ function clearPhotoWeather(message){
  $("weatherTime").textContent=message;
 }
 function updatePhotographyLightStatus(){
+ updatePhotoRanking();
  const {current,hourly,daily}=weatherData||{};
  const now=Date.now();
  const crossing=Number.isFinite(photoCrossingAt)&&photoCrossingAt>=now?photoLocalTime(photoCrossingAt):null;
@@ -2142,7 +2168,7 @@ function renderTimetable(){
    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(depart))continue;
    const [hours,mins]=depart.split(":").map(Number);
    const at=day.getTime()+(hours*60+mins-shift)*60000;
-   if(at<now)continue;
+   if(at<now&&!(railLocalTime(date,train.viaduct)>now))continue;
    const key=[date,depart,train.from,train.to].join("|");
    services.push({train,at,date,key});
   }
@@ -2163,6 +2189,7 @@ function renderTimetable(){
  const previousFirst=rows.querySelector(".calls-button")?.dataset.service;
  const serviceRows=upcoming.map(({train,date,key:id},index)=>{
   const day=formatUK.format(new Date(date+"T12:00:00Z"));
+  const crossingAt=railLocalTime(date,train.viaduct);
   const expanded=expandedKeys.has(id)||(index===0&&id!==previousFirst);
   const items=train.stops.map(([station,time,request])=>
    '<span class="ticker-call"><strong>'+safe(station)+'</strong><time>'+safe(time)+'</time>'+(request?'<small>Request</small>':'')+'</span>').join('<span class="ticker-separator" aria-hidden="true">◆</span>');
@@ -2171,7 +2198,7 @@ function renderTimetable(){
   return '<tr class="service-main"><td>'+safe(train.stops[0][1])+'<span class="service-date">'+safe(day)+'</span></td>'+
    '<td>'+safe(train.from)+' → '+safe(train.to)+'</td><td>'+safe(train.viaduct)+'</td>'+
    '<td><button class="calls-button" data-service="'+safe(id)+'" type="button" aria-expanded="'+expanded+'" aria-controls="calls-'+index+'">Calls '+(expanded?'▴':'▾')+'</button></td></tr>'+
-   '<tr class="calls-expanded" id="calls-'+index+'"'+(expanded?'':' hidden')+'><td colspan="4">'+ticker+'</td></tr>';
+   '<tr class="calls-expanded" id="calls-'+index+'"'+(expanded?'':' hidden')+'><td colspan="4">'+ticker+(crossingAt>now?'<button class="button" type="button" title="Scheduled crossing reminder at the lead time selected under Alerts" data-alert-at="'+crossingAt+'">Alert me for this crossing</button>':'')+'</td></tr>';
  });
  rows.innerHTML=serviceRows[0]||"";
  timetableMoreRows.innerHTML=serviceRows.slice(1).join("");
@@ -2258,10 +2285,14 @@ async function setupPush(){
   pushStatus(pushSubscription?"Push subscription detected. Select a viewpoint and tap Update alerts.":"Background push is available. Choose a viewpoint and enable alerts.");
  }catch(e){button.disabled=true;pushStatus("Background push unavailable: "+e.message)}
 }
-async function savePush(){
- const button=$("notifyBtn"),viewpoint=$("viewpoint").value;
+async function savePush(crossingAt=null){
+ const once=Number.isFinite(crossingAt);
+ const button=$("notifyBtn"),viewpoint=once?"glenfinnan":$("viewpoint").value;
  if(siteData[viewpoint]?.between&&viewpoint!=="eilt"||siteData[viewpoint]?.viaduct&&viewpoint!=="glenfinnan"){pushStatus("Background alerts are unavailable for this viewpoint.");return}
- if(!pushConfig||!pushRegistration){pushStatus("Push backend is not ready.");return}
+ if(!pushConfig?.publicKey||!pushRegistration||(/iPad|iPhone|iPod/.test(navigator.userAgent)&&!standalone())){
+  if(once)throw Error("Open JacobiteTrack from its Home Screen icon to set a reminder.");
+  pushStatus("Push backend is not ready.");return;
+ }
  button.disabled=true;
  try{
   if(Notification.permission!=="granted"){
@@ -2269,14 +2300,15 @@ async function savePush(){
     if(permission!=="granted")throw Error("Notification permission was not granted");
   }
   const newSub=await pushRegistration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decodeVapidBase64(pushConfig.publicKey)});
-  const res=await fetch(pushConfig.backendUrl+"/api/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subscription:newSub.toJSON(),viewpoint:$("viewpoint").value,leadMinutes:Number($("alertLead").value)})});
+  const res=await fetch(pushConfig.backendUrl+"/api/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subscription:newSub.toJSON(),viewpoint,leadMinutes:Number($("alertLead").value),...(once?{crossingAt}: {})})});
   if(!res.ok)throw Error("Push service rejected subscription ("+res.status+")");
   pushSubscription=newSub;button.textContent="Update alerts";$("disableAlertsBtn").style.display="inline-block";
-  pushStatus("Background alerts registered for "+selectedViewpointLocation().name+" · "+$("alertLead").value+" minutes. Delivery requires valid railway predictions and a running backend.");
- }catch(e){pushStatus("Could not enable alerts: "+e.message)}
+  if(once)$("crossingAlertStatus").textContent="Glenfinnan reminder set for "+planClock(crossingAt)+" · "+$("alertLead").value+" min before the scheduled crossing.";
+  else pushStatus("Background alerts registered for "+selectedViewpointLocation().name+" · "+$("alertLead").value+" minutes.");
+ }catch(e){if(once)throw e;pushStatus("Could not enable alerts: "+e.message)}
  finally{button.disabled=false}
 }
-$("notifyBtn").addEventListener("click",savePush);
+$("notifyBtn").addEventListener("click",()=>savePush());
 $("disableAlertsBtn").addEventListener("click",async()=>{
  const sub=pushSubscription||await pushRegistration?.pushManager.getSubscription();
  if(!sub)return;
@@ -2287,6 +2319,7 @@ $("disableAlertsBtn").addEventListener("click",async()=>{
  pushStatus("Background alerts disabled on this iPhone.");
 });
 function changeViewpoint(){
+ resetTravelPlan();
  updateSelectedViewpointRating();
  updateViewpointDistance();
  updateViewpointDirections();
@@ -2794,6 +2827,128 @@ function initGeoInteraction(){
  el.addEventListener("pointerup",end);el.addEventListener("pointercancel",end);el.addEventListener("lostpointercapture",end);
  el.addEventListener("keydown",e=>{if(e.key==="+"||e.key==="="){e.preventDefault();geoZoom(.7)}else if(e.key==="-"){e.preventDefault();geoZoom(1.4)}});
 }
+const ukPlanClock=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
+const planClock=(at,now=Date.now())=>(photoLocalTime(at).slice(0,10)===photoLocalTime(now).slice(0,10)?"":"On "+new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",weekday:"short",day:"numeric",month:"short"}).format(at)+" · ")+ukPlanClock.format(at);
+const glenParking={lat:56.870499,lon:-5.435653};
+let driveRequest=null;
+function updateLeaveBy(){
+ const at=photoCrossingAt, fields=["planDrive","planWalk","planBuffer"].map(id=>$(id).valueAsNumber);
+ const output=$("leaveByResult");
+ if(!Number.isFinite(at)||at<=Date.now()){output.textContent="No upcoming passing estimate.";return;}
+ if(!fields.every(value=>Number.isFinite(value)&&value>=0&&value<=360)){output.textContent="Enter your drive, walk and buffer in minutes.";return;}
+ const leave=at-fields.reduce((a,b)=>a+b,0)*60000;
+ output.textContent="Passing "+planClock(at)+" · "+(leave<=Date.now()?"Leave now · buffer may be reduced":"Leave by "+planClock(leave));
+}
+function resetTravelPlan(){
+ driveRequest?.abort();
+ $("planDrive").value="";
+ $("planWalk").value=$("viewpoint").value==="glenfinnan"?"20":"";
+ $("planRouteNote").textContent="";
+ $("checkDrive").hidden=!selectedViewpointLocation()?.viaduct;
+ updateLeaveBy();
+}
+async function checkViewpointDrive(){
+ const spot=selectedViewpointLocation(),key=window.WAYFINDER_TOMTOM_KEY;
+ const note=$("planRouteNote");
+ if(!spot?.viaduct||!key)return;
+ driveRequest?.abort();
+ const request=new AbortController();
+ driveRequest=request;
+ note.textContent="Checking drive to Glenfinnan visitor centre car park…";
+ try{
+  const start=userCoords||await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(
+   p=>resolve({lat:p.coords.latitude,lon:p.coords.longitude}),reject,{timeout:10000}));
+  if(request.signal.aborted)return;
+  const coords=[start,glenParking].map(p=>p.lat+","+p.lon).join(":");
+  const query=new URLSearchParams({key,travelMode:"car",traffic:"true"});
+  const response=await fetch("https://api.tomtom.com/routing/1/calculateRoute/"+coords+"/json?"+query,{signal:request.signal});
+  if(!response.ok)throw Error("Route unavailable");
+  const seconds=(await response.json()).routes?.[0]?.summary?.travelTimeInSeconds;
+  if(request.signal.aborted)return;
+  if(!Number.isFinite(seconds)||seconds<0)throw Error("Drive time unavailable");
+  $("planDrive").value=Math.ceil(seconds/60);
+  note.textContent="Drive to Glenfinnan visitor centre car park · TomTom";
+  updateLeaveBy();
+ }catch{
+  if(!request.signal.aborted)note.textContent="Drive estimate unavailable. Enter the time from your maps app.";
+ }
+}
+function photoLightDirection(at,spot,target){
+ const radians=Math.PI/180, t=(at-Date.UTC(2000,0,1,12))/86400000;
+ const mean=(280.46+0.9856474*t)*radians, anomaly=(357.528+0.9856003*t)*radians;
+ const longitude=mean+(1.915*Math.sin(anomaly)+0.020*Math.sin(2*anomaly))*radians;
+ const obliquity=23.439*radians;
+ const ra=Math.atan2(Math.cos(obliquity)*Math.sin(longitude),Math.cos(longitude));
+ const dec=Math.asin(Math.sin(obliquity)*Math.sin(longitude));
+ const hour=(280.46061837+360.98564736629*t+spot.lon)*radians-ra;
+ const lat=spot.lat*radians;
+ const sun=Math.atan2(-Math.sin(hour),Math.tan(dec)*Math.cos(lat)-Math.sin(lat)*Math.cos(hour));
+ const delta=(target.lon-spot.lon)*radians, targetLat=target.lat*radians;
+ const bearing=Math.atan2(Math.sin(delta)*Math.cos(targetLat),
+  Math.cos(lat)*Math.sin(targetLat)-Math.sin(lat)*Math.cos(targetLat)*Math.cos(delta));
+ const angle=Math.acos(Math.max(-1,Math.min(1,Math.cos(sun-bearing))))/radians;
+ return angle<55?{label:"Backlit",value:-1}:angle>125?{label:"Front-lit",value:1}:{label:"Side-lit",value:0.5};
+}
+function rankPhotoCrossings(now=Date.now()){
+ const id=$("viewpoint").value, spot=selectedViewpointLocation(), data=publishedTimetable;
+ const today=photoLocalTime(now).slice(0,10);
+ if(!spot||today<data.validFrom||today>data.validThrough)return [];
+ const day=new Date(today+"T12:00:00Z").getUTCDay();
+ const pattern=day===0?"sunday":day===6?"saturday":day===5?"friday":"weekday";
+ const target=spot.viaduct?{lat:56.876183,lon:-5.431904}:geoStations.find(station=>station.name===spot.station);
+ const daily=weatherData?.daily,hourly=weatherData?.hourly;
+ const dateIndex=daily?.time?.indexOf(today), rise=daily?.sunrise?.[dateIndex],set=daily?.sunset?.[dateIndex];
+ if(!hourly||!rise||!set)return [];
+ return (data.patterns[pattern]||[]).flatMap(train=>{
+  const at=railLocalTime(today,spot.viaduct?train.viaduct:publishedStopTime(train,id));
+  if(!(at>now))return [];
+  const local=photoLocalTime(at), index=photoHour(hourly,local);
+  const visibility=hourly.visibility?.[index], rain=hourly.precipitation_probability?.[index];
+  if(local<rise||local>=set||!Number.isFinite(visibility)||!Number.isFinite(rain))return [];
+  const minutesOf=stamp=>Number(stamp.slice(11,13))*60+Number(stamp.slice(14,16));
+  const nearTwilight=Math.min(minutesOf(local)-minutesOf(rise),minutesOf(set)-minutesOf(local))<25;
+  const score=weatherConditionsScore(visibility,rain,nearTwilight?"twilight":"day");
+  const direction=target&&distanceKm(spot.lat,spot.lon,target.lat,target.lon)>.03?photoLightDirection(at,spot,target):null;
+  const clouds=hourly.cloud_cover?.[index]??100;
+  return [{at,to:train.to,rain,visibility, direction,rank:score+(direction?.value||0)*(1-clouds/100)}];
+ }).sort((a,b)=>b.rank-a.rank||a.at-b.at);
+}
+function updatePhotoRanking(){
+ const panel=$("photoRanking");
+ if(!panel.open)return;
+ const ranked=rankPhotoCrossings();
+ $("photoRankingStatus").textContent=ranked.length?"Timetable and hourly forecast at this viewpoint.":"No remaining daylight services with a forecast today.";
+ $("photoRankedList").replaceChildren(...ranked.map(item=>{
+  const li=document.createElement("li");
+  li.textContent=ukPlanClock.format(item.at)+" to "+item.to+" · "+item.rain+"% rain · "+(item.visibility/1000).toFixed(1)+" km visibility"+(item.direction?" · "+item.direction.label:"");
+  return li;
+ }));
+}
+function railLocalTime(date,time){
+ if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time||""))return NaN;
+ const wall=Date.parse(date+"T"+time+":00Z");
+ const offset=new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",timeZoneName:"shortOffset",hour:"2-digit"}).formatToParts(wall).find(p=>p.type==="timeZoneName")?.value;
+ const match=offset?.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+ return wall-(match?(match[1]==="-"?-1:1)*(+match[2]*60+ +(match[3]||0))*60000:0);
+}
+$("leaveByPanel").addEventListener("input",updateLeaveBy);
+$("checkDrive").addEventListener("click",checkViewpointDrive);
+$("photoRanking").addEventListener("toggle",updatePhotoRanking);
+$("timetableTable").addEventListener("click",async event=>{
+ const button=event.target.closest("button[data-alert-at]");
+ if(!button)return;
+ button.disabled=true;
+ const at=Number(button.dataset.alertAt);
+ try{
+  await savePush(at);
+  button.textContent="Reminder set";
+ }catch(error){
+  $("crossingAlertStatus").textContent=error.message;
+  button.disabled=false;
+ }
+});
+resetTravelPlan();
+
 initGeoInteraction();
 updateMapReset();renderGeoMaps();loadGeoRailway();fetchWeather();
 
