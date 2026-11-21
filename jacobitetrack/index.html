@@ -799,11 +799,8 @@ main .tile>.heading{font-size:19px}
 .viaduct-approach-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .viaduct-approach-heading .heading{font-size:17px;margin:0}
 #viaductTrackTile .rail-svg{display:block;width:100%;height:auto;max-height:110px}
-#viaductApproachTrain .train-body{fill:#f0b84a;stroke:#ffe39c;stroke-width:2}
+#viaductApproachTrain .train-body{fill:#f0b84a;stroke:#ffe39c;stroke-width:2;animation:none}
 #viaductApproachTrain .train-arrow{fill:#17242b}
-@media(prefers-reduced-motion:no-preference){
- #viaductApproachTrain{transition:transform .8s linear}
-}
 </style><style>
 .viewpoint-planner { margin:6px 12px; }
 .viewpoint-planner summary { padding:7px 0; cursor:pointer; font-size:13px; font-weight:700; }
@@ -870,9 +867,9 @@ main .tile>.heading{font-size:19px}
   <span id="viaductApproachStatus" class="small">Estimated approach</span>
  </div>
   <svg class="rail-svg viaduct-hero-rail" viewBox="0 0 600 100" role="img" aria-label="Estimated movement towards and over Glenfinnan Viaduct">
-   <path class="bed" d="M 14 59 H 263 M 337 59 H 586"/>
-   <path class="track" d="M 14 59 H 263 M 337 59 H 586"/>
-   <g id="viaductMarker" transform="translate(300 59)" fill="none" stroke="#80b8fa" stroke-linecap="round" aria-label="Glenfinnan Viaduct centre">
+   <path class="bed" d="M 14 59 H 220 M 380 59 H 586"/>
+   <path class="track" d="M 14 59 H 220 M 380 59 H 586"/>
+   <g id="viaductMarker" transform="translate(300 59) scale(2.5 1)" fill="none" stroke="#80b8fa" stroke-linecap="round" aria-label="Glenfinnan Viaduct centre">
     <path d="M -27 -11 H 27" stroke-width="2.8"/>
     <path d="M -25 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
              M -14.4 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
@@ -882,7 +879,6 @@ main .tile>.heading{font-size:19px}
     <title>Glenfinnan Viaduct</title>
    </g>
    <g id="viaductApproachTrain">
-    <circle class="train-halo" r="19"/>
     <circle class="train-body" r="14"/>
     <path class="jacobite-star" d="M0 -19 5.5 -6.8 19 -5.7 8.8 3.2 11.8 17 0 9.9 -11.8 17 -8.8 3.2 -19 -5.7 -5.5 -6.8Z"/>
     <text id="viaductApproachArrow" class="train-arrow" y="1">→</text>
@@ -1729,7 +1725,9 @@ const isJacobite=train=>train?.serviceKind==="jacobite";
 const matchesTrainFilter=train=>trainFilter==="all"||isJacobite(train);
 const serviceLabel=train=>isJacobite(train)?"The Jacobite":train.operatorCode==="SR"||train.serviceKind==="scotrail"?"ScotRail":"";
 const viaductApproachWindow=5*60000;
-const viaductCrossingHold=8000;
+const viaductCrossingHold=40000;
+// SVG deck half-width including the rounded stroke cap, after horizontal scaling.
+const viaductDeckHalfWidth=(27+1.4)*2.5;
 let displayedViaductCrossing=null;
 function updateViaductCountdown(markers){
  // A malformed or missing live feed must never stop the published timetable timer.
@@ -1765,8 +1763,7 @@ function updateViaductCountdown(markers){
  const boards=liveCandidate||scheduleCandidate;
  const next=boards||
   (pdfNext?{at:pdfNext.at,direction:pdfNext.to==="Mallaig"?"back":"out",serviceKind:pdfNext.serviceKind,timetable:true}:null);
- // Keep the completed crossing on screen briefly so the marker can pass
- // over the bridge before both tiles switch to the next service.
+ // Keep this service selected until its marker clears the bridge.
  const previous=displayedViaductCrossing;
  const crossing=previous&&now>=previous.at&&now-previous.at<viaductCrossingHold;
  const chosen=crossing?previous:next;
@@ -1840,11 +1837,15 @@ function renderViaductApproach(crossing,now){
  tile.hidden=remaining>viaductApproachWindow||remaining<=-viaductCrossingHold;
  if(tile.hidden)return;
  const direction=crossing.direction==="back"?-1:1;
- // This is a countdown illustration, not a measured distance or GPS fix.
- const offset=remaining>=0?-264*remaining/viaductApproachWindow
-  :-48*remaining/viaductCrossingHold;
- $("viaductApproachTrain").classList.toggle("is-jacobite",isJacobite(crossing));
- $("viaductApproachTrain").style.transform="translate("+(300+direction*offset)+"px,59px)";
+ // Match the marker edges to the deck edges at entry and exit.
+ const jacobite=isJacobite(crossing);
+ const markerHalfWidth=jacobite?20:15; // Includes the SVG stroke.
+ const entry=viaductDeckHalfWidth+markerHalfWidth;
+ const offset=remaining>0?-entry-(264-entry)*remaining/viaductApproachWindow
+  :entry*(2*(-remaining)/viaductCrossingHold-1);
+ const marker=$("viaductApproachTrain");
+ marker.classList.toggle("is-jacobite",jacobite);
+ marker.setAttribute("transform","translate("+(300+direction*offset)+",59)");
  $("viaductApproachArrow").textContent=direction===1?"→":"←";
  $("viaductApproachStatus").textContent=remaining>0?"Estimated approach":"Estimated crossing";
 }
