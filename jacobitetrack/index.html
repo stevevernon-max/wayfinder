@@ -125,7 +125,6 @@ select{background:#0f1721;color:#eaf0f8;border:1px solid #344256;border-radius:1
 .single-viewpoint{grid-template-columns:1fr;gap:0}
 .single-viewpoint>.tile{margin-bottom:12px}
 #trackerTile .rail-svg{overflow:visible}
-#viaductTrackTile .focus-eta-label{fill:#e9f6ff;font-size:35px;font-weight:800;paint-order:stroke;stroke:#102331;stroke-width:3px;stroke-linejoin:round}
 #trackerTile .user-ripple{fill:#39a4ff;opacity:.55}
 #trackerTile .user-spot{fill:#278eff;stroke:#e9f9ff;stroke-width:3}
 #trackerTile #gpsDistanceTag{text-rendering:geometricPrecision}
@@ -505,17 +504,6 @@ main>.planned-works-status{margin:0 0 10px}
 @keyframes sync-spin{to{transform:rotate(360deg)}}
 @media(max-width:380px){.app-header .force-sync-btn{font-size:11px;padding:7px 8px}}
 
-/* Close-up stays directly below Tile 1 and includes one clear viaduct marker. */
-.app-header #viaductTrackTile{padding:6px 2px 10px;border-bottom:1px solid #303e50}
-#viaductTrackTile .focus-title{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#dbeeff;font-size:12px;font-weight:750;padding:2px 6px}
-#viaductTrackTile .focus-hint{font-size:10px;color:#90abc3;font-weight:500;white-space:nowrap}
-#viaductTrackTile .rail-scroll{margin:0;overflow:hidden}
-#viaductTrackTile .rail-svg{display:block;width:100%;height:auto}
-#viaductTrackTile .focus-viaduct-label{fill:#87eab2;font-size:19px;font-weight:800;paint-order:stroke;stroke:#102331;stroke-width:2px}
-#viaductTrackTile .focus-caption{font-size:10px;color:#8fa5bb;text-align:right;padding:0 6px}
-#viaductTrackTile .train-arrow{fill:#17242b}
-#viaductTrackTile .focus-train-estimate .train-body{fill:#e8b85c}
-#viaductTrackTile .focus-train-reported .train-body{fill:#66c5ff}
 /* Match both compact header pills and keep a 44px-ish refresh tap target. */
 .app-header .header-pills{gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .app-header .force-sync-btn,.app-header #activeTrainsPill{border:1px solid #355777;border-radius:999px;background:#182d43;color:#deedff;font-size:11px;font-weight:750;min-height:32px;padding:7px 10px;line-height:1.25;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;box-shadow:none}
@@ -558,7 +546,6 @@ main>.planned-works-status{margin:0 0 10px}
 .app-header .force-sync-btn{width:34px;min-width:34px;max-width:34px;height:34px;padding:0!important;display:inline-grid;place-items:center;font-size:23px!important;line-height:1}
 .app-header .force-sync-btn span{display:inline-block;font-size:23px;line-height:1}
 .app-header .force-sync-btn[aria-busy="true"] span{animation:sync-spin 900ms linear infinite}
-#viaductTrackTile .focus-title{justify-content:flex-start}
 
 /* Pull GPS, train count and refresh to the very top of compact Tile 1. */
 .app-header .header-shell{padding-top:5px}
@@ -591,8 +578,6 @@ main>.planned-works-status{margin:0 0 10px}
 .app-header #viaductCombinedTile #proximityTile{display:flex!important;align-items:center;min-width:0;min-height:0!important;padding:2px 0!important;margin:0!important;border:0!important;box-shadow:none!important;background:transparent!important;border-radius:0!important;overflow:visible}
 .app-header #viaductCombinedTile #viaductRemaining{display:block!important;line-height:1.06;text-align:left;font-size:clamp(27px,7.4vw,50px)!important;white-space:nowrap;letter-spacing:-.9px;flex:0 1 auto}
 .app-header #viaductCombinedTile .viaduct-next-clock{font-size:clamp(27px,7.4vw,50px);font-weight:800;line-height:1.06;text-align:right;white-space:nowrap;letter-spacing:-.9px;color:#8fcfff;font-variant-numeric:tabular-nums}
-.app-header #viaductCombinedTile #viaductTrackTile{border:0!important;padding:2px 0 0!important;background:transparent!important;margin:0!important}
-.app-header #viaductCombinedTile #viaductTrackTile .rail-scroll{margin:0}
 @media(max-width:390px){.app-header .header-brand>strong{font-size:16px!important}.app-header #activeTrainsPill,.app-header .gps-accuracy-pill{font-size:9px;padding:4px 5px}}
 .app-header .train-delay-summary{font-size:10px;line-height:1.2;color:#849db0;text-align:right;margin:0 4px 2px}
 .app-header .train-delay-summary.is-delayed{color:#ffcc78;font-weight:750}
@@ -630,23 +615,10 @@ main>.planned-works-status{margin:0 0 10px}
  .app-header #viaductCombinedTile .viaduct-next-clock{font-size:clamp(10px,2.7vw,12px)!important}
 }
 
-/* Glenfinnan viaduct hero + zoomed approach; scoped strictly to Tile 2. */
-.app-header #viaductTrackTile{border:0!important;padding:8px 0 2px!important;margin:0!important;background:transparent!important;min-width:0}
-.app-header #viaductTrackTile .rail-scroll{margin:0;overflow:hidden;width:100%}
-.app-header #viaductTrackTile .viaduct-hero-rail{display:block;width:100%;height:auto;max-width:100%}
-.app-header #viaductTrackTile .hero-km{font-size:17px;fill:#a0b7c9;font-weight:650;letter-spacing:.1px}
-.app-header #viaductTrackTile .focus-viaduct-label{font-size:18px;fill:#9de8c8;font-weight:800;letter-spacing:.3px}
-.app-header #viaductTrackTile .focus-train-reported .train-body{fill:#f0b84a;stroke:#ffe39c;stroke-width:2}
-.app-header #viaductTrackTile .focus-train-estimate .train-body{fill:#66bde8;stroke:#c9eeff;stroke-width:2}
-@media(max-width:440px){.app-header #viaductTrackTile .hero-km{font-size:18px}}
 
-/* The countdown sets the row height; the close-up fits alongside it. */
+/* Compact crossing countdown. */
 .app-header #viaductCombinedTile{padding:5px 4px 3px!important;min-width:0}
 .app-header #viaductCombinedTile .viaduct-integrated-row{position:relative;width:100%;min-width:0}
-.app-header #viaductCombinedTile .viaduct-integrated-row:has(#viaductTrackTile:not([hidden])){padding-right:46%}
-.app-header #viaductCombinedTile #viaductTrackTile{position:absolute;inset:0 0 0 auto;width:44%;display:grid;align-items:center}
-.app-header #viaductCombinedTile #viaductTrackTile .rail-scroll{height:100%}
-.app-header #viaductCombinedTile #viaductTrackTile .viaduct-hero-rail{height:100%}
 .app-header #viaductCombinedTile .viaduct-countdown-layout{display:flex;gap:8px;align-items:center;min-width:0}
 .app-header #viaductCombinedTile .viaduct-countdown-layout>.viaduct-icon{flex:0 0 38px!important;width:38px!important;height:43px!important;aspect-ratio:auto!important;padding:5px!important;border-radius:10px!important}
 .app-header #viaductCombinedTile .viaduct-countdown-content{min-width:0;flex:1 1 auto}
@@ -655,10 +627,6 @@ main>.planned-works-status{margin:0 0 10px}
 .app-header #viaductCombinedTile #viaductRemaining{font-size:clamp(24px,5.5vw,40px)!important;white-space:nowrap!important;line-height:1.08!important}
 .app-header #viaductCombinedTile .viaduct-combined-heading{font-size:clamp(11px,2.35vw,15px)!important;line-height:1.1!important;flex:1 1 auto}
 .app-header #viaductCombinedTile .viaduct-next-clock{margin-top:4px!important;font-size:clamp(10px,2vw,13px)!important;line-height:1.3!important;overflow-wrap:break-word}
-.app-header #viaductTrackTile{display:block;width:100%;min-width:0;padding:0!important;margin:0!important;align-self:center}
-.app-header #viaductTrackTile .rail-scroll{width:100%;margin:0!important}
-.app-header #viaductTrackTile .viaduct-hero-rail{width:100%;height:auto;display:block;max-width:100%}
-.app-header #viaductTrackTile .hero-km{font-size:20px;fill:#9ab6c9;font-weight:700}
 @media(max-width:520px){
  .app-header #viaductCombinedTile .viaduct-countdown-layout{gap:6px;align-items:flex-start}
  .app-header #viaductCombinedTile .viaduct-countdown-layout>.viaduct-icon{flex-basis:30px!important;width:30px!important;height:36px!important;border-radius:8px!important;padding:4px!important}
@@ -671,16 +639,12 @@ main>.planned-works-status{margin:0 0 10px}
 /* Tile 1 refinement: remove duplicated divider, enlarge the approach illustration. */
 .app-header #trackerTile{border-bottom:0!important}
 .app-header #viaductCombinedTile{border-top:0!important;margin-top:0!important}
-.app-header #viaductTrackTile{min-width:0}
-.app-header #viaductTrackTile .viaduct-hero-rail{width:100%;max-width:100%;height:auto}
 @media(max-width:520px){
  .app-header #viaductCombinedTile .viaduct-countdown-layout>.viaduct-icon{flex-basis:26px!important;width:26px!important;height:34px!important}
  .app-header #viaductCombinedTile #viaductRemaining{font-size:clamp(20px,5.7vw,28px)!important}
 }
 
 /* Only show the close-up when an estimated train is within 1 km of the viaduct. */
-.app-header #viaductTrackTile[hidden]{display:none!important}
-.app-header #viaductTrackTile .focus-distance-label{font-size:34px;fill:#a9b9cc}
 
 .app-header #viaductCombinedTile .viaduct-countdown-top{display:grid;justify-items:start;gap:3px}
 #geoTile #geoStatus:empty{visibility:hidden}
@@ -725,9 +689,6 @@ main>.planned-works-status{margin:0 0 10px}
  font-size:clamp(22px,6.5vw,45px)!important;
  font-weight:800!important;
  font-variant-numeric:tabular-nums;
-}
-.app-header #viaductCombinedTile .viaduct-integrated-row:has(#viaductTrackTile:not([hidden])) #viaductRemaining{
- font-size:clamp(16px,5.2vw,38px)!important;
 }
 
 :root{--tile-gap:8px}
@@ -829,6 +790,16 @@ main .tile>.heading{font-size:19px}
 .photo-weather>.photo-toggle-in-weather,.viewpoint-guide-body{padding-top:8px}
 /* Footer buttons provide the disclosure controls, so closed panels take no space. */
 #photoTile>details:not([open]){display:none}
+#viaductTrackTile{padding:9px 12px 2px}
+#viaductTrackTile[hidden]{display:none}
+.viaduct-approach-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.viaduct-approach-heading .heading{font-size:17px;margin:0}
+#viaductTrackTile .rail-svg{display:block;width:100%;height:auto;max-height:110px}
+#viaductApproachTrain .train-body{fill:#f0b84a;stroke:#ffe39c;stroke-width:2}
+#viaductApproachTrain .train-arrow{fill:#17242b}
+@media(prefers-reduced-motion:no-preference){
+ #viaductApproachTrain{transition:transform .8s linear}
+}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -848,7 +819,7 @@ main .tile>.heading{font-size:19px}
 <div id="trainDelaySummary" class="train-delay-summary" aria-live="off" hidden></div>
 <div class="muted" id="trackStatus" hidden></div>
 </section>
-<section id="viaductCombinedTile" aria-label="Glenfinnan Viaduct approach and next crossing">
+<section id="viaductCombinedTile" aria-label="Next Glenfinnan Viaduct crossing">
  <div class="viaduct-combined-heading viaduct-title-row">Next Viaduct Crossing · <span id="viaductTileCountdown">Checking time…</span></div>
  <div class="viaduct-integrated-row">
  <div class="viaduct-countdown-layout">
@@ -861,13 +832,17 @@ main .tile>.heading{font-size:19px}
    </div>
   </div>
  </div>
- <section id="viaductTrackTile" aria-label="Zoomed train approach to Glenfinnan Viaduct" hidden>
- <div class="rail-scroll">
-  <svg class="rail-svg viaduct-hero-rail" viewBox="0 0 600 120" role="img" aria-label="Estimated train position within one kilometre on either side of Glenfinnan Viaduct">
+ </div>
+</section>
+</div></header><main>
+<section class="tile" id="viaductTrackTile" aria-labelledby="viaductApproachHeading" hidden>
+ <div class="viaduct-approach-heading">
+  <h2 class="heading" id="viaductApproachHeading">Glenfinnan Viaduct</h2>
+  <span id="viaductApproachStatus" class="small">Estimated approach</span>
+ </div>
+  <svg class="rail-svg viaduct-hero-rail" viewBox="0 0 600 100" role="img" aria-label="Estimated movement towards and over Glenfinnan Viaduct">
    <path class="bed" d="M 14 59 H 263 M 337 59 H 586"/>
    <path class="track" d="M 14 59 H 263 M 337 59 H 586"/>
-   <text class="station-label focus-distance-label" x="14" y="109">1 km</text>
-   <text class="station-label focus-distance-label" x="586" y="109" text-anchor="end">1 km</text>
    <g id="viaductMarker" transform="translate(300 59)" fill="none" stroke="#80b8fa" stroke-linecap="round" aria-label="Glenfinnan Viaduct centre">
     <path d="M -27 -11 H 27" stroke-width="2.8"/>
     <path d="M -25 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
@@ -877,13 +852,13 @@ main .tile>.heading{font-size:19px}
              M 17.4 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16" stroke-width="1.8"/>
     <title>Glenfinnan Viaduct</title>
    </g>
-   <g id="viaductTrains"></g>
+   <g id="viaductApproachTrain">
+    <circle class="train-halo" r="19"/>
+    <circle class="train-body" r="14"/>
+    <text id="viaductApproachArrow" class="train-arrow" y="1">→</text>
+   </g>
   </svg>
- </div>
 </section>
- </div>
-</section>
-</div></header><main>
 <section class="tile" id="photoTile" aria-labelledby="viewpointHeading">
  <h2 class="heading" id="viewpointHeading">Viewpoints &amp; Weather Conditions</h2>
  <div class="viewpoint-train-row">
@@ -960,7 +935,7 @@ main .tile>.heading{font-size:19px}
 <p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
 </div>
 </details>
-<details class="tile" id="timetableTile" aria-labelledby="timetableHeading" open>
+<details class="tile" id="timetableTile" aria-labelledby="timetableHeading">
 <summary class="heading" id="timetableHeading">Upcoming train services</summary>
 <div class="small" id="timetableStatus">Loading upcoming services…</div>
 <div class="table-wrap"><table class="timetable" id="timetableTable" hidden><thead><tr><th>Departs</th><th>Route</th><th>Viaduct</th><th>Calls</th></tr></thead><tbody id="timetableRows"></tbody><tbody id="timetableMoreRows" hidden></tbody></table></div>
@@ -1697,18 +1672,22 @@ function formatViaductCountdown(milliseconds){
  const clock=minuteText+"m "+seconds+"s";
  return days?days+"d "+hours+"h "+clock:hours?hours+"h "+clock:clock;
 }
+const viaductApproachWindow=5*60000;
+const viaductCrossingHold=8000;
+let displayedViaductCrossing=null;
 function updateViaductCountdown(markers){
  // A malformed or missing live feed must never stop the published timetable timer.
  let liveNext=null;
- try{liveNext=getViaductApproaching(markers||renderedTrainMarkers)[0]||null;}catch(error){console.warn("Viaduct live ETA unavailable",error)}
+ try{liveNext=getViaductApproaching(markers||renderedTrainMarkers).find(train=>train.crossingAt>Date.now())||null;}catch(error){console.warn("Viaduct live ETA unavailable",error)}
  const now=Date.now();
  // Normalise board times before choosing or deduplicating the next event.
  const boardCrossingTimes=scheduledCrossings.map(c=>{
   const at=Date.parse(c.at);
   if(c.basis!=="published_schedule_station_offset")return at;
   return c.direction==="fort_william"?fortWilliamCrossingFloor(at):at-60000;
- }).filter(Number.isFinite);
- const feedNext=boardCrossingTimes.filter(at=>at>now).sort((a,b)=>a-b)[0];
+ });
+ const feedNext=scheduledCrossings.map((crossing,index)=>({...crossing,at:boardCrossingTimes[index]}))
+  .filter(crossing=>crossing.at>now).sort((a,b)=>a.at-b.at)[0];
  let pdfNext=nextPublishedViaductCrossing(now-2*60000);
  // PDF viaduct times are the published baseline. Apply only a display
  // calibration for Mallaig-bound crossings; do not rewrite source times.
@@ -1726,18 +1705,24 @@ function updateViaductCountdown(markers){
  const boardAge=now-Date.parse(feedUpdated||"");
  const boardFresh=Number.isFinite(boardAge)&&boardAge>=-60000&&boardAge<15*60000;
  const liveCandidate=Number.isFinite(liveNext?.remaining)&&liveNext.remaining>=0?
-  {at:Math.max(now,liveNext.crossingAt||now+liveNext.remaining*60000),type:"reported_station_times"}:null;
- const scheduleCandidate=boardFresh&&Number.isFinite(feedNext)?
-  {at:feedNext,type:"schedule"}:null;
+  {at:liveNext.crossingAt,direction:liveNext.direction}:null;
+ const scheduleCandidate=boardFresh&&feedNext?
+  {at:feedNext.at,direction:feedNext.direction==="mallaig"?"back":"out"}:null;
  // A train physically approaching the viaduct wins over a later
  // timetable service. Schedule entries are retained only as fallback.
  const boards=liveCandidate||scheduleCandidate;
- const chosen=boards||
-  (pdfNext&&Number.isFinite(pdfCrossingAt(pdfNext))&&pdfCrossingAt(pdfNext)>now?{at:pdfCrossingAt(pdfNext),type:"timetable"}:null);
- // Keep both wall-clock labels anchored to the same crossing timestamp.
+ const next=boards||
+  (pdfNext&&Number.isFinite(pdfCrossingAt(pdfNext))&&pdfCrossingAt(pdfNext)>now?{at:pdfCrossingAt(pdfNext),direction:pdfNext.to==="Mallaig"?"back":"out"}:null);
+ // Keep the completed crossing on screen briefly so the marker can pass
+ // over the bridge before both tiles switch to the next service.
+ const previous=displayedViaductCrossing;
+ const crossing=previous&&now>=previous.at&&now-previous.at<viaductCrossingHold;
+ const chosen=crossing?previous:next;
+ displayedViaductCrossing=chosen&&Math.abs(chosen.at-now)<=viaductApproachWindow?chosen:null;
+ renderViaductApproach(chosen,now);
  const trainAt=chosen?.at;
  updateViewpointCountdown(trainAt,now);
- const minutes=Number.isFinite(trainAt)?(trainAt-now)/60000:null;
+ const minutes=Number.isFinite(trainAt)?Math.max(0,trainAt-now)/60000:null;
  const tile=$("proximityTile");
  const approaching=Number.isFinite(minutes)&&minutes>=0&&minutes<15;
  const header=document.querySelector(".app-header");
@@ -1796,81 +1781,18 @@ function updateActiveTrainsPill(markers=visibleTrainMarkers()){
  gpsPill.classList.toggle("gps-poor",accurate&&gpsAccuracyMetres>100);
  gpsPill.title=accurate?"Estimated horizontal location accuracy: ±"+Math.round(gpsAccuracyMetres)+" metres":"Waiting for GPS accuracy";
 }
-const viaductFocusKm=1;
-function focusRailX(distanceFromViaduct){
- if(!Number.isFinite(distanceFromViaduct)||Math.abs(distanceFromViaduct)>viaductFocusKm)return null;
- return 300+286*distanceFromViaduct/viaductFocusKm;
-}
-function renderViaductApproach(markers=renderedTrainMarkers){
- const tile=$("viaductTrackTile"),group=$("viaductTrains");
- if(!tile||!group)return;
- const rawOf=name=>timingStations.find(([label])=>label.toLowerCase()===String(name||"").toLowerCase())?.[1];
- // Cumulative approximate railway chainage built from the ordered station
- // reference coordinates. Use kilometres, not raw schematic SVG units.
- const chainage=[0];
- for(let i=1;i<railFixes.length;i++){
-  const a=railFixes[i-1],b=railFixes[i];
-  chainage.push(chainage[i-1]+distanceKm(a.lat,a.lon,b.lat,b.lon));
- }
- const rawToKm=raw=>{
-  if(!Number.isFinite(raw))return null;
-  for(let i=1;i<timingStations.length;i++){
-   const left=timingStations[i-1][1],right=timingStations[i][1];
-   if(raw<=right||i===timingStations.length-1){
-    const f=Math.max(0,Math.min(1,(raw-left)/(right-left)));
-    return chainage[i-1]+f*(chainage[i]-chainage[i-1]);
-   }
-  }
-  return null;
- };
- const viaductKm=rawToKm(viaductRaw);
- const visible=[];
- for(const {train} of markers){
-  const timetableOnly=train.positionQuality==="timetable_only";
-  const p=train.position||{},from=rawOf(p.fromStation),to=rawOf(p.toStation);
-  if(!Number.isFinite(from)||!Number.isFinite(to))continue;
-  let raw=from;
-  const start=Date.parse(p.fromAt||""),finish=Date.parse(p.toAt||"");
-  if(Number.isFinite(start)&&Number.isFinite(finish)&&finish>start){
-   const now=Math.max(start,Math.min(finish,Date.now()));
-   const prediction=viaductCrossingForMarker(train,Date.now());
-   if(prediction&&prediction.at>start&&prediction.at<finish&&
-      Math.min(from,to)<=viaductRaw&&viaductRaw<=Math.max(from,to)){
-    const departure=prediction.towardFort&&p.fromStation==="Glenfinnan"
-     ?Math.max(start,prediction.at-60000):start;
-    raw=now<=prediction.at?from+(viaductRaw-from)*Math.max(0,now-departure)/(prediction.at-departure)
-     :viaductRaw+(to-viaductRaw)*(now-prediction.at)/(finish-prediction.at);
-   }else{
-    raw=from+(to-from)*(now-start)/(finish-start);
-   }
-  }
-  const trainKm=rawToKm(raw);
-  if(!Number.isFinite(trainKm)||!Number.isFinite(viaductKm))continue;
-  const x=focusRailX(trainKm-viaductKm);
-  if(!Number.isFinite(x))continue;
-  const g=document.createElementNS("http://www.w3.org/2000/svg","g");
-  g.setAttribute("transform","translate("+x.toFixed(1)+",59)");
-  g.setAttribute("class",timetableOnly?"focus-train-estimate":"focus-train-reported");
-  const crossing=viaductCrossingForMarker(train,Date.now());
-  const remaining=crossing?crossing.at-Date.now():null;
-  const away=remaining!==null&&remaining>=0?Math.ceil(remaining/60000):null;
-  const direction=trainDirectionArrow(train);
-  g.innerHTML='<circle class="train-halo" r="15"><animate attributeName="r" values="14;34" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".65;0" dur="1.4s" repeatCount="indefinite"/></circle><circle class="train-body" r="14"><animate attributeName="r" values="13;17;13" dur="1.4s" repeatCount="indefinite"/></circle><text class="train-arrow" y="1">'+direction+'</text>';
-  if(away!==null||timetableOnly){
-   const etaLabel=document.createElementNS("http://www.w3.org/2000/svg","text");
-   etaLabel.setAttribute("class","focus-eta-label");
-   etaLabel.setAttribute("x",x<=300?"8":"-8");
-   etaLabel.setAttribute("y","-29");
-   etaLabel.setAttribute("text-anchor",x<=300?"start":"end");
-   etaLabel.textContent=timetableOnly?"Estimated":away<1?"<1 min away":away+" min"+(away===1?"":"s")+" away";
-   g.appendChild(etaLabel);
-  }
-  const title=document.createElementNS("http://www.w3.org/2000/svg","title");
-  title.textContent=(train.positionLabel||"Estimated train position")+(away!==null?" · "+(away<1?"less than 1 min away":away+" min"+(away===1?"":"s")+" away"):"");
-  g.appendChild(title);visible.push(g);
- }
- group.replaceChildren(...visible);
- tile.hidden=visible.length===0;
+function renderViaductApproach(crossing,now){
+ const tile=$("viaductTrackTile");
+ const remaining=crossing?crossing.at-now:Infinity;
+ tile.hidden=remaining>viaductApproachWindow||remaining<=-viaductCrossingHold;
+ if(tile.hidden)return;
+ const direction=crossing.direction==="back"?-1:1;
+ // This is a countdown illustration, not a measured distance or GPS fix.
+ const offset=remaining>=0?-264*remaining/viaductApproachWindow
+  :-48*remaining/viaductCrossingHold;
+ $("viaductApproachTrain").style.transform="translate("+(300+direction*offset)+"px,59px)";
+ $("viaductApproachArrow").textContent=direction===1?"→":"←";
+ $("viaductApproachStatus").textContent=remaining>0?"Estimated approach":"Estimated crossing";
 }
 
 function render(){
@@ -1879,7 +1801,6 @@ function render(){
  updateActiveTrainsPill(markers);
  $("trains").innerHTML=markers.map(({train:t})=>'<g class="'+(t.positionQuality==="last_actual_report"?"train-reported":"train-estimated")+'" transform="translate('+schematicTrainX(t)+',83)"><circle class="train-halo" r="15" style="animation:none"><animate attributeName="r" values="17;35" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values=".7;0" dur="1.4s" repeatCount="indefinite"/></circle><circle class="train-body" r="13" style="animation:none"><animate attributeName="r" values="14;19;14" dur="1.4s" repeatCount="indefinite"/></circle><text class="train-arrow" y="1">'+trainDirectionArrow(t)+'</text><title>'+safe(t.id)+(t.positionLabel?" · "+safe(t.positionLabel):" · position estimate")+' · '+safe(t.quality||"Rail report")+'</title></g>').join("");
  updateGeoTrainMarkers();
- renderViaductApproach(markers);
  updateViaductCountdown(markers);
  updateHeaderDistances();
 
