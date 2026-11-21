@@ -774,7 +774,17 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
 <section id="trackerTile" aria-label="Railway train tracker">
 <span id="feedBadge" hidden aria-live="polite">Checking</span>
-<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 140" aria-label="Railway stations from Mallaig to Fort William positioned approximately by route distance" role="img">
+<div class="rail-scroll"><svg class="rail-svg" viewBox="0 0 900 140" aria-label="Railway stations from Mallaig to Fort William, including the viaduct just east of Glenfinnan station" role="img">
+<defs>
+ <g id="viaductArchShape" fill="none" stroke="#80b8fa" stroke-linecap="round">
+    <path d="M -27 -11 H 27" stroke-width="2.8"/>
+    <path d="M -25 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
+             M -14.4 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
+             M -3.8 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
+             M 6.8 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
+             M 17.4 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16" stroke-width="1.8"/>
+ </g>
+</defs>
 <line class="track" x1="13" y1="83" x2="887" y2="83"/>
 <circle class="node" cx="35" cy="83" r="12"/><text class="station-label" x="9" y="45" text-anchor="start">Mallaig</text>
 <circle class="node" cx="93" cy="83" r="12"/><text class="station-label" x="93" y="132" text-anchor="middle">Morar</text>
@@ -783,6 +793,11 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 <circle class="node" cx="595" cy="83" r="12"/><text class="station-label" x="595" y="45" text-anchor="middle">Glenfinnan</text>
 <circle class="node" cx="807" cy="83" r="12"/><text class="station-label" x="807" y="132" text-anchor="middle">Corpach</text>
 <circle class="node" cx="865" cy="83" r="12"/><text class="station-label" x="892" y="45" text-anchor="end">Fort William</text>
+<g id="mainViaductMarker" transform="translate(605 112)">
+ <path d="M 0 -19 V -9" stroke="#80b8fa" stroke-width="2" stroke-linecap="round"/>
+ <use href="#viaductArchShape" transform="scale(.72)"/>
+ <title>Glenfinnan Viaduct</title>
+</g>
 <g id="trains"></g>
 </svg></div>
 <div id="trainDelaySummary" class="train-delay-summary" aria-live="off" hidden></div>
@@ -809,12 +824,7 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
    <text class="station-label focus-distance-label" x="14" y="109">1 km</text>
    <text class="station-label focus-distance-label" x="586" y="109" text-anchor="end">1 km</text>
    <g id="viaductMarker" transform="translate(300 59)" fill="none" stroke="#80b8fa" stroke-linecap="round" aria-label="Glenfinnan Viaduct centre">
-    <path d="M -27 -11 H 27" stroke-width="2.8"/>
-    <path d="M -25 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
-             M -14.4 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
-             M -3.8 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
-             M 6.8 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16
-             M 17.4 16 V -4 a 3.8 3.8 0 0 1 7.6 0 V 16" stroke-width="1.8"/>
+    <use href="#viaductArchShape"/>
     <title>Glenfinnan Viaduct</title>
    </g>
    <g id="viaductTrains"></g>
@@ -1091,6 +1101,10 @@ function displayRailX(rawX){
  }
  return schematicStations[0][1];
 }
+const glenfinnanRaw=timingStations.find(([name])=>name==="Glenfinnan")[1];
+const locheilsideRaw=timingStations.find(([name])=>name==="Locheilside")[1];
+const viaductRaw=glenfinnanRaw+(locheilsideRaw-glenfinnanRaw)*.14;
+$("mainViaductMarker").setAttribute("transform","translate("+displayRailX(viaductRaw)+",112)");
 function trainDirectionArrow(train){
  return train.direction==="back"?"←":"→";
 }
@@ -1646,8 +1660,6 @@ function renderViaductApproach(markers=renderedTrainMarkers){
  const tile=$("viaductTrackTile"),group=$("viaductTrains");
  if(!tile||!group)return;
  const rawOf=name=>timingStations.find(([label])=>label.toLowerCase()===String(name||"").toLowerCase())?.[1];
- const glen=rawOf("Glenfinnan"),eastRaw=rawOf("Locheilside");
- if(![glen,eastRaw].every(Number.isFinite)){tile.hidden=true;group.replaceChildren();return}
  // Cumulative approximate railway chainage built from the ordered station
  // reference coordinates. Use kilometres, not raw schematic SVG units.
  const chainage=[0];
@@ -1666,8 +1678,6 @@ function renderViaductApproach(markers=renderedTrainMarkers){
   }
   return null;
  };
- // Use the viaduct point also used by the existing focus marker.
- const viaductRaw=glen+(eastRaw-glen)*.14;
  const viaductKm=rawToKm(viaductRaw);
  const visible=[];
  for(const {train} of markers){
