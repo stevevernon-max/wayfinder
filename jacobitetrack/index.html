@@ -690,8 +690,10 @@ main>.planned-works-status{margin:0 0 10px}
 .viewpoint-train-row select{text-overflow:ellipsis}
 .viewpoint-train-row .viewpoint-eta{max-width:110px}
 .photo-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;padding:0 16px}
-.photo-score{display:grid;align-content:start;gap:5px;min-width:0}
-.photo-toggle-row{display:flex;justify-content:center;padding:12px 12px 10px}
+.photo-score{display:grid;align-content:start;gap:5px;min-width:0;padding:9px 10px;background:#1d293a;border-radius:9px}
+.photo-score .rating-track{width:100%}
+.photo-score .photo-score-label{font-size:clamp(9px,2.6vw,11px);letter-spacing:.55px}
+.photo-toggle-row{display:flex;justify-content:flex-end;padding:12px 16px 10px}
 .viewpoint-eta{display:grid;gap:3px;text-align:right;justify-items:end}
 .viewpoint-eta strong{color:#8bcaff;font-size:clamp(18px,5vw,25px)}
 .viewpoint-alerts{padding:10px 16px;border-top:1px solid #30394a}
@@ -699,10 +701,6 @@ main>.planned-works-status{margin:0 0 10px}
 .photo-score-label{color:#9aaabd;font-size:11px;letter-spacing:1.2px;font-weight:800}
 .photo-score-value{font-size:25px;font-weight:850;line-height:1}
 .photo-score-value small{font-size:12px;color:#9aaabd}
-.photo-score-bars{display:grid;grid-template-columns:repeat(10,minmax(3px,1fr));gap:2px;width:min(100%,165px)}
-.photo-score-bars span{height:8px;border-radius:2px;background:#293346}
-.photo-score-bars .filled{background:#edb74e}
-.photo-score-bars .filled:nth-child(n+6){background:#72ce9b}
 .photo-weather{border-top:1px solid #30394a}
 .photo-weather summary{padding:10px 16px;cursor:pointer;font-size:13px;font-weight:700}
 .photo-panel{padding:0 16px 14px}
@@ -846,14 +844,14 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
  </div>
  <div class="photo-overview">
   <div class="photo-score">
-   <span class="photo-score-label">PHOTO CONDITIONS</span>
-   <span class="photo-score-value"><span id="photoStatus">—</span><small>/10</small></span>
-   <span class="photo-score-bars" id="photoBars" aria-hidden="true"></span>
-  </div>
-  <div class="photo-score">
    <span class="photo-score-label">VIEWPOINT RATING</span>
    <span class="photo-score-value"><span id="selectedViewpointRating">—</span><small>/10</small></span>
    <span class="rating-track" id="selectedViewpointBar" aria-hidden="true"></span>
+  </div>
+  <div class="photo-score">
+   <span class="photo-score-label">WEATHER CONDITIONS</span>
+   <span class="photo-score-value"><span id="photoStatus">—</span><small>/10</small></span>
+   <span class="rating-track" id="photoBars" aria-hidden="true"></span>
   </div>
  </div>
  <div class="photo-toggle-row">
@@ -867,7 +865,7 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
   <div class="photo-panel">
    <div class="photo-metrics">
     <div><span>Cloud</span><strong id="photoCloud">—</strong></div>
-    <div><span title="Estimated distance you can see in daylight in open terrain. Hills and trees can block the view.">Viewing distance</span><strong id="photoVisibility">—</strong></div>
+    <div><span title="Forecast visibility in daylight. Local terrain can block the view.">Visibility</span><strong id="photoVisibility">—</strong></div>
     <div><span>Rain</span><strong id="photoRain">—</strong></div>
     <div><span>Temp</span><strong id="photoTemp">—</strong></div>
     <div><span>Wind speed</span><strong id="photoWind">—</strong></div>
@@ -879,7 +877,7 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
   <summary>Photo Viewpoints</summary>
   <div class="viewpoint-guide-body">
    <label class="viewpoint-map-switch"><input type="checkbox" id="showViewpoints" checked> Show viewpoints on map</label>
-   <p class="small">Total is the average of photo impact, visibility from the spot and parking. Ratings are editorial. Parking scores describe typical access.</p>
+   <p class="small">Total is the rounded average of photo impact, visibility from the spot and parking. Ratings are editorial. Parking scores describe typical access.</p>
    <div id="spots"></div>
    <p class="small">Use public paths and signed parking. Map pins mark approximate photo areas. Passing times can include ScotRail services. <a href="https://westcoastrailways.co.uk/jacobite/steam-train-trip" target="_blank" rel="noopener">Check Jacobite dates with West Coast Railways</a>.</p>
   </div>
@@ -1726,14 +1724,16 @@ function ratingColour(score){
 function ratingBar(score){
  return '<span class="rating-track" aria-hidden="true" style="--rating-fill:'+(score*10)+'%;--rating-color:'+ratingColour(score)+'"></span>';
 }
+function setRatingBar(bar,score){
+ bar.style.setProperty("--rating-fill",(score??0)*10+"%");
+ bar.style.setProperty("--rating-color",ratingColour(score??0));
+}
 function updateSelectedViewpointRating(){
  const spot=siteData[$("viewpoint").value];
  if(!spot)return;
- const score=viewpointScore(spot);
- $("selectedViewpointRating").textContent=score.toFixed(1);
- const bar=$("selectedViewpointBar");
- bar.style.setProperty("--rating-fill",score*10+"%");
- bar.style.setProperty("--rating-color",ratingColour(score));
+ const score=Math.round(viewpointScore(spot));
+ $("selectedViewpointRating").textContent=score;
+ setRatingBar($("selectedViewpointBar"),score);
 }
 function renderSpots(){
  const ranked=Object.entries(siteData).sort(([,a],[,b])=>viewpointScore(b)-viewpointScore(a));
@@ -1744,10 +1744,10 @@ function renderSpots(){
  updateSelectedViewpointRating();
  $("spots").innerHTML=ranked.map(([id,spot],index)=>{
   const [impact,sightline,parking]=spot.scores;
-  const total=viewpointScore(spot);
+  const total=Math.round(viewpointScore(spot));
   return '<details class="viewpoint-card" name="photo-viewpoints"><summary>'+
    '<span class="viewpoint-rank">'+(index+1)+'</span><span>'+safe(spot.name)+'</span>'+
-   '<span class="viewpoint-total" aria-label="Total rating '+total.toFixed(1)+' out of 10">'+total.toFixed(1)+'/10'+ratingBar(total)+'</span></summary>'+
+   '<span class="viewpoint-total" aria-label="Total rating '+total+' out of 10">'+total+'/10'+ratingBar(total)+'</span></summary>'+
    '<div class="viewpoint-card-body"><p>'+safe(spot.note)+'</p>'+
    '<dl class="viewpoint-ratings"><div><dt>Photo impact</dt><dd>'+impact+'/10'+ratingBar(impact)+'</dd></div>'+
    '<div><dt>Visibility</dt><dd>'+sightline+'/10'+ratingBar(sightline)+'</dd></div>'+
@@ -1787,11 +1787,24 @@ function photoDaylight(time,rise,set){
  const first=minutes(rise),last=minutes(set),at=minutes(time);
  return Math.max(0,Math.min(1,(at-first+30)/60,(last+30-at)/60));
 }
-function photoScore(cloud,visibility,rain,light){
+function weatherConditionsScore(cloud,visibility,rain,light){
  if(![cloud,visibility,rain,light].every(Number.isFinite)||light<=0)return null;
- const weather=10-(visibility<2000?4.5:visibility<5000?2.7:visibility<12000?1.2:0)
-  -(rain>=70?4:rain>=40?2.5:rain>=20?1.2:0)-cloud/50;
- return Math.max(0,Math.round(weather*light));
+ const visibilityScore=Math.max(0,Math.min(1,visibility/15000));
+ const clearSky=1-cloud/100;
+ const dryWeather=1-rain/100;
+ const score=10*(.7*visibilityScore+.15*clearSky+.15*dryWeather)*light;
+ return Math.max(0,Math.min(10,Math.round(score)));
+}
+function visibilityStatus(visibility,light){
+ if(!Number.isFinite(visibility)||light<=0)return null;
+ if(visibility<5000)return "Poor";
+ return visibility<15000?"Good":"Excellent";
+}
+function updateVisibilityMetric(visibility,light){
+ const metric=$("photoVisibility"),status=visibilityStatus(visibility,light);
+ metric.textContent=status??"—";
+ if(status)metric.dataset.tone=status==="Poor"?"fair":"good";
+ else delete metric.dataset.tone;
 }
 function photoMetric(id,value,suffix,tone){
  const metric=$(id);
@@ -1821,14 +1834,12 @@ function updatePhotographyLightStatus(){
  const day=daily?.time?.indexOf(time.slice(0,10));
  const rise=daily?.sunrise?.[day],set=daily?.sunset?.[day];
  const light=rise&&set?photoDaylight(time,rise,set):null;
- const score=photoScore(cloud,visibility,rain,light);
+ const score=weatherConditionsScore(cloud,visibility,rain,light);
  $("photoStatus").textContent=score??"—";
- $("photoStatus").title="Estimated daylight photo conditions from cloud, air visibility and rain chance";
- $("photoBars").innerHTML=Array.from({length:10},(_,index)=>index<score?'<span class="filled"></span>':"<span></span>").join("");
+ $("photoStatus").title="Daylight weather score: 70% visibility, 15% cloud and 15% rain chance";
+ setRatingBar($("photoBars"),score);
  photoMetric("photoCloud",cloud,"%",cloud>=55?"fair":"good");
- const viewingDistance=light>0?visibility:NaN;
- if(viewingDistance<1000)photoMetric("photoVisibility",viewingDistance," m","fair");
- else photoMetric("photoVisibility",viewingDistance/1000," km",viewingDistance<12000?"fair":"good");
+ updateVisibilityMetric(visibility,light);
  photoMetric("photoRain",rain,"%",rain>=20?"fair":"good");
  photoMetric("photoTemp",temp,"°C");
  const wind=forecast?hourly.wind_speed_10m?.[i]:current.wind_speed_10m;
@@ -1859,7 +1870,7 @@ async function fetchWeather(){
  if(cached&&Date.now()-cached.at<600000)return;
  if(!weatherData){
   $("photoStatus").textContent="—";
-  $("photoBars").replaceChildren();
+  setRatingBar($("photoBars"),null);
   for(const field of ["photoCloud","photoVisibility","photoRain","photoTemp","photoWind"])photoMetric(field,null,"");
   $("photoSunrise").textContent=$("photoSunset").textContent="—";
   $("weatherTime").textContent="Loading weather…";
