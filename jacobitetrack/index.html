@@ -689,15 +689,15 @@ main>.planned-works-status{margin:0 0 10px}
 .viewpoint-train-row .field{min-width:0;margin:0}
 .viewpoint-train-row select{text-overflow:ellipsis}
 .viewpoint-train-row .viewpoint-eta{max-width:110px}
-.photo-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;padding:0 16px}
-.photo-score{display:grid;align-content:start;gap:5px;min-width:0;padding:9px 10px;background:#1d293a;border-radius:9px}
-.photo-score .rating-track{width:100%}
-.photo-score .photo-score-label{font-size:clamp(9px,2.6vw,11px);letter-spacing:.55px}
-.photo-toggle-row{display:flex;align-items:center;gap:7px;padding:12px 16px 10px}
-.photo-toggle-row .photo-periods{margin-left:auto;flex:0 0 auto}
-.viewpoint-distance{display:grid;gap:2px;min-width:0;font-size:10px;color:#aab8cb;line-height:1.05}
-.viewpoint-distance strong{color:#d7e9f9;font-size:13px;font-variant-numeric:tabular-nums}
-.viewpoint-directions{display:grid;place-items:center;flex:0 0 28px;height:28px;border:1px solid #3b5976;border-radius:8px;background:#182a3b;color:#a5d2ff}
+.photo-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:0 16px}
+.photo-score{display:grid;grid-template-rows:1fr auto;gap:3px;min-width:0;padding:6px;background:#1d293a;border-radius:9px}
+.photo-score .photo-score-label{font-size:clamp(9px,2.45vw,11px);letter-spacing:.2px;line-height:1.1}
+.photo-score-reading{display:flex;align-items:center;gap:4px;min-width:0;min-height:28px}
+.photo-score .rating-track{flex:1;min-width:0;height:5px}
+.photo-toggle-row{display:flex;justify-content:flex-end;padding:6px 16px 8px}
+.viewpoint-distance strong{color:#d7e9f9;font-size:clamp(10px,2.7vw,13px);font-variant-numeric:tabular-nums}
+.viewpoint-directions{display:grid;place-items:center;flex:0 0 28px;height:28px;margin-left:auto;border:1px solid #3b5976;border-radius:8px;background:#182a3b;color:#a5d2ff}
+@media(max-width:360px){.viewpoint-distance .photo-score-reading{gap:2px}.viewpoint-directions{flex-basis:24px}}
 #photoVisibility{font-size:clamp(11px,3.4vw,16px);white-space:normal;overflow-wrap:anywhere}
 @media(max-width:380px){.photo-toggle-row{padding-inline:12px}.photo-toggle-row .photo-periods button{padding-inline:6px}}
 .viewpoint-eta{display:grid;gap:3px;text-align:right;justify-items:end}
@@ -705,8 +705,8 @@ main>.planned-works-status{margin:0 0 10px}
 .viewpoint-alerts{padding:10px 16px;border-top:1px solid #30394a}
 .viewpoint-alerts .small:not(:empty){margin-top:5px}
 .photo-score-label{color:#9aaabd;font-size:11px;letter-spacing:1.2px;font-weight:800}
-.photo-score-value{font-size:25px;font-weight:850;line-height:1}
-.photo-score-value small{font-size:12px;color:#9aaabd}
+.photo-score-value{font-size:clamp(16px,4vw,22px);font-weight:850;line-height:1;white-space:nowrap}
+.photo-score-value small{font-size:10px;color:#9aaabd}
 .photo-weather{border-top:1px solid #30394a}
 .photo-weather summary{padding:10px 16px;cursor:pointer;font-size:13px;font-weight:700}
 .photo-panel{padding:0 16px 14px}
@@ -714,7 +714,6 @@ main>.planned-works-status{margin:0 0 10px}
 .photo-periods{display:flex;gap:2px;max-width:100%;border:1px solid #30394a;border-radius:999px;background:#101522;padding:2px}
 .photo-periods button{min-width:0;font:inherit;font-size:12px;color:#aab8cb;padding:5px 9px;border:0;border-radius:999px;background:transparent;cursor:pointer}
 .photo-periods button[aria-pressed="true"]{color:#d5e6ff;background:#223c60}
-.photo-periods button:disabled{opacity:.55;cursor:default}
 .photo-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(75px,1fr));gap:8px}
 .photo-metrics span{display:block;font-size:12px;color:#aab8cb}
 .photo-metrics strong{display:block;font-size:clamp(14px,4.2vw,20px);margin-top:3px;white-space:nowrap}
@@ -848,25 +847,32 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
  <div class="photo-overview">
   <div class="photo-score">
    <span class="photo-score-label">VIEWPOINT RATING</span>
-   <span class="photo-score-value"><span id="selectedViewpointRating">—</span><small>/10</small></span>
-   <span class="rating-track" id="selectedViewpointBar" aria-hidden="true"></span>
+   <div class="photo-score-reading">
+    <span class="photo-score-value"><span id="selectedViewpointRating">—</span><small>/10</small></span>
+    <span class="rating-track" id="selectedViewpointBar" aria-hidden="true"></span>
+   </div>
   </div>
   <div class="photo-score">
    <span class="photo-score-label">WEATHER CONDITIONS</span>
-   <span class="photo-score-value"><span id="photoStatus">—</span><small>/10</small></span>
-   <span class="rating-track" id="photoBars" aria-hidden="true"></span>
+   <div class="photo-score-reading">
+    <span class="photo-score-value" title="Daylight weather score: 70% visibility and 30% chance of staying dry"><span id="photoStatus">—</span><small>/10</small></span>
+    <span class="rating-track" id="photoBars" aria-hidden="true"></span>
+   </div>
+  </div>
+  <div class="photo-score viewpoint-distance">
+   <span class="photo-score-label">DISTANCE FROM ME</span>
+   <div class="photo-score-reading">
+    <strong id="viewpointDistance" title="Straight-line distance to the viewpoint pin">— km</strong>
+    <a id="viewpointDirections" class="viewpoint-directions" target="_blank" rel="noopener" aria-label="Directions">
+     <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M17.7 2.3 1.9 8.5a.7.7 0 0 0 .1 1.3l6 1.8 1.8 6a.7.7 0 0 0 1.3.1l7.5-14.5c.3-.6-.3-1.2-.9-.9z"/></svg>
+    </a>
+   </div>
   </div>
  </div>
  <div class="photo-toggle-row">
-  <div class="viewpoint-distance" title="Straight-line distance to the approximate viewpoint">
-   <span>Distance from me</span><strong id="viewpointDistance">— km</strong>
-  </div>
-  <a id="viewpointDirections" class="viewpoint-directions" target="_blank" rel="noopener" aria-label="Directions">
-   <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M17.7 2.3 1.9 8.5a.7.7 0 0 0 .1 1.3l6 1.8 1.8 6a.7.7 0 0 0 1.3.1l7.5-14.5c.3-.6-.3-1.2-.9-.9z"/></svg>
-  </a>
   <div class="photo-periods" role="group" aria-label="Weather forecast time">
    <button type="button" id="photoNow" aria-pressed="true">Now</button>
-   <button type="button" id="photoCrossing" aria-pressed="false" disabled>At Next Passing</button>
+   <button type="button" id="photoCrossing" aria-pressed="false">At Next Passing</button>
   </div>
  </div>
  <details class="photo-weather" id="weatherConditions">
@@ -903,7 +909,7 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 <p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
 </section>
 <details class="tile" id="timetableTile" aria-labelledby="timetableHeading" open>
-<summary class="heading" id="timetableHeading">Next 10 services</summary>
+<summary class="heading" id="timetableHeading">Upcoming train services</summary>
 <div class="small" id="timetableStatus">Loading upcoming services…</div>
 <div class="table-wrap"><table class="timetable" id="timetableTable" hidden><thead><tr><th>Departs</th><th>Route</th><th>Viaduct</th><th>Calls</th></tr></thead><tbody id="timetableRows"></tbody><tbody id="timetableMoreRows" hidden></tbody></table></div>
 <div class="timetable-controls">
@@ -929,7 +935,6 @@ const siteData={
   lon:-5.1061,
   station:"Fort William",
   scores:[8,9,9],
-  destination:"Fort William Transport Centre Car Park, PH33 6BT",
   note:"Close-up platform shots of the locomotive and crew before departure, when station access permits.",
   parking:"Use the paid Transport Centre car park next to the station. Follow staff instructions."
  },
@@ -940,7 +945,6 @@ const siteData={
   lon:-5.0957,
   station:"Banavie",
   scores:[9,9,10],
-  destination:"Banavie Locks Car Park, Neptune’s Staircase",
   note:"Watch the train cross the canal swing bridge from the lower towpath, with Ben Nevis on a clear day.",
   parking:"Use the dedicated Banavie Locks visitor car park off the B8004."
  },
@@ -951,7 +955,6 @@ const siteData={
   lon:-5.1216,
   station:"Corpach",
   scores:[9,8,9],
-  destination:"Corpach Canal Basin Car Park, Corpach",
   note:"Look for canal-basin reflections and the Ben Nevis massif. Scout a clear angle towards the railway by Corpach station.",
   parking:"Use the canal basin car park south of the A830 and follow the public paths."
  },
@@ -962,9 +965,8 @@ const siteData={
   lon:-5.1394,
   between:["Corpach","Loch Eil Outward Bound",0.25],
   scores:[8,8,6],
-  destination:"Corpach Canal Basin Car Park, Corpach",
   note:"A wide coastal frame near the entrance to Loch Eil, with the railway along the north shore.",
-  parking:"Directions go to Corpach Basin. For Annat itself, use a signed layby only where there is safe off-road viewing."
+  parking:"Use a signed layby only where there is safe off-road viewing. Corpach Basin has a car park."
  },
  fassfern:{
   name:"Fassfern Shoreline",
@@ -973,7 +975,6 @@ const siteData={
   lon:-5.2476,
   between:["Loch Eil Outward Bound","Locheilside",0.58],
   scores:[9,8,7],
-  destination:"Fassfern Forest Walks Car Park, Fassfern",
   note:"On still days, look for the steam plume reflected in Loch Eil from a clear shore-side angle.",
   parking:"Start at the signed Fassfern forest walks car park. Leave forestry gates and access tracks clear."
  },
@@ -984,8 +985,6 @@ const siteData={
   lon:-5.3326,
   between:["Locheilside","Glenfinnan",0.28],
   scores:[9,8,8],
-  destination:"56.8549,-5.3326",
-  directionsLabel:"Loch Eil head layby",
   note:"The loch head gives a wide frame as the railway turns inland towards Glenfinnan.",
   parking:"Use the documented layby overlooking the Loch Eil mudflats near the A861 turnoff. Scout a clear angle from off the road."
  },
@@ -996,7 +995,6 @@ const siteData={
   lon:-5.4075,
   between:["Locheilside","Glenfinnan",0.73],
   scores:[8,7,7],
-  destination:"Callop Car Park, Glenfinnan",
   note:"The Callop area offers a mountain backdrop. Scout the train’s approach from a clear section of the public path.",
   parking:"Use Callop car park and the signed paths. The A830 railway underbridge is narrow."
  },
@@ -1009,7 +1007,6 @@ const siteData={
   viaduct:true,
   total:10,
   scores:[10,10,7],
-  destination:"Glenfinnan Visitor Centre, PH37 4LT",
   note:"The classic elevated frame of the train sweeping around the 21-arch curve. Include Loch Shiel if your angle allows.",
   parking:"Use the visitor centre or adjacent community car park. Allow about 15–20 minutes for the signed uphill path, longer at busy times."
  },
@@ -1021,7 +1018,6 @@ const siteData={
   station:"Glenfinnan",
   viaduct:true,
   scores:[9,9,7],
-  destination:"Glenfinnan Visitor Centre, PH37 4LT",
   note:"A low-angle shot from the valley path brings out the arches and the steam above them.",
   parking:"Use the visitor or community car park and follow the lower path towards the arches."
  },
@@ -1033,7 +1029,6 @@ const siteData={
   station:"Glenfinnan",
   viaduct:true,
   scores:[8,7,7],
-  destination:"Glenfinnan Visitor Centre, PH37 4LT",
   note:"Use the raised viewpoint by the visitor centre for a wide scene with the viaduct in the distance. A longer lens helps.",
   parking:"Use the visitor or community car park. Follow the signed short uphill route to the viewpoint."
  },
@@ -1044,7 +1039,6 @@ const siteData={
   lon:-5.449,
   station:"Glenfinnan",
   scores:[9,9,6],
-  destination:"Glenfinnan Station Museum, PH37 4LT",
   note:"Close locomotive and carriage details when the Jacobite calls at the heritage station.",
   parking:"Station parking is limited. Check signs and museum arrangements, or use the visitor car parks and walk via the signed link."
  },
@@ -1055,9 +1049,8 @@ const siteData={
   lon:-5.5653,
   between:["Lochailort","Glenfinnan",0.52],
   scores:[9,8,6],
-  destination:"Glenfinnan Visitor Centre, PH37 4LT",
   note:"Frame the south-shore railway across the water from the northern A830 side. The islands work well as foreground.",
-  parking:"Directions go to the Glenfinnan visitor centre. At the photo area, only stop in an open layby with safe off-road viewing."
+  parking:"At the photo area, only stop in an open layby with safe off-road viewing."
  },
  eilt:{
   name:"Loch Eilt West · Eilean na Moine",
@@ -1066,9 +1059,8 @@ const siteData={
   lon:-5.6255,
   between:["Lochailort","Glenfinnan",0.18],
   scores:[10,8,5],
-  destination:"Lochailort Railway Station, PH38 4LZ",
   note:"The pine-covered island is a striking foreground for a long-lens shot of the train on the far shore.",
-  parking:"Directions go to Lochailort station. No dedicated parking was verified at the photo area. Only stop in an open, legal layby with safe off-road viewing."
+  parking:"Parking is available at Lochailort station. No dedicated parking was verified at the photo area. Only stop in an open, legal layby with safe off-road viewing."
  },
  lochailort:{
   name:"Lochailort · Viaduct & Station",
@@ -1077,7 +1069,6 @@ const siteData={
   lon:-5.6634,
   station:"Lochailort",
   scores:[8,8,7],
-  destination:"Lochailort Railway Station, PH38 4LZ",
   note:"Try the station approach for a curved railway frame as the line heads towards the coast.",
   parking:"ScotRail lists a small station car park. Use marked spaces and keep the approach clear."
  },
@@ -1088,7 +1079,6 @@ const siteData={
   lon:-5.764,
   station:"Beasdale",
   scores:[8,8,5],
-  destination:"Beasdale Railway Station, Highland",
   note:"A quiet woodland railway frame as the train climbs the coastal ridge.",
   parking:"Road access is limited. Use only permitted parking and keep farm tracks and station access clear."
  },
@@ -1099,9 +1089,8 @@ const siteData={
   lon:-5.78315,
   between:["Beasdale","Arisaig",0.22],
   scores:[9,7,5],
-  destination:"Arisaig Railway Station, PH39 4NJ",
   note:"A concrete viaduct in a wooded glen west of Beasdale. A clear gap in the trees makes the shot.",
-  parking:"Directions go to Arisaig station. Verify public access locally before attempting this view. The Prince’s Cairn is a different location."
+  parking:"Verify public access locally before attempting this view. The Prince’s Cairn is a different location."
  },
  lochNanUamh:{
   name:"Loch nan Uamh Viaduct",
@@ -1110,7 +1099,6 @@ const siteData={
   lon:-5.73043,
   between:["Lochailort","Beasdale",0.62],
   scores:[10,9,6],
-  destination:"Prince’s Cairn, Loch nan Uamh, A830",
   note:"Eight concrete arches above the tidal loch offer a strong coastal alternative to Glenfinnan.",
   parking:"The Prince’s Cairn has a signed layby. Confirm a safe public route and sightline from there before walking towards the viaduct."
  },
@@ -1121,7 +1109,6 @@ const siteData={
   lon:-5.8406,
   station:"Arisaig",
   scores:[8,9,7],
-  destination:"Arisaig Railway Station, PH39 4NJ",
   note:"Close-up passes in coastal light at mainland Britain’s most westerly station. The Jacobite may run through without stopping.",
   parking:"Use the small station car park. Stay on areas open to visitors."
  },
@@ -1132,7 +1119,6 @@ const siteData={
   lon:-5.8161,
   between:["Arisaig","Morar",0.89],
   scores:[9,8,6],
-  destination:"Morar, Highland",
   note:"The river viaduct offers rushing water as foreground. The nearby tidal sands provide a wider coastal backdrop where the railway is visible.",
   parking:"Use signed village or beach parking where available. Check for a public walking route and keep road bridges clear."
  },
@@ -1143,7 +1129,6 @@ const siteData={
   lon:-5.8289,
   station:"Mallaig",
   scores:[9,9,8],
-  destination:"West Bay Car Park, Mallaig",
   note:"Photograph the arrival or departure near the fishing harbour, with Skye beyond on clear days.",
   parking:"Use a signed council car park such as West Bay. Scout from public harbour or station areas."
  }
@@ -1857,18 +1842,18 @@ function updateViewpointDistance(){
  const value=viewpointDistanceText(userCoords,selectedViewpointLocation());
  if(label.textContent!==value)label.textContent=value;
 }
-function viewpointDirectionsUrl(destination,apple){
- const encoded=encodeURIComponent(destination);
- return apple?"https://maps.apple.com/?daddr="+encoded+"&dirflg=d":
-  "https://www.google.com/maps/dir/?api=1&destination="+encoded+"&travelmode=driving";
+function viewpointDirectionsUrl(spot,apple){
+ const pin=encodeURIComponent(spot.lat+","+spot.lon);
+ return apple?"https://maps.apple.com/?daddr="+pin:
+  "https://www.google.com/maps/dir/?api=1&destination="+pin;
 }
 function updateViewpointDirections(){
  const spot=selectedViewpointLocation();
  if(!spot)return;
  const apple=/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
  const link=$("viewpointDirections");
- link.href=viewpointDirectionsUrl(spot.destination,apple);
- const label="Directions to "+(spot.directionsLabel||spot.destination);
+ link.href=viewpointDirectionsUrl(spot,apple);
+ const label="Directions to "+spot.name;
  link.title=label;
  link.setAttribute("aria-label",label);
 }
@@ -1890,10 +1875,11 @@ function updateSelectedViewpointRating(){
  setRatingBar($("selectedViewpointBar"),score);
 }
 function renderSpots(){
- const viewpoints=Object.entries(siteData);
+ const viewpoints=Object.entries(siteData).sort(([,a],[,b])=>
+  viewpointScore(b)-viewpointScore(a)||b.scores[0]-a.scores[0]);
  const select=$("viewpoint");
  const selected=select.value;
- select.replaceChildren(...viewpoints.map(([id,spot])=>new Option(spot.name,id)));
+ select.replaceChildren(...viewpoints.map(([id,spot],index)=>new Option((index+1)+". "+spot.name,id)));
  select.value=siteData[selected]?selected:"glenfinnan";
  updateSelectedViewpointRating();
  updateViewpointDistance();
@@ -1941,13 +1927,11 @@ function photoDaylight(time,rise,set){
  const first=minutes(rise),last=minutes(set),at=minutes(time);
  return Math.max(0,Math.min(1,(at-first+30)/60,(last+30-at)/60));
 }
-function weatherConditionsScore(cloud,visibility,rain,light){
- if(![cloud,visibility,rain,light].every(Number.isFinite)||light<=0)return null;
+function weatherConditionsScore(visibility,rain,light){
+ if(![visibility,rain,light].every(Number.isFinite)||light<=0)return null;
  const visibilityScore=Math.max(0,Math.min(1,visibility/15000));
- const clearSky=1-cloud/100;
- const dryWeather=1-rain/100;
- const score=10*(.7*visibilityScore+.15*clearSky+.15*dryWeather)*light;
- return Math.max(0,Math.min(10,Math.round(score)));
+ const dryWeather=1-Math.max(0,Math.min(1,rain/100));
+ return Math.round(10*(.7*visibilityScore+.3*dryWeather));
 }
 function visibilityStatus(visibility,light){
  if(!Number.isFinite(visibility)||light<=0)return null;
@@ -1966,6 +1950,13 @@ function photoMetric(id,value,suffix,tone){
  if(Number.isFinite(value)&&tone)metric.dataset.tone=tone;
  else delete metric.dataset.tone;
 }
+function clearPhotoWeather(message){
+ $("photoStatus").textContent="—";
+ setRatingBar($("photoBars"),null);
+ for(const field of ["photoCloud","photoVisibility","photoRain","photoTemp","photoWind"])photoMetric(field,null,"");
+ $("photoSunrise").textContent=$("photoSunset").textContent="—";
+ $("weatherTime").textContent=message;
+}
 function updatePhotographyLightStatus(){
  const {current,hourly,daily}=weatherData||{};
  const now=Date.now();
@@ -1973,12 +1964,14 @@ function updatePhotographyLightStatus(){
  const crossingIndex=crossing&&hourly?photoHour(hourly,crossing):-1;
  const crossingButton=$("photoCrossing"),nowButton=$("photoNow");
  crossingButton.title=crossing?"Forecast at "+crossing.slice(11,16):"Next passing forecast unavailable";
- crossingButton.disabled=crossingIndex<0;
- if(crossingIndex<0)photoPeriod="now";
  const forecast=photoPeriod==="crossing";
  crossingButton.setAttribute("aria-pressed",String(forecast));
  nowButton.setAttribute("aria-pressed",String(!forecast));
  if(!current)return;
+ if(forecast&&crossingIndex<0){
+  clearPhotoWeather("Next passing forecast unavailable");
+  return;
+ }
  const time=forecast?crossing:photoLocalTime(now);
  const i=forecast?crossingIndex:photoHour(hourly,current.time);
  const cloud=forecast?hourly.cloud_cover?.[i]:current.cloud_cover;
@@ -1988,9 +1981,8 @@ function updatePhotographyLightStatus(){
  const day=daily?.time?.indexOf(time.slice(0,10));
  const rise=daily?.sunrise?.[day],set=daily?.sunset?.[day];
  const light=rise&&set?photoDaylight(time,rise,set):null;
- const score=weatherConditionsScore(cloud,visibility,rain,light);
+ const score=weatherConditionsScore(visibility,rain,light);
  $("photoStatus").textContent=score??"—";
- $("photoStatus").title="Daylight weather score: 70% visibility, 15% cloud and 15% rain chance";
  setRatingBar($("photoBars"),score);
  photoMetric("photoCloud",cloud,"%",cloud>=55?"fair":"good");
  updateVisibilityMetric(visibility,light);
@@ -2022,13 +2014,7 @@ async function fetchWeather(){
  weatherData=cached?.data||null;
  updatePhotographyLightStatus();
  if(cached&&Date.now()-cached.at<600000)return;
- if(!weatherData){
-  $("photoStatus").textContent="—";
-  setRatingBar($("photoBars"),null);
-  for(const field of ["photoCloud","photoVisibility","photoRain","photoTemp","photoWind"])photoMetric(field,null,"");
-  $("photoSunrise").textContent=$("photoSunset").textContent="—";
-  $("weatherTime").textContent="Loading weather…";
- }
+ if(!weatherData)clearPhotoWeather("Loading weather…");
  const request=new AbortController();
  weatherRequest=request;
  try{
@@ -2278,7 +2264,7 @@ async function savePush(){
   const res=await fetch(pushConfig.backendUrl+"/api/push/subscribe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({subscription:newSub.toJSON(),viewpoint:$("viewpoint").value,leadMinutes:Number($("alertLead").value)})});
   if(!res.ok)throw Error("Push service rejected subscription ("+res.status+")");
   pushSubscription=newSub;button.textContent="Update alerts";$("disableAlertsBtn").style.display="inline-block";
-  pushStatus("Background alerts registered for "+$("viewpoint").selectedOptions[0].textContent+" · "+$("alertLead").value+" minutes. Delivery requires valid railway predictions and a running backend.");
+  pushStatus("Background alerts registered for "+selectedViewpointLocation().name+" · "+$("alertLead").value+" minutes. Delivery requires valid railway predictions and a running backend.");
  }catch(e){pushStatus("Could not enable alerts: "+e.message)}
  finally{button.disabled=false}
 }
@@ -2293,7 +2279,6 @@ $("disableAlertsBtn").addEventListener("click",async()=>{
  pushStatus("Background alerts disabled on this iPhone.");
 });
 function changeViewpoint(){
- photoPeriod="now";
  updateSelectedViewpointRating();
  updateViewpointDistance();
  updateViewpointDirections();
