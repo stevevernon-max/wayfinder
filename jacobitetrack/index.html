@@ -699,7 +699,10 @@ main>.planned-works-status{margin:0 0 10px}
 .photo-score-bars .filled{background:#edb74e}
 .photo-score-bars .filled:nth-child(n+6){background:#72ce9b}
 #photoTrend{font-size:12px;color:#8dbaff}
-.photo-panel{padding:14px 16px;border-top:1px solid #30394a}
+.photo-weather{border-top:1px solid #30394a}
+.photo-weather summary{padding:10px 16px;cursor:pointer;font-size:13px;font-weight:700}
+.photo-panel{padding:0 16px 14px}
+@media(max-width:380px){.photo-weather summary{padding-inline:12px}}
 .photo-panel-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;margin-bottom:13px}
 #photoCondition{font-size:16px;font-weight:750}
 .photo-periods{display:flex;gap:2px;border:1px solid #30394a;border-radius:999px;background:#101522;padding:2px}
@@ -846,23 +849,26 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
   </div>
   <div class="viewpoint-eta"><span class="photo-score-label">NEXT TRAIN</span><strong id="eta" class="countdown">—</strong><span id="etaNote" class="small"></span></div>
  </div>
- <div class="photo-panel">
-  <div class="photo-panel-top">
-   <strong id="photoCondition" role="status">Loading weather…</strong>
-   <div class="photo-periods" role="group" aria-label="Weather forecast time">
-    <button type="button" id="photoNow" aria-pressed="true">Now</button>
-    <button type="button" id="photoCrossing" aria-pressed="false" disabled>Next Passing</button>
+ <details class="photo-weather" id="weatherConditions" open>
+  <summary>Weather conditions</summary>
+  <div class="photo-panel">
+   <div class="photo-panel-top">
+    <strong id="photoCondition" role="status">Loading weather…</strong>
+    <div class="photo-periods" role="group" aria-label="Weather forecast time">
+     <button type="button" id="photoNow" aria-pressed="true">Now</button>
+     <button type="button" id="photoCrossing" aria-pressed="false" disabled>Next Passing</button>
+    </div>
    </div>
+   <div class="photo-metrics">
+    <div><span>Cloud</span><strong id="photoCloud">—</strong></div>
+    <div><span class="visibility-label" title="Weather visibility through the air, independent of daylight">Air visibility</span><strong id="photoVisibility">—</strong></div>
+    <div><span>Rain</span><strong id="photoRain">—</strong></div>
+    <div><span>Temp</span><strong id="photoTemp">—</strong></div>
+   </div>
+   <div class="photo-meta"><span>☀ <b id="photoSunrise">—</b></span><span>☾ <b id="photoSunset">—</b></span><span id="weatherTime"></span></div>
+   <div class="small" id="photoAdvice" hidden></div>
   </div>
-  <div class="photo-metrics">
-   <div><span>Cloud</span><strong id="photoCloud">—</strong></div>
-   <div><span class="visibility-label" title="Weather visibility through the air, independent of daylight">Air visibility</span><strong id="photoVisibility">—</strong></div>
-   <div><span>Rain</span><strong id="photoRain">—</strong></div>
-   <div><span>Temp</span><strong id="photoTemp">—</strong></div>
-  </div>
-  <div class="photo-meta"><span>☀ <b id="photoSunrise">—</b></span><span>☾ <b id="photoSunset">—</b></span><span id="weatherTime"></span></div>
-  <div class="small" id="photoAdvice" hidden></div>
- </div>
+ </details>
  <details class="viewpoint-alerts">
   <summary>Alerts</summary>
   <div class="alerts"><select id="alertLead" aria-label="Train approaching warning"><option value="5">5 min alert</option><option value="10" selected>10 min alert</option><option value="15">15 min alert</option><option value="20">20 min alert</option></select><button class="button" id="notifyBtn">Enable alerts</button><button class="button" id="disableAlertsBtn" style="display:none">Disable alerts</button></div><div class="small" id="notificationStatus">Checking whether background notifications are available…</div><div class="small" id="installHint"></div>
@@ -1774,6 +1780,7 @@ function showDirections(key){
  const km=111.195*Math.hypot(origin.lat-v.lat,(origin.lon-v.lon)*Math.cos(v.lat*Math.PI/180));
  const direction=cardinal(bearing(origin.lat,origin.lon,v.lat,v.lon));
  const text="Approximate straight-line bearing: "+direction+" · "+(km<1?Math.round(km*1000)+" m":km.toFixed(1)+" km")+". This is not a mapped walking route. Use signed public paths and verify access on site.";
+ $("weatherConditions").open=true;
  $("photoAdvice").hidden=false;
  $("photoAdvice").textContent=v.name+": "+text;
  $("photoAdvice").scrollIntoView({behavior:"smooth",block:"nearest"});
