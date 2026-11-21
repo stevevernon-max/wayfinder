@@ -752,6 +752,23 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 #timetableTile .calls-ticker{border-block:0}
 .map-viewpoint-ring{fill:none;stroke:#c1e5ff;stroke-width:4.5;animation:mapViewpointPulse 1.8s ease-out infinite;transform-box:fill-box;transform-origin:center}
 @keyframes mapViewpointPulse{0%{transform:scale(.75);opacity:1}85%,100%{transform:scale(2.15);opacity:0}}
+#parkingTile .parking-note{margin:0 0 10px}
+.parking-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.parking-panel{padding:10px 12px;border:1px solid #30394a;border-radius:12px;background:#111924;min-width:0}
+.parking-panel h3{font-size:14px;margin:0 0 7px}
+#parkingTile a{color:#a7d2ff;font-size:12px;text-underline-offset:2px}
+.parking-links{display:flex;flex-wrap:wrap;gap:5px 12px}
+#parkingPopularTimes:not(:empty){margin-bottom:7px}
+#parkingPopularTimes gmp-place-details{display:block;width:100%;max-width:400px}
+.parking-routes{margin-bottom:8px}
+.parking-routes>div{display:flex;justify-content:space-between;gap:8px;margin:5px 0;font-size:12px}
+.parking-routes strong{text-align:right}
+.parking-attribution [translate="no"]{font:normal 12px Roboto,system-ui,sans-serif;color:#fff;white-space:nowrap}
+.parking-setup{margin-top:10px}
+.parking-setup summary{cursor:pointer;font-size:12px;color:#aabdd4}
+.parking-setup input{display:block;width:100%;margin-top:5px;padding:8px;background:#111924;color:#edf3fa;border:1px solid #3d4d62;border-radius:8px}
+.parking-setup p:empty{display:none}
+@media(max-width:560px){.parking-panels{grid-template-columns:minmax(0,1fr)}}
 </style></head><body>
 <header class="app-header"><div class="header-shell">
 <div class="header-main"><div class="header-brand"><strong>Jacobite<span>Track</span></strong><span id="gpsStatus" hidden>Finding GPS…</span></div><div class="header-pills"><span id="activeTrainsPill" role="status" aria-live="polite" title="Train positions are estimated from railway times">No trains running</span><span id="gpsAccuracyPill" class="gps-accuracy-pill" role="status" title="Horizontal GPS accuracy in metres"><span id="gpsIndicator" class="gps-indicator"></span><span id="gpsAccuracyLabel">GPS waiting</span></span></div></div>
@@ -848,6 +865,40 @@ main>.tile,main>.cols>.tile,main>.planned-works-status{margin-bottom:0}
 <div class="geo-map-bottom"><span>Drag · Pinch to zoom</span></div>
 <p class="geo-note" id="geoNote">© OpenStreetMap contributors · Railway overlay uses mapped track geometry</p>
 </section>
+<section class="tile" id="parkingTile" aria-labelledby="parkingHeading">
+ <h2 class="heading" id="parkingHeading">Glenfinnan Parking &amp; Traffic</h2>
+ <p class="small parking-note">Parking availability unknown</p>
+ <div class="parking-panels">
+  <div class="parking-panel">
+   <h3>Visitor centre busyness</h3>
+   <p class="small" id="parkingBusynessStatus" role="status" hidden></p>
+   <div id="parkingPopularTimes"></div>
+   <a href="https://www.google.com/maps/search/?api=1&amp;query=Glenfinnan%20Visitor%20Centre%20National%20Trust%20for%20Scotland" target="_blank" rel="noopener">Check Popular Times on Google Maps</a>
+  </div>
+  <div class="parking-panel">
+   <h3>A830 approach traffic</h3>
+   <div class="parking-routes" id="parkingRoutes" aria-live="polite" hidden>
+    <div><span>From Fort William</span><strong id="parkingTrafficEast">—</strong></div>
+    <div><span>From Lochailort</span><strong id="parkingTrafficWest">—</strong></div>
+    <div class="parking-attribution"><span translate="no">Google Maps</span><span id="parkingChecked"></span></div>
+   </div>
+   <div class="parking-links">
+    <a href="https://www.google.com/maps/dir/?api=1&amp;origin=Fort%20William%2C%20Scotland&amp;destination=Glenfinnan%20Visitor%20Centre&amp;travelmode=driving" target="_blank" rel="noopener">From Fort William</a>
+    <a href="https://www.google.com/maps/dir/?api=1&amp;origin=Lochailort%2C%20Scotland&amp;destination=Glenfinnan%20Visitor%20Centre&amp;travelmode=driving" target="_blank" rel="noopener">From Lochailort</a>
+   </div>
+  </div>
+ </div>
+ <details class="parking-setup">
+  <summary>Set up in-app Google data</summary>
+  <form id="parkingGoogleForm">
+   <label class="field">Google Maps website key<input type="password" id="parkingGoogleKey" autocomplete="off" required></label>
+   <p class="small">Needs a billing-enabled project with Maps JavaScript API, Places UI Kit, Places API (New) and Routes API. Restrict the key to this site. Requests may count towards Google charges.</p>
+   <button class="button" id="parkingLoadGoogle" type="submit">Load busyness and traffic</button>
+   <p class="small" id="parkingGoogleStatus" role="status"></p>
+  </form>
+  <p class="small" id="parkingGooglePrivacy">When you load live data, JacobiteTrack sends the supplied website key, the public visitor centre search and fixed route endpoints to Google. It does not send your GPS location or save the key. See <a href="https://maps.google.com/help/terms_maps/" target="_blank" rel="noopener">Google Maps terms</a> and <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google’s Privacy Policy</a>.</p>
+ </details>
+</section>
 <details class="tile" id="timetableTile" aria-labelledby="timetableHeading" open>
 <summary class="heading" id="timetableHeading">Next 10 services</summary>
 <div class="small" id="timetableStatus">Loading upcoming services…</div>
@@ -870,6 +921,123 @@ const FEED_URL="./feed.json";
 const PUSH_CONFIG_URL="./push-config.json";
 let pushConfig=null, pushRegistration=null, pushSubscription=null;
 const $=id=>document.getElementById(id);
+
+// Google services are loaded only after a visitor supplies a browser key and requests data.
+let parkingMapsLoader,parkingMapsKey,parkingPlaceId;
+const parkingDestination={lat:56.8705,lng:-5.43565};
+function loadParkingMaps(key){
+ if(parkingMapsLoader){
+  if(key!==parkingMapsKey)return Promise.reject(Error("Reload this page before changing the Google key."));
+  return parkingMapsLoader;
+ }
+ parkingMapsKey=key;
+ parkingMapsLoader=new Promise((resolve,reject)=>{
+  const script=document.createElement("script");
+  const params=new URLSearchParams({key,v:"weekly",loading:"async",callback:"jacobiteParkingMapsReady",region:"GB",language:"en"});
+  function fail(message){
+   clearTimeout(timeout);
+   delete window.jacobiteParkingMapsReady;
+   delete window.gm_authFailure;
+   script.remove();
+   parkingMapsLoader=null;
+   parkingMapsKey=null;
+   reject(Error(message));
+  }
+  const timeout=setTimeout(()=>fail("Google Maps did not respond."),15000);
+  window.jacobiteParkingMapsReady=()=>{
+   clearTimeout(timeout);
+   delete window.jacobiteParkingMapsReady;
+   resolve(window.google.maps);
+  };
+  window.gm_authFailure=()=>fail("Google Maps rejected the key. Check its restrictions and enabled APIs.");
+  script.onerror=()=>fail("Google Maps could not load.");
+  script.src="https://maps.googleapis.com/maps/api/js?"+params;
+  document.head.appendChild(script);
+ });
+ return parkingMapsLoader;
+}
+async function loadParkingBusyness(maps){
+ const status=$("parkingBusynessStatus"),host=$("parkingPopularTimes");
+ status.hidden=false;
+ if(host.querySelector("gmp-place-popular-times")?.rendered){status.hidden=true;return}
+ status.textContent="Loading visitor centre busyness…";
+ const {Place}=await maps.importLibrary("places");
+ if(!parkingPlaceId){
+  const {places}=await Place.searchByText({
+   textQuery:"Glenfinnan Visitor Centre National Trust for Scotland, Glenfinnan",
+   fields:["id","displayName"],locationBias:parkingDestination,maxResultCount:3
+  });
+  const place=places?.find(item=>/glenfinnan.*visitor cent[re]+/i.test(item.displayName||""));
+  if(!place?.id)throw Error("Visitor centre not found");
+  parkingPlaceId=place.id;
+ }
+ const details=document.createElement("gmp-place-details");
+ const request=document.createElement("gmp-place-details-place-request");
+ request.setAttribute("place",parkingPlaceId);
+ const popular=document.createElement("gmp-place-popular-times");
+ details.append(request,document.createElement("gmp-place-name"),popular);
+ const loaded=new Promise((resolve,reject)=>{
+  const timeout=setTimeout(()=>reject(Error("Popular Times timed out")),15000);
+  details.addEventListener("gmp-load",()=>{clearTimeout(timeout);resolve()},{once:true});
+  details.addEventListener("gmp-error",()=>{clearTimeout(timeout);reject(Error("Popular Times unavailable"))},{once:true});
+ });
+ host.replaceChildren(details);
+ await loaded;
+ if(popular.rendered)status.hidden=true;
+ else{
+  host.replaceChildren();
+  status.textContent="Google has no Popular Times data to display.";
+ }
+}
+function parkingRouteText(route){
+ if(!Number.isFinite(route?.durationMillis)||!Number.isFinite(route?.staticDurationMillis))return "Unavailable";
+ const minutes=value=>Math.max(1,Math.round(value/60000));
+ return minutes(route.durationMillis)+" min now · "+minutes(route.staticDurationMillis)+" min baseline";
+}
+async function loadParkingTraffic(maps){
+ const approaches=[["parkingTrafficEast","Fort William, Scotland"],["parkingTrafficWest","Lochailort, Scotland"]];
+ $("parkingRoutes").hidden=false;
+ $("parkingChecked").textContent="";
+ for(const [id] of approaches)$(id).textContent="Checking…";
+ try{
+  const {Route}=await maps.importLibrary("routes");
+  const results=await Promise.allSettled(approaches.map(([,origin])=>Route.computeRoutes({
+   origin,destination:parkingDestination,travelMode:"DRIVING",routingPreference:"TRAFFIC_AWARE",
+   region:"GB",fields:["durationMillis","staticDurationMillis"]
+  })));
+  results.forEach((result,index)=>{
+   $(approaches[index][0]).textContent=parkingRouteText(result.status==="fulfilled"?result.value.routes?.[0]:null);
+  });
+  if(results.some((_,i)=>$(approaches[i][0]).textContent!=="Unavailable")){
+   $("parkingChecked").textContent="Checked "+new Date().toLocaleTimeString("en-GB",{timeZone:"Europe/London",hour:"2-digit",minute:"2-digit"});
+  }
+ }catch{
+  for(const [id] of approaches)$(id).textContent="Unavailable";
+ }
+}
+$("parkingGoogleForm").addEventListener("submit",async event=>{
+ event.preventDefault();
+ const key=$("parkingGoogleKey").value.trim(),button=$("parkingLoadGoogle"),status=$("parkingGoogleStatus");
+ if(!key)return;
+ button.disabled=true;
+ status.textContent="Connecting to Google Maps…";
+ try{
+  const maps=await loadParkingMaps(key);
+  status.textContent="";
+  await Promise.all([
+   loadParkingBusyness(maps).catch(()=>{
+    $("parkingPopularTimes").replaceChildren();
+    $("parkingBusynessStatus").textContent="In-app busyness unavailable. Try the Google Maps link.";
+   }),
+   loadParkingTraffic(maps)
+  ]);
+ }catch(error){
+  status.textContent=error.message;
+ }finally{
+  button.disabled=false;
+ }
+});
+
 const viewpointPositions={morar:201,arisaig:367,lochailort:533,glenfinnan:699};
 const siteData={
  glenfinnan:{name:"Glenfinnan Viaduct",lat:56.8733,lon:-5.4317,walk:15,note:"Hillside viewpoints overlook the viaduct. Allow extra time for the uphill approach.",parking:"Glenfinnan visitor parking",parkingLat:56.8718,parkingLon:-5.4375},
