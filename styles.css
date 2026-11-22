@@ -560,3 +560,8 @@ body.journey-active #leave-time { font-size: 38px; }
   height: 1px;
   background: #d3e3ec90;
 }
+
+#predicted-departure .departure-option { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: baseline; gap: 2px 8px; padding-block: 4px; }
+#predicted-departure .departure-option strong { font-size: 21px; color: #91dfba; font-variant-numeric: tabular-nums; }
+#predicted-departure .departure-option small { grid-column: 2; color: var(--muted); text-align: right; }
+#walk-pace-note { font-size: 10px; line-height: 1.4; color: var(--muted); }

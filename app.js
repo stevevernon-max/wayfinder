@@ -453,9 +453,9 @@
       persist();
     }
     if(!document.hidden)updateWalkingEstimate(position,car,route);
-    const routed=recentWalkingRoute(route,point,now);
-    return {distance, progress:(1-distance/farthest)*100, routed,
-      milliseconds:routed?walkingEstimate.seconds*1000:distance*1.25/1.2*1000};
+    const estimate=walkBackEstimate(route,position,car,now);
+    return {...estimate,distance, progress:(1-distance/farthest)*100};
+
   }
   const timerString=milliseconds=>{
     const seconds=Math.max(0,Math.ceil(Math.abs(milliseconds)/1000));
@@ -488,9 +488,41 @@
     })();
   }
 
+  let walkingPaceSample;
+  function observeWalkingPace(position,context){
+    if(position.coords.accuracy>20)return;
+    const previous=walkingPaceSample;
+    if(!previous || previous.context!==context){walkingPaceSample={position,context};return;}
+    const seconds=(position.timestamp-previous.position.timestamp)/1000;
+    if(seconds<20)return;
+    walkingPaceSample={position,context};
+    if(seconds>90 || position.coords.speed>2.5 || previous.position.coords.speed>2.5)return;
+    let metres=metresBetween(position.coords,previous.position.coords);
+    if(metres/seconds>2.5)return;
+    if(metres<Math.max(position.coords.accuracy,previous.position.coords.accuracy)*1.5)return;
+    const saved=state.walkingPace || {metres:0,seconds:0};
+    const weight=saved.seconds>600?600/saved.seconds:1;
+    state.walkingPace={metres:saved.metres*weight+metres,seconds:saved.seconds*weight+seconds};
+    persist();
+  }
+  function walkBackEstimate(context,position,car,now){
+    if(!car || !position || position.coords.accuracy>30 || now-position.timestamp>30000)return null;
+    const straight=metresBetween(position.coords,car);
+    if(!Number.isFinite(straight))return null;
+    if(straight>50)observeWalkingPace(position,context);
+    const measured=state.walkingPace?.seconds>=60;
+    const pace=measured?Math.max(.4,Math.min(1.3,state.walkingPace.metres/state.walkingPace.seconds)):1;
+    const routed=recentWalkingRoute(context,position.coords,now);
+    const distance=straight<=50?straight:routed && Number.isFinite(walkingEstimate.metres)
+      ?Math.max(straight,walkingEstimate.metres):straight*1.3;
+    const milliseconds=straight<=50?0:Math.max(routed?walkingEstimate.seconds*1000:0,distance/pace*1000);
+    return {straight,distance,milliseconds,routed,measured};
+  }
   function parkedReturn(stop,position,now){
     if(!stop?.parkedAt || !position || position.coords.accuracy>30 || now-position.timestamp>30000)return null;
-    const distance=metresBetween(position.coords,stop.parkedAt);
+    const estimate=walkBackEstimate(stop,position,stop.parkedAt,now);
+    if(!estimate)return null;
+    const distance=estimate.straight;
     const farthest=Math.max(Number(stop.farthestMetres)||0,Math.ceil(distance/5)*5);
     if(stop.returnSampleAt!==position.timestamp){
       const last=stop.returnDistance;
@@ -504,15 +536,17 @@
       state.journeyTracking=departureTracking;
       persist();
     }
-    const routed=recentWalkingRoute(stop,position.coords,now);
-    const milliseconds=distance<=50?0:routed?walkingEstimate.seconds*1000:distance*1.25/1.2*1000;
-    return {distance,progress:distance<=50?100:farthest?Math.max(0,Math.min(100,(1-distance/farthest)*100)):0,
-      milliseconds,returning:Boolean(stop.returning),routed};
+    return {...estimate,distance,progress:distance<=50?100:farthest?Math.max(0,Math.min(100,(1-distance/farthest)*100)):0,
+      returning:Boolean(stop.returning)};
+  }
+  function parkedDepartureOptions(stop,walk,now){
+    if(!walk)return null;
+    const returnNow=now+walk.milliseconds+120000;
+    const plannedStay=Math.max(stop.arrivedAt+n(state.stops[stop.index]?.stay)*60000,returnNow);
+    return {returnNow,plannedStay,selected:walk.returning?returnNow:plannedStay};
   }
   function predictParkedDeparture(stop,walk,now){
-    if(!walk)return null;
-    const ready=now+walk.milliseconds+(walk.returning || walk.distance>50?120000:0);
-    return walk.returning?ready:Math.max(stop.arrivedAt+n(state.stops[stop.index]?.stay)*60000,ready);
+    return parkedDepartureOptions(stop,walk,now)?.selected ?? null;
   }
   function drawProgress(){
     const rows=$('timeline').querySelectorAll('.event');
@@ -567,11 +601,7 @@
       const downstream=Math.max(0,timelineEvents.at(-1).time-stop.time);
       const plannedLeave=target-downstream;
       returnWalk=parkedReturn(manualStop,gpsFix,now);
-      const parked=manualStop.parkedAt, freshFix=fresh && parked;
-      const straight=freshFix?metresBetween(gpsFix.coords,parked):null;
-      const routed=freshFix && recentWalkingRoute(manualStop,gpsFix.coords,now);
-      const walkingMs=straight===null?0:straight<=50?0
-        :routed?walkingEstimate.seconds*1000:straight*1.25/1.2*1000;
+      const walkingMs=returnWalk?.milliseconds ?? 0;
       predictedDeparture=predictParkedDeparture(manualStop,returnWalk,now);
       const minimumStay=n(state.stops[manualStop.index]?.stay)*60000;
       const earliestLeave=predictedDeparture ?? Math.max(manualStop.arrivedAt+minimumStay,now+walkingMs);
@@ -621,20 +651,29 @@
         $('parked-return-progress').value=Math.round(returnWalk.progress);
         $('parked-return-detail').textContent=Math.round(returnWalk.progress)+'% back to car';
       }
-      $('predicted-departure').hidden=predictedDeparture===null;
-      if(predictedDeparture!==null){
-        $('predicted-departure-time').textContent=new Date(predictedDeparture).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-        $('predicted-departure-note').textContent=returnWalk.returning
-          ? 'Based on your walk back, plus 2 min to get ready'
-          : 'Based on your planned stay and walk back';
+      const options=parkedDepartureOptions(manualStop,returnWalk,now);
+      $('predicted-departure').hidden=!options;
+      if(options){
+        const show=timestamp=>new Date(timestamp).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+        const describe=timestamp=>{
+          const margin=Math.round((leaveBy-timestamp)/60000);
+          return margin===0?'On time':Math.abs(margin)+' min '+(margin>0?'early':'late');
+        };
+        $('predicted-departure-time').textContent=show(options.returnNow);
+        $('planned-stay-departure').textContent=show(options.plannedStay);
+        $('return-now-margin').textContent=describe(options.returnNow);
+        $('planned-stay-margin').textContent=describe(options.plannedStay);
+        $('predicted-departure-note').textContent=(returnWalk.returning?'Margin uses return now':'Margin uses full planned stay')
+          +' · includes 2 min to get ready';
       }
-      const straight=manualStop.parkedAt && fresh?metresBetween(gpsFix.coords,manualStop.parkedAt):null;
-      if(straight!==null && straight>50)updateWalkingEstimate(gpsFix,manualStop.parkedAt,manualStop);
-      const routed=straight!==null && recentWalkingRoute(manualStop,gpsFix.coords,now);
-      const distance=straight===null?null:straight<=50?Math.round(straight)
-        :routed && Number.isFinite(walkingEstimate.metres)?Math.round(walkingEstimate.metres):Math.round(straight);
-      const walkMs=straight===null?null:straight<=50?0:
-        routed?walkingEstimate.seconds*1000:straight*1.25/1.2*1000;
+      const straight=returnWalk?.straight ?? null;
+      if(straight!==null && straight>50 && !document.hidden)updateWalkingEstimate(gpsFix,manualStop.parkedAt,manualStop);
+      const routed=Boolean(returnWalk?.routed);
+      const distance=returnWalk?Math.round(returnWalk.routed?returnWalk.distance:returnWalk.straight):null;
+      const walkMs=returnWalk?.milliseconds ?? null;
+      $('walk-pace-note').textContent=returnWalk
+        ? (returnWalk.measured?'Based on your observed pace':'Cautious pace estimate')+(routed?' · walking route':' · approximate path')
+        : 'Waiting for accurate GPS';
       const returnDeadline=walkMs===null?null:leaveBy-walkMs-120000;
       const warning=returnDeadline!==null && straight>50 && now>=returnDeadline;
       info.hidden=false;
@@ -645,7 +684,7 @@
       $('parked-leave-by').textContent=new Date(leaveBy).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
       $('parked-badge').textContent=straight===null?'Parked':straight<=50?'Parked · at car':'Parked · away from car';
       $('car-distance').textContent=distance===null?'—':distance>=1000?(distance/1000).toFixed(1)+' km':distance+' m';
-      $('car-distance-detail').textContent=straight===null?'Waiting for car position':straight<=50?'Within 50 m':'Away';
+      $('car-distance-detail').textContent=straight===null?'Waiting for car position':straight<=50?'Within 50 m':routed?'Walking route':'Straight line';
       $('walk-duration').textContent=walkMs===null?'—':Math.ceil(walkMs/60000)+' min';
       $('return-by').textContent=returnDeadline===null?''
         :straight<=50?'Ready to depart'
