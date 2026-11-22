@@ -2035,7 +2035,7 @@ function updatePhotographyLightStatus(){
  // Sunrise/sunset are local to the viewpoint (Open-Meteo timezone Europe/London).
  // Keep weather-only visibility distinct from usable photographic light.
  const light=atMinute===null||riseMinute===null||setMinute===null?"unknown":
-  atMinute<riseMinute||atMinute>=setMinute?"night":
+  atMinute<riseMinute-20||atMinute>=setMinute+20?"night":
   atMinute<riseMinute+25||atMinute>=setMinute-25?"twilight":"day";
  const score=weatherConditionsScore(visibility,rain,light);
  setPhotoScore("photoStatus","weatherRating",score);
