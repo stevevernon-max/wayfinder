@@ -1,4 +1,4 @@
-const CACHE='wayfinder-shell-v90';
+const CACHE='wayfinder-shell-v91';
 const FILES=['./','./index.html','./styles.css?v=90','./app.js?v=90','./tomtom-config.js?v=35','./manifest.webmanifest','./road-mark-180.png','./road-mark-192.png','./road-mark-512.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
