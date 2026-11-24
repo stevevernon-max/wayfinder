@@ -38,3 +38,12 @@
 - Distinguish simulation results from real-device GPS testing.
 - Report unresolved failures honestly and avoid speculative repeated fixes.
 - Update asset/cache versions when client files change.
+
+## Credit-efficient workflow
+
+- Match reasoning to the task. Use low for copy, colours and spacing, medium for routine work, high for complex bugs, GPS, authentication and live integrations, and extra high when the model supports it for major architecture or exceptional debugging.
+- Start with `rg --files` and targeted `rg -n` searches. Use semantic navigation when a symbol or its callers are hard to locate. Read only relevant sections and reuse information already retrieved.
+- Make targeted edits using existing components, functions, utilities and design tokens. Keep unrelated code and dependencies out of the diff. Preserve existing behaviour and integrations.
+- Group related changes in one cycle. Use deterministic linting, formatting and tests. Run targeted tests first and broader regressions when shared behaviour, authentication, integrations or architecture warrant them.
+- Use MCP selectively. Capture screenshots and repeat visual audits only when needed. Keep tool output, progress and final summaries concise.
+- Review the diff, test the completed change and commit it to GitHub. Open [ARCHITECTURE.md](ARCHITECTURE.md), [DESIGN.md](DESIGN.md) or [TESTING.md](TESTING.md) when relevant.

@@ -1,0 +1,25 @@
+{
+  "name": "wayfinder-quality",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^22.19.0 || >=24"
+  },
+  "scripts": {
+    "browsers": "playwright install chromium webkit",
+    "test": "playwright test --grep-invert @a11y",
+    "audit:a11y": "playwright test --grep @a11y",
+    "audit:performance": "node lighthouse.mjs",
+    "lint": "eslint .",
+    "format:check": "prettier --check '**/*.mjs' package.json"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.65.1",
+    "eslint": "10.15.0",
+    "globals": "17.14.0",
+    "lighthouse": "13.6.0",
+    "prettier": "3.10.1"
+  }
+}

@@ -1,0 +1,39 @@
+name: Development quality
+
+on:
+  workflow_dispatch:
+    inputs:
+      browsers:
+        description: Run browser smoke and accessibility checks
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: tools/quality/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: node --check app.js && node --check sw.js
+      - working-directory: tools/quality
+        run: npm ci && npm run lint && npm run format:check
+      - if: inputs.browsers
+        working-directory: tools/quality
+        run: npx playwright install --with-deps chromium webkit && npm test && npm run audit:a11y
